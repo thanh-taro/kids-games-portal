@@ -1,0 +1,31 @@
+/* style.css — layout + retro pixel look. */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;             /* fullscreen canvas — no page scroll */
+  background: #202225;
+  font-family: monospace;
+}
+
+#wrap {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  background: #f7f7f7;
+  image-rendering: pixelated;   /* keep dots crisp at native resolution */
+}
+
+/* A simple pixel-ish fallback font; the chunky look mostly comes from the
+   canvas dot rendering. Swap in a real bitmap @font-face later if desired. */
+@font-face {
+  font-family: "PixelFont";
+  src: local("Courier New"), local("monospace");
+}

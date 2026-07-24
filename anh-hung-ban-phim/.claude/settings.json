@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node js/telex.test.js)",
+      "Bash(node --check js/*.js)",
+      "Bash(node --check:*)",
+      "Bash(python3 serve.py:*)",
+      "Bash(curl -s -I http://localhost:8177/*)",
+      "Bash(curl -s http://localhost:8177/*)",
+      "Bash(pkill -f \"serve.py\")",
+      "Bash(pkill -f \"http.server*\")",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)"
+    ]
+  }
+}
