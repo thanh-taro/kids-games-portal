@@ -17,6 +17,14 @@
 // Ranks ordered LOW→HIGH. Each requires BOTH a minimum accuracy AND a minimum
 // speed; the hero holds the highest rank whose gates it clears. `killBonus` is
 // the kill-point multiplier; `glow` (Master+) is the aura color + soft blur.
+//
+// Gate sizing is anchored to what the game actually asks of a KID: one clean
+// 12-stage playthrough is ~260 words, and CPM counts rendered Vietnamese
+// characters, so Telex tone/shape keys (aw → ă, ees → ế) mean real keypress
+// speed runs well above the CPM number. Legend therefore lands inside a single
+// determined playthrough (~180 words) and Mythic just past a full run (~320) —
+// still the two hardest tiers, and still gated on sustained accuracy, but
+// reachable by a child rather than by an adult touch-typist.
 export const RANKS = [
   {
     id: 'novice',
@@ -61,9 +69,9 @@ export const RANKS = [
   {
     id: 'legend',
     name: 'Huyền Thoại',       // "Legend"
-    minAccuracy: 0.96,
-    minCpm: 260,
-    minWords: 400,             // sustained mastery — not a lucky hot streak
+    minAccuracy: 0.92,
+    minCpm: 175,
+    minWords: 180,             // sustained mastery — not a lucky hot streak
     killBonus: 2.5,
     color: '#b06bff',
     emoji: '👑',
@@ -72,9 +80,9 @@ export const RANKS = [
   {
     id: 'mythic',
     name: 'Thần Thoại',        // "Mythic"
-    minAccuracy: 0.99,
-    minCpm: 320,
-    minWords: 1000,            // near-flawless over a very long haul
+    minAccuracy: 0.95,
+    minCpm: 210,
+    minWords: 320,             // near-flawless over a very long haul
     killBonus: 3.0,
     color: '#ffd24a',
     emoji: '✨',
@@ -226,16 +234,25 @@ export class RankTracker {
   // top ranks) lifetime words have climbed from the current rank's gates to the
   // next rank's, taking the LAGGING of the three (all must be met to promote).
   // Null at max rank.
+  //
+  // The floor is measured from the LIVE rank, not the displayed one. Those
+  // differ whenever the badge is ratcheted above current form (see
+  // displayIndex), and measuring from the displayed rank's gates would clamp
+  // every fraction to 0 — a bar frozen at 0% with no hint why. `lagging` names
+  // the gate holding the kid back ('accuracy' | 'speed' | 'words') so the HUD
+  // can tell them what to work on instead of showing a dead bar.
   get progressToNext() {
     const next = this.nextRank;
     if (!next) return null;
-    const cur = RANKS[this.displayIndex];
+    const cur = RANKS[Math.min(this.rankIndex, this.displayIndex)];
     const accP = frac(this.accuracy, cur.minAccuracy, next.minAccuracy);
     const cpmP = frac(this.cpm, cur.minCpm, next.minCpm);
     const wordP = next.minWords
       ? frac(this.totalWords, cur.minWords || 0, next.minWords)
       : 1;
-    return { overall: Math.min(accP, cpmP, wordP), accP, cpmP, wordP };
+    const overall = Math.min(accP, cpmP, wordP);
+    const lagging = overall === accP ? 'accuracy' : overall === cpmP ? 'speed' : 'words';
+    return { overall, accP, cpmP, wordP, lagging };
   }
 
   // Snapshot of persistable fields to fold into the progress object.

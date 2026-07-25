@@ -126,6 +126,11 @@ const stepCases = [
   // 'c'... no — retype from the start. "bx" is off-rails; the next 'c' on a
   // fresh buffer starts "cá", so it wipes the mistake and restarts.
   ['bxc',        'cá',       'c',      false,       false,      true],
+  // Auto-restart toward a word whose FIRST char needs a shape/tone key: the
+  // retype's first key renders as a bare vowel (o), not the target's ô — a plain
+  // startsWith would reject it and strand the kid. 'o' must restart "ông".
+  ['axo',        'ông',      'o',      false,       false,      true], // go off-rails ("ax"), then 'o' restarts ô-word
+  ['xd',         'đi',       'd',      false,       false,      true], // 'x' off-rails, then 'd' restarts đ-word
   // Backspace recovers: type "meo", delete, retype tone path.
   ['meo<of',     'mèo',      'mèo',    true,        false,      false],
 ];

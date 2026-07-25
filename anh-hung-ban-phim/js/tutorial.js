@@ -107,18 +107,62 @@ const LESSONS = [
     target: 'bế', // "to carry (a child)"
   },
   {
+    title: 'Dấu cách giữa hai từ',
+    // "The space bar! A phrase is several words. Press the long SPACE bar to
+    //  leave a gap between them. Note: tones belong to their own word."
+    lines: [
+      'Nhiều từ ghép lại thành một câu.',
+      'Nhấn thanh DÀI (SPACE) để cách từ.',
+      'Mỗi từ có dấu riêng của nó!',
+    ],
+    keys: 'c o n ␣ g a f',
+    target: 'con gà', // "the chicken" — also a real tier-3 phrase in skills.js
+  },
+  {
+    title: 'Luyện câu dài hơn',
+    // "A longer phrase: hats, hooks and a space all in one. Take your time."
+    lines: [
+      'Một câu dài hơn: có mũ, có móc,',
+      'và có dấu cách. Cứ gõ từ từ nhé!',
+    ],
+    keys: 'b a ␣ d d i ␣ c h o w i',
+    target: 'ba đi chơi', // "dad goes out to play"
+  },
+  {
     title: 'Sẵn sàng chiến đấu!',
     // "You're ready! Type the word above each monster to attack. Clean typing
     //  builds a combo for extra power. Good luck, hero!"
     lines: [
       'Bạn đã sẵn sàng! ⚔️',
-      'Gõ đúng từ trên đầu quái để tấn công.',
+      'Gõ đúng từ (hoặc câu) trên đầu quái vật.',
       'Gõ sạch để lên COMBO — mạnh hơn!',
       'Chúc may mắn, anh hùng nhỏ! 🌟',
     ],
     target: null,
   },
 ];
+
+// Vertical breathing room inside a text plate, above and below the font box.
+const PLATE_PAD = 3;
+
+// Line pitch for the explanation lines. An 18px plate is now ~26px tall
+// (1.2 ascent + 18.8 descent + 2*3 pad), so the pitch has to clear that with a
+// visible gap — at the old 30px the plates stacked edge-to-edge into one slab.
+const LINE_PITCH = 34;
+
+// Practice-card internals, measured from the card's top edge.
+//
+// `drawText` uses textBaseline='top', so ink starts `fontBoundingBoxAscent`
+// ABOVE the given y — 37px at size 44. The 16px label draws at +14 and its ink
+// ends at +19, so the word's y must be at least 19 + 37 for the glyphs to clear
+// it. The old formula put it at +30, which is why "mèo" overlapped the label and
+// poked out above the card. +70 clears the label with room to spare and leaves
+// the word visually centred between the label and the chip row, which sits
+// CHIP_ROW_BOTTOM_GAP above the bottom of a CARD_H-tall card.
+const WORD_TOP = 70;
+const CARD_H = 158;
+const CHIP_ROW_BOTTOM_GAP = 14;
+const CHIP_H = 26; // key-hint chip size; also the height of the solved-flourish row
 
 export class Tutorial {
   constructor() {
@@ -232,16 +276,18 @@ export class Tutorial {
     drawText(ctx, 'HƯỚNG DẪN', W / 2, 38, 24, '#ffe08a', 'center');
     this._drawProgress(ctx, W, 74);
 
-    // Lesson title.
-    this._plate(ctx, W / 2, 98, lesson.title, 30);
-    drawText(ctx, lesson.title, W / 2, 100, 30, '#ffffff', 'center');
+    // Lesson title. At 30px its plate reaches ~32px above the baseline-top, so
+    // it has to sit far enough below the progress dots (which end at y=78) not
+    // to cover them.
+    this._plate(ctx, W / 2, 108, lesson.title, 30);
+    drawText(ctx, lesson.title, W / 2, 110, 30, '#ffffff', 'center');
 
     // Explanation lines.
-    let ly = 148;
+    let ly = 158;
     for (const line of lesson.lines) {
       this._plate(ctx, W / 2, ly, line, 18);
       drawText(ctx, line, W / 2, ly + 2, 18, '#bfe8ff', 'center');
-      ly += 30;
+      ly += LINE_PITCH;
     }
 
     // The practice card, and just below it the "Press SPACE" advance prompt so
@@ -264,50 +310,76 @@ export class Tutorial {
   // advance prompt right under the box).
   _drawPractice(ctx, W, H, lesson, y) {
     const cx = W / 2;
-    const cardW = 460;
-    const cardH = 150;
+
+    // Phrase targets ("ba đi chơi") are much wider than single words, so the
+    // word size shrinks and the card grows to fit — both clamped to the screen
+    // so nothing spills off a narrow window.
+    const size = lesson.target.length > 8 ? 34 : 44;
+    ctx.font = `${size}px "PixelFont", monospace`;
+    const textW = ctx.measureText(lesson.target).width;
+    const chips = lesson.keys ? this._chipMetrics(lesson.keys) : null;
+    const cardW = Math.min(
+      W - 40,
+      Math.max(460, textW + 80, chips ? chips.totalW + 60 : 0),
+    );
+    const cardH = CARD_H;
     const cardX = cx - cardW / 2;
     drawRect(ctx, cardX - 3, y - 3, cardW + 6, cardH + 6, '#1a1423');
     drawRect(ctx, cardX, y, cardW, cardH, '#2b2740');
     drawRect(ctx, cardX, y, cardW, 4, this.solved ? '#5fc23c' : '#f2c53d');
 
-    // "Gõ từ này:" label ("Type this word:").
-    drawText(ctx, 'Gõ từ này:', cx, y + 14, 16, '#cfc8dd', 'center');
+    // Label: "Type this word:" for one word, "Type this phrase:" for a phrase.
+    const label = lesson.target.includes(' ') ? 'Gõ cụm này:' : 'Gõ từ này:';
+    drawText(ctx, label, cx, y + 14, 16, '#cfc8dd', 'center');
 
     // Big target word, letters lit green as the kid matches them.
+    // The per-char advance MUST be measured with the word's own font: drawText()
+    // above left the context at the label's 16px, and measuring at that size
+    // advances ~9.6px instead of ~26.4px, stacking the letters on top of each
+    // other. Set the font once before the loop and never let it drift.
     const cur = render(this.buffer);
     const matched = this._matchedLen(cur, lesson.target);
-    const size = 44;
     ctx.font = `${size}px "PixelFont", monospace`;
-    const textW = ctx.measureText(lesson.target).width;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
     let dx = cx - textW / 2;
-    const wy = y + 40;
+    // Sit the word below the label rather than centering a `size`-tall box: the
+    // old `y + 46 - size/2 + 6` assumed the glyphs were only `size` px tall, so
+    // at 44px the ink started 7px ABOVE the card's top edge and ran through the
+    // label. WORD_TOP is measured from the card top, below the 16px label.
+    const wy = y + WORD_TOP;
     for (let i = 0; i < lesson.target.length; i++) {
+      const ch = lesson.target[i];
+      const chW = ctx.measureText(ch).width;
       let color = '#f4f4f4';
       if (this.solved) color = '#7fe66a';
       else if (i < matched) color = '#5fc23c';
       else if (this.mistake && i === matched) color = '#ff6a5a';
-      ctx.fillStyle = color;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.font = `${size}px "PixelFont", monospace`;
-      ctx.fillText(lesson.target[i], dx, wy);
-      dx += ctx.measureText(lesson.target[i]).width;
+      // A space is invisible, so draw the gap the kid must type as a small
+      // underscore bar — otherwise "con gà" reads as one blank stretch and
+      // there is no visual cue that SPACE is a keystroke of its own.
+      if (ch === ' ') {
+        const barW = Math.max(6, chW - 6);
+        drawRect(ctx, dx + 3, wy + size * 0.72, barW, 4, i < matched ? '#5fc23c' : '#6b6490');
+      } else {
+        ctx.fillStyle = color;
+        ctx.fillText(ch, dx, wy);
+      }
+      dx += chW;
     }
 
-    // Key-hint chips: the raw keys to press, e.g. m e o f.
+    // Key-hint chips: the raw keys to press, e.g. m e o f. A '␣' token becomes
+    // a wide SPACE bar chip so the space key looks like the real keyboard key.
     if (lesson.keys && !this.solved) {
-      const keys = lesson.keys.split(' ');
-      const chip = 26;
-      const gap = 8;
-      const totalW = keys.length * chip + (keys.length - 1) * gap;
-      let kx = cx - totalW / 2;
-      const ky = wy + size + 8;
-      for (const k of keys) {
-        drawRect(ctx, kx, ky, chip, chip, '#4a4470');
-        drawRect(ctx, kx, ky, chip, 3, '#f2c53d');
-        drawText(ctx, k.toUpperCase(), kx + chip / 2, ky + 6, 15, '#fff4d6', 'center');
-        kx += chip + gap;
+      let kx = cx - chips.totalW / 2;
+      const ky = y + cardH - CHIP_ROW_BOTTOM_GAP - chips.chip;
+      for (const k of chips.keys) {
+        const isSpace = k === '␣';
+        const w = isSpace ? chips.spaceW : chips.chip;
+        drawRect(ctx, kx, ky, w, chips.chip, '#4a4470');
+        drawRect(ctx, kx, ky, w, 3, '#f2c53d');
+        drawText(ctx, isSpace ? 'SPACE' : k.toUpperCase(), kx + w / 2, ky + 6, isSpace ? 13 : 15, '#fff4d6', 'center');
+        kx += w + chips.gap;
       }
     }
 
@@ -315,9 +387,27 @@ export class Tutorial {
     if (this.solved) {
       const pop = Math.min(1, this.solvedTimer / 8);
       const s = 26 + (1 - pop) * 10;
-      drawText(ctx, '✓ Đúng rồi!', cx, wy + size + 10, Math.round(s), '#7fe66a', 'center');
+      // Anchored to the chip row's slot (not the word), so it lands in the same
+      // place regardless of the target's font size. The pop starts at 36px and
+      // settles to 26px, and ink rises with the size — so grow it about the
+      // row's CENTRE, otherwise the first popped frames reach up into the word.
+      const rowMid = cardH - CHIP_ROW_BOTTOM_GAP - CHIP_H / 2;
+      drawText(ctx, '✓ Đúng rồi!', cx, y + rowMid - s / 2, Math.round(s), '#7fe66a', 'center');
     }
     return y + cardH + 3; // outer bottom edge of the card
+  }
+
+  // Measure the key-hint chip row. A '␣' token renders as a wider SPACE bar,
+  // so the row's total width has to account for it before the card is sized.
+  _chipMetrics(keysStr) {
+    const keys = keysStr.split(' ');
+    const chip = CHIP_H;
+    const gap = 8;
+    const spaceW = 54;
+    const totalW =
+      keys.reduce((w, k) => w + (k === '␣' ? spaceW : chip), 0) +
+      (keys.length - 1) * gap;
+    return { keys, chip, gap, spaceW, totalW };
   }
 
   // The blinking "Press SPACE to continue/keep learning" prompt, drawn right
@@ -336,13 +426,19 @@ export class Tutorial {
   _drawFooter(ctx, W, H, lesson) {
     // While practicing: steady instruction at the bottom (no blink).
     if (lesson.target && !this.solved) {
-      const msg = 'Gõ chữ trên bàn phím để luyện tập'; // "Type on the keyboard to practice"
-      this._plate(ctx, W / 2, H - 54, msg, 16);
-      drawText(ctx, msg, W / 2, H - 51, 16, '#fff4d6', 'center');
+      // On phrase lessons the space bar is a typing key (not "continue"), so say
+      // so explicitly — otherwise SPACE reads as the advance key it is elsewhere.
+      const msg = lesson.target.includes(' ')
+        ? 'Nhấn SPACE để cách giữa hai từ' // "Press SPACE for the gap between the two words"
+        : 'Gõ chữ trên bàn phím để luyện tập'; // "Type on the keyboard to practice"
+      // 16px plates are ~24px tall, so the two footer rows need >24px between
+      // them — at the old H-54 / H-28 they sat 2px apart and read as one bar.
+      this._plate(ctx, W / 2, H - 62, msg, 16);
+      drawText(ctx, msg, W / 2, H - 59, 16, '#fff4d6', 'center');
     }
     // Always-visible skip hint.
-    this._plate(ctx, W / 2, H - 28, 'Nhấn ESC để bỏ qua hướng dẫn', 16);
-    drawText(ctx, 'Nhấn ESC để bỏ qua hướng dẫn', W / 2, H - 26, 16, '#cfc8dd', 'center');
+    this._plate(ctx, W / 2, H - 30, 'Nhấn ESC để bỏ qua hướng dẫn', 16);
+    drawText(ctx, 'Nhấn ESC để bỏ qua hướng dẫn', W / 2, H - 27, 16, '#cfc8dd', 'center');
   }
 
   // Row of dots showing lesson progress.
@@ -360,9 +456,22 @@ export class Tutorial {
   }
 
   // Dark plate behind text for legibility over the bright sky.
+  //
+  // Height comes from the FONT's own box, not from `size`: text is drawn with
+  // textBaseline='top' at y+2, and Vietnamese stacks tone marks above the
+  // letter and descenders below it, so real ink reaches ~size px past the top
+  // (18px text measures ~17.2px of descent, 30px measures ~28.6px). Sizing the
+  // plate as `size + 10` from `y - 4` left ~4px of slack, so consecutive lines
+  // 30px apart ran their plates into each other's diacritics as one dark slab.
   _plate(ctx, cx, y, text, size) {
     ctx.font = `${size}px "PixelFont", monospace`;
-    const w = ctx.measureText(text).width;
-    drawRect(ctx, cx - w / 2 - 10, y - 4, w + 20, size + 10, 'rgba(20,18,32,0.72)');
+    const m = ctx.measureText(text);
+    const w = m.width;
+    // Fall back to the old estimate where the box metrics aren't available.
+    const asc = m.fontBoundingBoxAscent ?? 2;
+    const desc = m.fontBoundingBoxDescent ?? size;
+    const top = y + 2 - asc - PLATE_PAD;
+    const h = asc + desc + PLATE_PAD * 2;
+    drawRect(ctx, cx - w / 2 - 10, top, w + 20, h, 'rgba(20,18,32,0.72)');
   }
 }

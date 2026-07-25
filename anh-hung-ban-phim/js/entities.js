@@ -3,7 +3,7 @@
 // All positions are in screen pixels. Sprites are drawn by the game loop using
 // render.drawSprite; entities just hold state + update logic.
 
-import { SPRITES } from './sprites.js';
+import { SPRITES, heroSprite } from './sprites.js';
 import { DOT } from './render.js';
 
 export const MONSTER_KIND = {
@@ -16,7 +16,6 @@ export class Hero {
   constructor(x, groundY) {
     this.x = x;
     this.groundY = groundY;
-    this.spriteId = 'hero_knight';
     this.scale = 1.4; // wider landscape world, nudged up a touch for presence
     this.maxHp = 250;
     this.hp = 250;
@@ -36,8 +35,12 @@ export class Hero {
     return Math.sin(p * Math.PI); // 0 at start/end, 1 at midpoint
   }
 
+  // The blade is tinted to the equipped weapon's color (set by
+  // rewards.applyRewards), so earning "Kiếm Lửa" visibly changes the sword the
+  // kid is holding. heroSprite() caches per color and returns the shared base
+  // sprite when no weapon is equipped yet.
   get sprite() {
-    return SPRITES[this.spriteId];
+    return heroSprite(this.weaponColor);
   }
 
   get y() {

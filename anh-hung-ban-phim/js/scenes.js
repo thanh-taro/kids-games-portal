@@ -3,12 +3,14 @@
 // Each function draws one full-screen scene. main.js decides which to call
 // based on the current game state, and passes the data each needs.
 
-import { drawSprite, drawScene, drawText, drawRect, DOT } from './render.js';
-import { SPRITES, CLOUD, CACTUS, ROCK, BUSH, SUN } from './sprites.js';
+import { drawSprite, drawText, drawRect, DOT } from './render.js';
+import { heroSprite, princessSprite } from './sprites.js';
 import { chapterForStage, stageNumberInChapter, nextChapter } from './chapters.js';
+import { getStage } from './stages.js';
+import { getBiome, drawBiomeTerrain, drawBiomeScenery, drawBiomeLights, drawBiomeWeather } from './biomes.js';
 import { drawAura } from './effects.js';
 
-// Animated sparkles (used as celebratory dots over the desert on some scenes).
+// Animated sparkles (used as celebratory dots over the backdrop on some scenes).
 function drawSparkles(ctx, W, H, tick, color = '#c77dff') {
   for (let i = 0; i < 24; i++) {
     const x = (i * 137 + tick * (1 + (i % 3))) % W;
@@ -21,29 +23,36 @@ function drawSparkles(ctx, W, H, tick, color = '#c77dff') {
   }
 }
 
-// Shared desert backdrop for the menu scenes: the same pixel world as gameplay
-// (sky, sand, layered ground) plus sun, clouds, and grounded scenery props.
-// `tint` optionally washes the whole scene with a mood color (rgba string).
-function drawSceneBackdrop(ctx, W, H, tick, tint = null) {
+// Shared backdrop for the menu scenes: the same pixel world as gameplay, themed
+// to the stage's biome (sky, terrain band, layered ground, scenery props, and
+// weather) so the intro/victory/failure screens read as the SAME place the kid
+// is about to fight in — a cave intro looks like a cave, the fortress rains.
+//
+// `biomeName` picks the theme (falls back to the desert look when absent);
+// `tint` optionally washes the scene with an extra mood color (rgba string) on
+// top of the biome's own tint.
+//
+// Menu scenes sit their clouds a little lower than gameplay (no HUD row to
+// avoid) and raise the sky body toward the top edge, clear of the title plates.
+const MENU_SKY_LAYOUT = { cloudY: [60, 110, 84] };
+
+function drawSceneBackdrop(ctx, W, H, tick, tint = null, biomeName = null) {
   const groundY = H - 90;
-  drawScene(ctx, W, H, groundY);
+  const biome = getBiome(biomeName);
 
-  // Sun in the top-left corner.
-  drawSprite(ctx, SUN, 0, 50, 40, 3);
+  drawBiomeTerrain(ctx, W, H, groundY, biome, tick);
+  // Keep the biome's own horizontal placement (tuned around its props) and just
+  // raise the body so the centered title text stays clear of it.
+  const layout = { ...MENU_SKY_LAYOUT };
+  if (biome.body) layout.body = { ...biome.body, y: 40 };
+  drawBiomeScenery(ctx, W, H, groundY, biome, tick, layout);
 
-  // Drifting clouds in the upper sky, kept to the right of the sun.
-  const c1 = (tick * 0.3) % (W - 260) + 240;
-  const c2 = (tick * 0.2) % (W - 320) + 300;
-  drawSprite(ctx, CLOUD, 0, c1, 60, 3);
-  drawSprite(ctx, CLOUD, 0, c2, 110, 2);
-
-  // Grounded scenery: cacti, a rock, a bush spread across the ground line
-  // (positions chosen to stay clear of the hero/princess in the foreground).
-  const foot = (sprite, scale) => groundY - sprite.h * DOT * scale;
-  drawSprite(ctx, CACTUS, 0, W * 0.10, foot(CACTUS, 2), 2);
-  drawSprite(ctx, ROCK, 0, W * 0.72, foot(ROCK, 2), 2);
-  drawSprite(ctx, BUSH, 0, W * 0.80, foot(BUSH, 2), 2);
-  drawSprite(ctx, CACTUS, 0, W * 0.90, foot(CACTUS, 1.5), 1.5);
+  if (biome.tint) {
+    ctx.fillStyle = biome.tint;
+    ctx.fillRect(0, 0, W, H);
+  }
+  drawBiomeLights(ctx, W, H, groundY, biome, tick);
+  drawBiomeWeather(ctx, W, H, groundY, biome, tick);
 
   if (tint) {
     ctx.fillStyle = tint;
@@ -58,11 +67,25 @@ function plate(ctx, cx, y, text, size) {
   drawRect(ctx, cx - w / 2 - 10, y - 4, w + 20, size + 10, 'rgba(20,18,32,0.72)');
 }
 
+// The fullscreen shortcut is NOT the same everywhere, so the title screen names
+// the one that actually works on the kid's machine. On macOS it's Ctrl+Cmd+F —
+// F11 there is the OS "Show Desktop" (and needs Fn on laptops), so telling a Mac
+// kid to press F11 actively does the wrong thing. Windows and Linux browsers all
+// use F11. Computed once at module load; `userAgent` is the fallback for
+// browsers without `navigator.platform`.
+const FULLSCREEN_KEY = (() => {
+  const ua = `${navigator.platform || ''} ${navigator.userAgent || ''}`;
+  // iPadOS reports "MacIntel" but has no keyboard shortcut worth naming; it also
+  // matches /Mac/, which is harmless — the tip is just advice either way.
+  return /Mac|iPhone|iPad|iPod/.test(ua) ? 'Ctrl+Cmd+F' : 'F11';
+})();
+
 // `hero` describes the kid's ACTUAL equipped look so the home screen shows the
-// hero they've built: { spriteId, weaponColor, rankGlow, rankName, rankEmoji,
-// rankColor }. Falls back to the base knight when nothing is unlocked yet.
-export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}) {
-  drawSceneBackdrop(ctx, W, H, tick);
+// hero they've built: { weaponColor, rankGlow, rankName, rankEmoji, rankColor }.
+// Falls back to no weapon glint / no aura when nothing is unlocked yet.
+export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}, biome = null) {
+  // The home screen previews the biome of the stage the kid is about to resume.
+  drawSceneBackdrop(ctx, W, H, tick, null, biome);
 
   plate(ctx, W / 2, 84, 'ANH HÙNG BÀN PHÍM', 40);
   drawText(ctx, 'ANH HÙNG BÀN PHÍM', W / 2, 90, 40, '#ffffff', 'center');
@@ -75,27 +98,23 @@ export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}) {
   plate(ctx, W / 2, 176, chapLabel, 16);
   drawText(ctx, chapLabel, W / 2, 178, 16, '#f0c6ff', 'center');
 
-  // Hero + princess standing on the ground line. The hero uses the kid's
-  // equipped skin, glows with their earned rank aura, and gets a small weapon
-  // glint in their current weapon color — so the home screen reflects who
-  // they've become, not a generic knight.
+  // Hero + princess standing on the ground line. The hero glows with their
+  // earned rank aura and gets a small weapon glint in their current weapon
+  // color — so the home screen reflects who they've become.
   const groundY = H - 90;
-  const heroSprite = SPRITES[hero.spriteId] || SPRITES.hero_knight;
+  // The hero's own sword is tinted to their equipped weapon, so the separate
+  // bobbing "glint" square that used to hint at the weapon color is gone — the
+  // blade itself now carries it.
+  const hSprite = heroSprite(hero.weaponColor);
   const heroScale = 2;
   const heroX = W / 2 - 120;
-  const heroY = groundY - heroSprite.h * DOT * heroScale;
-  const hw = heroSprite.w * DOT * heroScale;
-  const hh = heroSprite.h * DOT * heroScale;
+  const heroY = groundY - hSprite.h * DOT * heroScale;
+  const hw = hSprite.w * DOT * heroScale;
+  const hh = hSprite.h * DOT * heroScale;
   if (hero.rankGlow) {
     drawAura(ctx, heroX + hw / 2, heroY + hh / 2, hw * 0.85, hero.rankGlow, tick);
   }
-  drawSprite(ctx, heroSprite, Math.floor(tick / 10) % 2, heroX, heroY, heroScale);
-  // Weapon-color glint bobbing beside the hero (hint of the equipped weapon).
-  if (hero.weaponColor) {
-    const gy = heroY + hh * 0.4 + Math.sin(tick / 12) * 4;
-    drawRect(ctx, heroX + hw + 6, gy, DOT * 2, DOT * 2, '#1a1423');
-    drawRect(ctx, heroX + hw + 8, gy + 2, DOT * 1.2, DOT * 1.2, hero.weaponColor);
-  }
+  drawSprite(ctx, hSprite, Math.floor(tick / 10) % 2, heroX, heroY, heroScale);
   // Rank title plate floating ABOVE the hero's head (below-hero would collide
   // with the SPACE prompt on the ground line), so the kid sees their earned rank.
   if (hero.rankName) {
@@ -103,23 +122,42 @@ export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}) {
     plate(ctx, heroX + hw / 2, heroY - 28, label, 16);
     drawText(ctx, label, heroX + hw / 2, heroY - 26, 16, hero.rankColor || '#fff4d6', 'center');
   }
-  drawSprite(ctx, SPRITES.princess, 0, W / 2 + 70, groundY - SPRITES.princess.h * DOT * 2, 2);
+  // The princess waiting on the title screen is the one from the stage the kid
+  // is up to, so the home screen previews who they're about to rescue. Warm-up
+  // stages have no princess of their own — fall back to the default look.
+  const titlePrincess = princessSprite(getStage(stageIndex).princessStyle);
+  drawSprite(ctx, titlePrincess, Math.floor(tick / 16) % 2, W / 2 + 70, groundY - titlePrincess.h * DOT * 2, 2);
 
-  // SPACE prompt raised toward center so a kid's eye lands on it easily
-  // (kept above the standing hero/princess and the H/R hints below).
+  // Menu column: the blinking SPACE prompt as the primary item, with the
+  // secondary H/R options stacked right beneath it so the three read as one
+  // start menu instead of scattered hints. The plate is drawn even while the
+  // text blinks off so the menu block doesn't visibly jump.
+  const menuY = H / 2 + 40;
+  plate(ctx, W / 2, menuY, '▶ Nhấn SPACE để bắt đầu', 20);
   if (tick % 60 < 40) {
-    plate(ctx, W / 2, H / 2 + 40, '▶ Nhấn SPACE để bắt đầu', 20);
-    drawText(ctx, '▶ Nhấn SPACE để bắt đầu', W / 2, H / 2 + 44, 20, '#ffe08a', 'center');
+    drawText(ctx, '▶ Nhấn SPACE để bắt đầu', W / 2, menuY + 4, 20, '#ffe08a', 'center');
   }
-  // How-to-play + reset hints.
-  plate(ctx, W / 2, H - 46, 'Nhấn H để học cách chơi', 16);
-  drawText(ctx, 'Nhấn H để học cách chơi', W / 2, H - 44, 16, '#bfe8ff', 'center');
-  plate(ctx, W / 2, H - 22, 'Nhấn R để chơi lại từ đầu', 16);
-  drawText(ctx, 'Nhấn R để chơi lại từ đầu', W / 2, H - 20, 16, '#fff4d6', 'center');
+  plate(ctx, W / 2, menuY + 32, 'Nhấn H để học cách chơi', 16);
+  drawText(ctx, 'Nhấn H để học cách chơi', W / 2, menuY + 34, 16, '#bfe8ff', 'center');
+  plate(ctx, W / 2, menuY + 58, 'Nhấn R để chơi lại từ đầu', 16);
+  drawText(ctx, 'Nhấn R để chơi lại từ đầu', W / 2, menuY + 60, 16, '#fff4d6', 'center');
+
+  // Fullscreen tip, bottom-LEFT so it clears the always-on mute hint that
+  // `main.js` draws bottom-right. Gently blinking (slower than the SPACE
+  // prompt) so it reads as advice, not as another menu item to press.
+  // English gloss: "Tip: press <key> for fullscreen — much more fun!"
+  const tip = `💡 Mẹo: nhấn ${FULLSCREEN_KEY} để chơi toàn màn hình — vui hơn nhiều! Và tắt các chương trình gõ tiếng Việt trước khi chơi nhé!`;
+  ctx.font = '14px "PixelFont", monospace';
+  const tipCx = 20 + ctx.measureText(tip).width / 2;
+  const tipY = H - 29; // same row as main.js's mute hint, opposite corner
+  plate(ctx, tipCx, tipY, tip, 14);
+  if (tick % 120 < 90) {
+    drawText(ctx, tip, tipCx, tipY, 14, '#bfe8ff', 'center');
+  }
 }
 
-export function drawStageIntro(ctx, W, H, tick, stage, stageIndex = 0) {
-  drawSceneBackdrop(ctx, W, H, tick);
+export function drawStageIntro(ctx, W, H, tick, stage, stageIndex = 0, weaponColor = null) {
+  drawSceneBackdrop(ctx, W, H, tick, null, stage.biome);
 
   // Chapter banner above the stage title.
   const chapter = chapterForStage(stageIndex);
@@ -145,7 +183,8 @@ export function drawStageIntro(ctx, W, H, tick, stage, stageIndex = 0) {
   // Hero jogging in place toward the stage, on the ground line.
   const groundY = H - 90;
   const hx = W / 2 - 24 + Math.sin(tick / 30) * 10;
-  drawSprite(ctx, SPRITES.hero_knight, Math.floor(tick / 8) % 2, hx, groundY - SPRITES.hero_knight.h * DOT * 2, 2);
+  const introHero = heroSprite(weaponColor);
+  drawSprite(ctx, introHero, Math.floor(tick / 8) % 2, hx, groundY - introHero.h * DOT * 2, 2);
 
   // SPACE prompt raised toward center for easy visibility (below the intro
   // text block above, above the jogging hero on the ground line).
@@ -155,8 +194,8 @@ export function drawStageIntro(ctx, W, H, tick, stage, stageIndex = 0) {
   }
 }
 
-export function drawVictory(ctx, W, H, tick, stage) {
-  drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.12)'); // warm golden wash
+export function drawVictory(ctx, W, H, tick, stage, weaponColor = null) {
+  drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.12)', stage.biome); // warm golden wash
   drawSparkles(ctx, W, H, tick, '#ffffff');
 
   plate(ctx, W / 2, 64, 'CHIẾN THẮNG!', 44);
@@ -170,9 +209,12 @@ export function drawVictory(ctx, W, H, tick, stage) {
   const groundY = H - 90;
   const bob = Math.floor(tick / 8) % 2 === 0 ? 0 : -6;
   const heroX = stage.princess ? W / 2 - 100 : W / 2 - 24;
-  drawSprite(ctx, SPRITES.hero_knight, Math.floor(tick / 10) % 2, heroX, groundY - SPRITES.hero_knight.h * DOT * 3, 3);
+  const vicHero = heroSprite(weaponColor);
+  drawSprite(ctx, vicHero, Math.floor(tick / 10) % 2, heroX, groundY - vicHero.h * DOT * 3, 3);
   if (stage.princess) {
-    drawSprite(ctx, SPRITES.princess, 0, W / 2 + 20, groundY - SPRITES.princess.h * DOT * 3 + bob, 3);
+    // The rescued princess wears her own stage's look (see PRINCESS_STYLES).
+    const p = princessSprite(stage.princessStyle);
+    drawSprite(ctx, p, Math.floor(tick / 16) % 2, W / 2 + 20, groundY - p.h * DOT * 3 + bob, 3);
   }
 
   // Rising heart-dots between the hero and princess (rescue stages only).
@@ -193,12 +235,11 @@ export function drawVictory(ctx, W, H, tick, stage) {
   }
 }
 
-export function drawReward(ctx, W, H, tick, reward) {
-  drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.10)');
+export function drawReward(ctx, W, H, tick, reward, biome = null) {
+  drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.10)', biome);
   drawSparkles(ctx, W, H, tick, '#ffffff');
 
-  const typeLabel =
-    reward.type === 'weapon' ? 'VŨ KHÍ MỚI' : reward.type === 'skin' ? 'TRANG PHỤC MỚI' : 'KỸ NĂNG MỚI';
+  const typeLabel = reward.type === 'weapon' ? 'VŨ KHÍ MỚI' : 'KỸ NĂNG MỚI';
   plate(ctx, W / 2, 74, '★ PHẦN THƯỞNG ★', 24);
   drawText(ctx, '★ PHẦN THƯỞNG ★', W / 2, 80, 24, '#ffe08a', 'center');
   plate(ctx, W / 2, 118, typeLabel, 18);
@@ -214,8 +255,9 @@ export function drawReward(ctx, W, H, tick, reward) {
   drawRect(ctx, cx - cardW / 2, cy - cardH / 2, cardW, cardH, '#2b2740');
   drawRect(ctx, cx - cardW / 2, cy - cardH / 2, cardW, 4, '#f2c53d');
 
-  // Reward icon: a big dot in its theme color.
-  const iconColor = reward.projectileColor || '#f2c53d';
+  // Reward icon: a big dot in its theme color (weapon color, or the skill's
+  // signature color for skill rewards).
+  const iconColor = reward.projectileColor || reward.color || '#f2c53d';
   drawRect(ctx, cx - 14, cy - 46, 28, 28, '#1a1423');
   drawRect(ctx, cx - 12, cy - 44, 24, 24, iconColor);
 
@@ -230,9 +272,9 @@ export function drawReward(ctx, W, H, tick, reward) {
   }
 }
 
-export function drawFailure(ctx, W, H, tick, stage) {
-  // Desert at dusk: darkened + red wash.
-  drawSceneBackdrop(ctx, W, H, tick, 'rgba(60,10,10,0.55)');
+export function drawFailure(ctx, W, H, tick, stage, weaponColor = null) {
+  // The stage's own world at dusk: darkened + red wash.
+  drawSceneBackdrop(ctx, W, H, tick, 'rgba(60,10,10,0.55)', stage.biome);
 
   plate(ctx, W / 2, H / 2 - 84, 'THẤT BẠI...', 44);
   drawText(ctx, 'THẤT BẠI...', W / 2, H / 2 - 80, 44, '#ff6a5a', 'center');
@@ -243,7 +285,8 @@ export function drawFailure(ctx, W, H, tick, stage) {
 
   // Fallen hero lying on the ground line.
   const groundY = H - 90;
-  drawSprite(ctx, SPRITES.hero_knight, 0, W / 2 - 18, groundY - SPRITES.hero_knight.h * DOT * 2, 2);
+  const failHero = heroSprite(weaponColor);
+  drawSprite(ctx, failHero, 0, W / 2 - 18, groundY - failHero.h * DOT * 2, 2);
 
   // SPACE prompt raised toward center for easy visibility (below the
   // encouragement text, above the fallen hero on the ground line).
@@ -253,8 +296,8 @@ export function drawFailure(ctx, W, H, tick, stage) {
   }
 }
 
-export function drawGameComplete(ctx, W, H, tick, stageIndex = 0) {
-  drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.12)');
+export function drawGameComplete(ctx, W, H, tick, stageIndex = 0, biome = null, weaponColor = null) {
+  drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.12)', biome);
   drawSparkles(ctx, W, H, tick, '#ffffff');
   drawSparkles(ctx, W, H, tick + 20, '#bfe8ff');
 
@@ -279,8 +322,13 @@ export function drawGameComplete(ctx, W, H, tick, stageIndex = 0) {
 
   // Hero + princess celebrating.
   const groundY = H - 90;
-  drawSprite(ctx, SPRITES.hero_knight, Math.floor(tick / 10) % 2, W / 2 - 90, groundY - SPRITES.hero_knight.h * DOT * 2, 2);
-  drawSprite(ctx, SPRITES.princess, 0, W / 2 + 50, groundY - SPRITES.princess.h * DOT * 2, 2);
+  // The chapter's LAST princess stands with the hero at the end — she's the one
+  // the final stage rescued, so the closing shot matches the story just told.
+  const endHero = heroSprite(weaponColor);
+  const lastStage = getStage(chapter.stageStart + chapter.stageCount - 1);
+  const endPrincess = princessSprite(lastStage && lastStage.princessStyle);
+  drawSprite(ctx, endHero, Math.floor(tick / 10) % 2, W / 2 - 90, groundY - endHero.h * DOT * 2, 2);
+  drawSprite(ctx, endPrincess, Math.floor(tick / 16) % 2, W / 2 + 50, groundY - endPrincess.h * DOT * 2, 2);
 
   // SPACE prompt raised toward center for easy visibility (below the chapter
   // teaser, above the celebrating hero + princess on the ground line).

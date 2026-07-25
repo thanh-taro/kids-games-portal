@@ -1,6 +1,6 @@
 // rewards.js — per-stage reward catalog + progress persistence.
 //
-// Each cleared stage grants ONE reward, cycling weapon -> skin -> skill.
+// Each cleared stage grants ONE reward, alternating weapon -> skill.
 // Rewards are cosmetic + a light stat boost (never enough to trivialize play).
 //
 // Progress (highest stage reached + unlocked reward ids) persists in
@@ -19,11 +19,12 @@ export const REWARDS = [
     damageBoost: 8,
   },
   {
-    type: 'skin',
-    id: 'skin_mage',
-    name: 'Áo Choàng Phù Thủy',  // "Mage Cloak"
-    desc: 'Trang phục mới!',     // "New outfit!"
-    spriteId: 'hero_mage',
+    type: 'skill',
+    id: 'fireball',
+    name: 'Cầu Lửa',             // "Fireball"
+    desc: 'Kỹ năng đặc biệt mới!', // "New special skill!"
+    skill: 'fireball',
+    color: '#e8622b',
   },
   {
     type: 'skill',
@@ -31,6 +32,7 @@ export const REWARDS = [
     name: 'Sấm Sét',             // "Lightning"
     desc: 'Kỹ năng mới!',        // "New skill!"
     skill: 'lightning',
+    color: '#4ad4d4',
   },
   {
     type: 'weapon',
@@ -46,6 +48,7 @@ export const REWARDS = [
     name: 'Thiên Thạch',         // "Meteor"
     desc: 'Kỹ năng tối thượng!', // "Ultimate skill!"
     skill: 'meteor',
+    color: '#c77dff',
   },
   {
     type: 'weapon',
@@ -125,7 +128,7 @@ export function resetProgress() {
   }
 }
 
-// Apply all unlocked rewards to the hero (skin, weapon boosts, extra skills).
+// Apply all unlocked rewards to the hero (weapon boosts, extra skills).
 export function applyRewards(hero, rewardIds) {
   const bonus = { damage: 0, speed: 0 };
   const skills = ['slash']; // always have the basic attack
@@ -134,7 +137,6 @@ export function applyRewards(hero, rewardIds) {
   for (const id of rewardIds) {
     const r = REWARDS.find((x) => x.id === id);
     if (!r) continue;
-    if (r.type === 'skin' && r.spriteId) hero.spriteId = r.spriteId;
     if (r.type === 'weapon') {
       bonus.damage += r.damageBoost || 0;
       bonus.speed += r.speedBoost || 0;
@@ -151,16 +153,14 @@ export function applyRewards(hero, rewardIds) {
 
 // Resolve just the COSMETIC look from a set of unlocked reward ids, without a
 // full Hero. Used by menu scenes (title, etc.) to show the kid's actual hero —
-// the equipped skin sprite id + the latest weapon's projectile color (a nice
-// accent). The last skin/weapon in the reward order wins, matching applyRewards.
+// the latest weapon's projectile color (a nice accent). The last weapon in the
+// reward order wins, matching applyRewards.
 export function equippedLook(rewardIds = []) {
-  let spriteId = 'hero_knight';
   let weaponColor = null;
   for (const id of rewardIds) {
     const r = REWARDS.find((x) => x.id === id);
     if (!r) continue;
-    if (r.type === 'skin' && r.spriteId) spriteId = r.spriteId;
     if (r.type === 'weapon' && r.projectileColor) weaponColor = r.projectileColor;
   }
-  return { spriteId, weaponColor };
+  return { weaponColor };
 }

@@ -5,13 +5,15 @@
 // Clearing the final stage → GAME_COMPLETE.
 
 import { clear, drawSprite, drawScene, drawText, drawRect, DOT } from './render.js';
-import { SPRITES, CLOUD, CACTUS, ROCK, BUSH, SUN } from './sprites.js';
+import { SPRITES } from './sprites.js';
+import { getBiome, drawBiomeTerrain, drawBiomeScenery, drawBiomeLights, drawBiomeWeather } from './biomes.js';
 import { Hero, Monster, Projectile, MONSTER_KIND } from './entities.js';
 import { ParticleSystem, drawAura } from './effects.js';
 import { TypingTracker, attachKeyboard } from './input.js';
 import { RankTracker } from './rank.js';
 import { SKILLS, SKILL_CLASS, pickWord } from './skills.js';
 import { getStage, TOTAL_STAGES } from './stages.js';
+import { monstersForBiome, MONSTER_COLOR } from './monsters.js';
 import { chapterForStage, stageNumberInChapter } from './chapters.js';
 import { rewardForStage, loadProgress, saveProgress, resetProgress, applyRewards, equippedLook } from './rewards.js';
 import { Combo } from './combo.js';
@@ -123,7 +125,7 @@ function setState(next) {
 function startStage() {
   const stage = getStage(stageIndex);
   hero = new Hero(120, GROUND_Y);
-  applyRewards(hero, progress.rewards); // equip unlocked gear/skin
+  applyRewards(hero, progress.rewards); // equip unlocked gear/skills
   monster = null;
   projectiles = [];
   waveCursor = 0;
@@ -135,6 +137,13 @@ function startStage() {
 
 function currentStage() {
   return getStage(stageIndex);
+}
+
+// Weapon color for the menu scenes. `hero` only exists from startStage() onward,
+// but STAGE_INTRO can be entered before any stage has started (straight out of
+// the tutorial), so fall back to the persisted rewards like the title does.
+function heroWeaponColor() {
+  return hero ? hero.weaponColor : equippedLook(progress.rewards).weaponColor;
 }
 
 function spawnNextWave() {
@@ -150,25 +159,29 @@ function spawnNextWave() {
   waveCursor++;
 
   const skill = SKILLS[wave.skill] || SKILLS.slash;
+  // Each stage fields monsters matching its scene — see monsters.js.
+  const roster = monstersForBiome(stage.biome);
 
   if (wave.type === 'creep') {
-    monster = new Monster(MONSTER_KIND.CREEP, 'creep_slime', W - 60, GROUND_Y, {
+    monster = new Monster(MONSTER_KIND.CREEP, roster.creep, W - 60, GROUND_Y, {
       speed: 0.32,
       hitsNeeded: 1,
     });
     monster.word = pickWord(wave.pool, waveCursor + stageIndex);
     monster.skill = skill;
+    monster.displayName = roster.creepName;
   } else if (wave.type === 'elite') {
-    monster = new Monster(MONSTER_KIND.CREEP, 'creep_slime', W - 60, GROUND_Y, {
+    monster = new Monster(MONSTER_KIND.CREEP, roster.elite, W - 60, GROUND_Y, {
       speed: 0.14,
       hitsNeeded: 1,
       contactDamage: 20,
     });
     monster.word = pickWord(wave.pool, waveCursor + stageIndex);
     monster.skill = skill;
+    monster.displayName = roster.creepName;
     monster.tint = 'elite';
   } else if (wave.type === 'boss') {
-    monster = new Monster(MONSTER_KIND.BOSS, 'boss_dragon', W - 40, GROUND_Y, {
+    monster = new Monster(MONSTER_KIND.BOSS, roster.boss, W - 40, GROUND_Y, {
       speed: 0.32,
       hitsNeeded: 3,
       standGap: 330,
@@ -176,11 +189,11 @@ function spawnNextWave() {
       attackDamage: 12,
     });
     monster.skill = skill;
-    monster.displayName = 'Khủng Long Lửa'; // "Fire Dinosaur"
+    monster.displayName = roster.bossName;
     monster.pool = wave.pool;
     assignBossWord();
   } else if (wave.type === 'stageboss') {
-    monster = new Monster(MONSTER_KIND.STAGEBOSS, 'stageboss_ogre', W - 30, GROUND_Y, {
+    monster = new Monster(MONSTER_KIND.STAGEBOSS, roster.stageboss, W - 30, GROUND_Y, {
       speed: 0.28,
       hitsNeeded: 6,
       standGap: 360,
@@ -188,7 +201,7 @@ function spawnNextWave() {
       attackDamage: 15,
     });
     monster.skill = skill;
-    monster.displayName = currentStage().princess ? 'Quỷ Khổng Lồ' : 'Quỷ';
+    monster.displayName = roster.stagebossName;
     monster.pool = wave.pool;
     assignBossWord();
   }
@@ -206,13 +219,19 @@ function assignBossWord() {
 // Combat callbacks
 // ---------------------------------------------------------------------------
 // Per-keystroke audio feedback: a rising blip on progress, a buzz on mistake.
-// NOTE: the combo is NOT broken here — Telex has legitimate non-prefix
-// intermediate states (you type the tone key last), so a per-keystroke
-// "mistake" is normal mid-word. Cleanliness is judged at word completion via
-// tracker.wasClean() (see onComplete).
+// A `mistake` here means the buffer has gone "off the rails" — it can no longer
+// become the target by typing more Telex keys (see tracker.isMistake). That is a
+// genuine wrong turn, NOT one of Telex's legitimate intermediate states (typing
+// the tone key last), so we break the combo the instant it happens rather than
+// waiting for word completion — the streak should visibly vanish the moment the
+// kid mistypes. (Word-completion still judges keystroke economy via wasClean.)
 tracker.onProgress = (matchedLen, mistake) => {
-  if (mistake) Audio.keyError();
-  else Audio.keyBlip(matchedLen);
+  if (mistake) {
+    Audio.keyError();
+    if (combo.break()) Audio.comboBreak();
+  } else {
+    Audio.keyBlip(matchedLen);
+  }
 };
 
 tracker.onComplete = (clean = true) => {
@@ -308,13 +327,6 @@ function onProjectileHit(p) {
   }
 }
 
-// Representative hue for each monster's death burst.
-const MONSTER_COLOR = {
-  creep_slime: '#5fc23c',
-  boss_dragon: '#e0503a',
-  stageboss_ogre: '#5fc23c',
-};
-
 function heroHit(dmg) {
   hero.takeDamage(dmg);
   shakeTimer = Math.max(shakeTimer, 12);
@@ -401,10 +413,18 @@ window.addEventListener('keydown', (e) => {
   // First user gesture unlocks the AudioContext (browsers require this).
   Audio.resumeAudio();
 
+  // F9 toggles mute at any time, in EVERY state (including the tutorial, which
+  // otherwise owns the keyboard). A function key is used because every letter —
+  // 'm' included — is a real Telex typing character a kid will hit during
+  // gameplay, and ESC is already the tutorial's skip key.
+  if (e.key === 'F9') {
+    e.preventDefault();
+    Audio.toggleMute();
+    return;
+  }
+
   // Tutorial owns the keyboard while active: EVERY printable key is a typing
-  // character for the practice lessons (including 'm', which is a real Telex
-  // letter — so mute is intentionally NOT bound here), plus space/backspace,
-  // and ESC to skip.
+  // character for the practice lessons, plus space/backspace, and ESC to skip.
   if (state === STATE.TUTORIAL) {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -420,14 +440,6 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  // ESC toggles mute at any time. (Not bound to a letter like M, since every
-  // letter is a real Telex typing character a kid will hit during gameplay.
-  // The tutorial branch above returns before this, so ESC skips the tutorial
-  // while it's active and toggles mute everywhere else.)
-  if (e.key === 'Escape') {
-    Audio.toggleMute();
-    return;
-  }
   // H on the title opens the how-to-play tutorial.
   if ((e.key === 'h' || e.key === 'H') && state === STATE.TITLE) {
     startTutorial(STATE.TITLE);
@@ -583,7 +595,7 @@ function drawHUD() {
   const barH = 24;
   drawRect(ctx, 18, 18, barW + 4, barH + 4, '#1a1423');
   const hpW = (hero.hp / hero.maxHp) * barW;
-  drawRect(ctx, 20, 20, hpW, barH, hero.hp > 30 ? '#5fc23c' : '#e0503a');
+  drawRect(ctx, 20, 20, hpW, barH, hero.hp > 30 ? '#f472b6' : '#e0503a');
   drawText(ctx, `HP ${hero.hp}`, 24, 23, 16, '#ffffff', 'left');
 
   // Stage name + wave counter on small dark plates.
@@ -653,8 +665,10 @@ function drawRankHUD() {
   // Pop scale on a fresh promotion.
   const pop = 1 + rank.pulse * 0.15;
 
-  // Card plate. A colored top strip signals the rank at a glance.
-  const cardH = r.glow ? 104 : 88; // glowing ranks get an extra "AURA" line
+  // Card plate. A colored top strip signals the rank at a glance. Below max
+  // rank the card gains a row for the "cần: …" hint under the progress bar.
+  const atMax = !rank.nextRank;
+  const cardH = (r.glow ? 104 : 88) + (atMax ? 0 : 16);
   drawRect(ctx, cardX - 2, cardY - 2, cardW + 4, cardH + 4, '#1a1423');
   drawRect(ctx, cardX, cardY, cardW, 5, r.color);
 
@@ -667,7 +681,10 @@ function drawRankHUD() {
   drawText(ctx, `⭐ ${rank.killPoints}`, cardX + cardW - 8, cardY + 12 + nameSize + 4, 15, '#ffd24a', 'right');
 
   // Progress bar toward the next rank (or a "MAX" flourish at the top).
-  const barY = cardY + cardH - (r.glow ? 34 : 24);
+  // Bar offset from the card bottom: 34px leaves room for the '→ next rank'
+  // label row, and the extra 16px of cardH (when not at max) holds the
+  // 'cần: …' hint row below that — both inside the plate.
+  const barY = cardY + cardH - 34 - (atMax ? 0 : 16);
   const barX = cardX + 8;
   const barW = cardW - 16;
   const barH = 10;
@@ -676,8 +693,12 @@ function drawRankHUD() {
   if (prog) {
     drawRect(ctx, barX, barY, barW * prog.overall, barH, r.color);
     const next = rank.nextRank;
+    // Name the lagging gate, so a stalled bar tells the kid WHAT to work on
+    // rather than just sitting still.
+    const need = { accuracy: 'gõ đúng hơn', speed: 'gõ nhanh hơn', words: 'gõ thêm từ' }[prog.lagging];
     drawText(ctx, `→ ${next.emoji} ${next.name}`, barX, barY + barH + 3, 14, '#cfc8dd', 'left');
     drawText(ctx, `${Math.round(prog.overall * 100)}%`, barX + barW, barY + barH + 3, 14, '#cfc8dd', 'right');
+    drawText(ctx, `cần: ${need}`, barX, barY + barH + 19, 13, '#9d94b5', 'left'); // "need: <hint>"
   } else {
     drawRect(ctx, barX, barY, barW, barH, r.color);
     drawText(ctx, 'CAO NHẤT!', barX + barW / 2, barY + barH + 3, 14, r.color, 'center'); // "MAX!"
@@ -725,34 +746,49 @@ function drawRankHUD() {
   }
 }
 
-// Desert scenery: sun, slow-drifting clouds, and grounded props (cacti, rock,
-// bush) placed behind the action.
-function drawScenery() {
-  // Sun in the open sky on the left, below the HUD row and clear of HP bar.
-  drawSprite(ctx, SUN, 0, 60, 100, 3);
-
-  // Two clouds drifting slowly across the sky (wrap around). Kept in the upper
-  // sky strip so they never sit behind the boss name / HP bar.
-  const c1 = (tick * 0.3) % (W + 80) - 40;
-  const c2 = (tick * 0.2 + W * 0.6) % (W + 80) - 40;
-  drawSprite(ctx, CLOUD, 0, c1, 55, 3);
-  drawSprite(ctx, CLOUD, 0, c2, 80, 2);
-
-  // Grounded props at fixed spots (behind the hero/monster action).
-  const foot = (s, sc) => GROUND_Y - s.h * DOT * sc;
-  drawSprite(ctx, CACTUS, 0, W * 0.58, foot(CACTUS, 1.4), 1.4);
-  drawSprite(ctx, BUSH, 0, W * 0.30, foot(BUSH, 1.4), 1.4);
-  drawSprite(ctx, ROCK, 0, W * 0.44, foot(ROCK, 1.05), 1.05);
+// The current stage's scene theme (sky/ground/weather/props) from biomes.js.
+function currentBiome() {
+  return getBiome(currentStage().biome);
 }
+
+// A dark plate sized to `text` so light HUD text stays legible over ANY biome
+// (snow and the golden dunes are far too bright for bare light text).
+// `align` matches the drawText alignment the plate backs.
+function plate(text, x, y, size, align = 'left') {
+  ctx.font = `${size}px "PixelFont", monospace`;
+  const tw = ctx.measureText(text).width;
+  const left = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
+  drawRect(ctx, left - 8, y - 4, tw + 16, size + 10, '#1a1423');
+}
+
+// The mute toggle guide, drawn in EVERY scene (bottom-right) so a kid — or a
+// parent in the next room — can always find the way to silence the game without
+// having to remember it from the title screen. Drawn outside any screen-shake
+// transform in `loop()`, so it stays rock-steady while the world rattles.
+function drawMuteHint() {
+  const text = Audio.isMuted() ? '🔇 F9: bật tiếng' : '🔊 F9: tắt tiếng';
+  plate(text, W - 20, H - 29, 14, 'right');
+  drawText(ctx, text, W - 20, H - 29, 14, '#fff4d6', 'right');
+}
+
+// Where the gameplay screen wants the sky body and clouds: low enough to clear
+// the HUD row, high enough to stay out of the boss name / HP bar.
+const PLAY_SKY_LAYOUT = { cloudY: [55, 80, 105] };
 
 function renderPlaying() {
   const ox = shakeTimer > 0 ? (tick % 2 === 0 ? 4 : -4) : 0;
   ctx.save();
   ctx.translate(ox, 0);
 
-  // Pixel-art desert world (sky, sand, layered ground) + scenery props.
-  drawScene(ctx, W, H, GROUND_Y);
-  drawScenery();
+  // Pixel-art world themed to the stage's biome (sky, terrain band, layered
+  // ground) + its scenery props; the mood tint washes over both.
+  const biome = currentBiome();
+  drawBiomeTerrain(ctx, W, H, GROUND_Y, biome, tick);
+  drawBiomeScenery(ctx, W, H, GROUND_Y, biome, tick, PLAY_SKY_LAYOUT);
+  if (biome.tint) {
+    ctx.fillStyle = biome.tint;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   // Hero: smooth forward lunge on attack, shove backward when hurt, flash
   // white briefly while recoiling from a hit.
@@ -796,13 +832,23 @@ function renderPlaying() {
   }
 
   particles.draw(ctx);
+
+  // Lights (god rays / aurora / crystal + lava glow) brighten the world and the
+  // action additively, then weather (rain / snow / embers / mist) settles on top.
+  // Both sit below the HUD so text plates stay fully legible.
+  drawBiomeLights(ctx, W, H, GROUND_Y, biome, tick);
+  drawBiomeWeather(ctx, W, H, GROUND_Y, biome, tick);
+
   drawBossBar();
   drawTargetWord();
   drawHUD();
   drawComboMeter();
   drawRankHUD();
-  drawText(ctx, 'Gõ chữ để tấn công! (Telex)', W / 2, H - 30, 17, '#fff4d6', 'center');
-  drawText(ctx, Audio.isMuted() ? '🔇 M: bật tiếng' : '🔊 M: tắt tiếng', W - 20, H - 29, 14, '#fff4d6', 'right');
+  // Bottom hints on dark plates: biome grounds range from dark volcanic rock to
+  // near-white snow, so light text alone would vanish on the bright ones.
+  const hint = 'Gõ chữ để tấn công! (Telex)';
+  plate(hint, W / 2, H - 30, 17, 'center');
+  drawText(ctx, hint, W / 2, H - 30, 17, '#fff4d6', 'center');
 
   ctx.restore();
 }
@@ -816,17 +862,16 @@ function loop() {
 
   switch (state) {
     case STATE.TITLE: {
-      // Show the kid's ACTUAL hero: equipped skin + weapon color + earned rank.
+      // Show the kid's ACTUAL hero: equipped weapon color + earned rank.
       const look = equippedLook(progress.rewards);
       const rr = rank.rank;
       Scenes.drawTitle(ctx, W, H, tick, progress.stage, {
-        spriteId: look.spriteId,
         weaponColor: look.weaponColor,
         rankGlow: rr.glow,
         rankName: rr.name,
         rankEmoji: rr.emoji,
         rankColor: rr.color,
-      });
+      }, getStage(progress.stage).biome);
       break;
     }
     case STATE.TUTORIAL:
@@ -834,28 +879,32 @@ function loop() {
       tutorial.draw(ctx, W, H);
       break;
     case STATE.STAGE_INTRO:
-      Scenes.drawStageIntro(ctx, W, H, tick, currentStage(), stageIndex);
+      Scenes.drawStageIntro(ctx, W, H, tick, currentStage(), stageIndex, heroWeaponColor());
       break;
     case STATE.PLAYING:
       updatePlaying();
       // updatePlaying may have transitioned state; guard the render.
       if (state === STATE.PLAYING) renderPlaying();
-      else if (state === STATE.VICTORY) Scenes.drawVictory(ctx, W, H, tick, currentStage());
-      else if (state === STATE.FAILURE) Scenes.drawFailure(ctx, W, H, tick, currentStage());
+      else if (state === STATE.VICTORY) Scenes.drawVictory(ctx, W, H, tick, currentStage(), heroWeaponColor());
+      else if (state === STATE.FAILURE) Scenes.drawFailure(ctx, W, H, tick, currentStage(), heroWeaponColor());
       break;
     case STATE.VICTORY:
-      Scenes.drawVictory(ctx, W, H, tick, currentStage());
+      Scenes.drawVictory(ctx, W, H, tick, currentStage(), heroWeaponColor());
       break;
     case STATE.REWARD:
-      Scenes.drawReward(ctx, W, H, tick, pendingReward);
+      Scenes.drawReward(ctx, W, H, tick, pendingReward, currentStage().biome);
       break;
     case STATE.FAILURE:
-      Scenes.drawFailure(ctx, W, H, tick, currentStage());
+      Scenes.drawFailure(ctx, W, H, tick, currentStage(), heroWeaponColor());
       break;
     case STATE.GAME_COMPLETE:
-      Scenes.drawGameComplete(ctx, W, H, tick, stageIndex);
+      Scenes.drawGameComplete(ctx, W, H, tick, stageIndex, currentStage().biome, heroWeaponColor());
       break;
   }
+
+  // Every scene gets the mute guide — one call here beats threading it through
+  // each scene draw function.
+  drawMuteHint();
 
   requestAnimationFrame(loop);
 }

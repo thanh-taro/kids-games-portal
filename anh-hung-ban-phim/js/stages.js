@@ -9,6 +9,13 @@
 //   pool: which WORD_POOLS tier to draw the target word from (skills.js)
 //   skill: which SKILLS entry the hero uses on that monster
 //
+// `biome` names the stage's scene theme in biomes.js — its sky, ground, weather,
+// scenery props, lights, and story landmark — so the backdrop matches the
+// stage's name AND its meaning (the cave holds the princess's broken cage, the
+// desert a half-buried colossus, the fortress its chained gate). Every biome
+// also shows the villain's spire on the horizon, growing nearer stage by stage.
+// Omitting `biome` falls back to the stage-1 training field.
+//
 // The first two stages are gentle WARM-UPS with no princess: kids just drill
 // letters (stage 1) and letters -> first words (stage 2) against weak monsters
 // before the real rescue journey begins. Scenes render a "practice" goal in
@@ -17,6 +24,7 @@
 export const STAGES = [
   {
     id: 1,
+    biome: 'training',
     name: 'Bãi Tập Nhỏ',          // "Little Training Ground"
     // no princess — warm-up stage
     intro: 'Làm quen với chữ cái!', // "Get to know the letters!"
@@ -30,6 +38,7 @@ export const STAGES = [
   },
   {
     id: 2,
+    biome: 'practice_yard',
     name: 'Sân Luyện Chữ',        // "Word Practice Yard"
     // no princess — warm-up stage
     intro: 'Ghép chữ thành từ đầu tiên!', // "Combine letters into your first words!"
@@ -44,8 +53,10 @@ export const STAGES = [
   },
   {
     id: 3,
+    biome: 'meadow',
     name: 'Đồng Cỏ Xanh',        // "Green Meadow"
     princess: 'Công Chúa Hoa',   // "Princess Flower"
+    princessStyle: 'flower',
     intro: 'Học gõ chữ cái đầu tiên!', // "Learn your first letters!"
     waves: [
       { type: 'creep', pool: 'letters', skill: 'slash' },
@@ -58,8 +69,10 @@ export const STAGES = [
   },
   {
     id: 4,
+    biome: 'forest',
     name: 'Rừng Rậm',            // "Deep Forest"
     princess: 'Công Chúa Suối',  // "Princess Stream"
+    princessStyle: 'stream',
     intro: 'Ghép chữ thành từ!', // "Combine letters into words!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -74,8 +87,10 @@ export const STAGES = [
   },
   {
     id: 5,
+    biome: 'cave',
     name: 'Hang Động Tối',       // "Dark Cave"
     princess: 'Công Chúa Sao',   // "Princess Star"
+    princessStyle: 'star',
     intro: 'Gõ cả cụm từ!',      // "Type whole phrases!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -90,8 +105,10 @@ export const STAGES = [
   },
   {
     id: 6,
+    biome: 'dino_cave',
     name: 'Hang Khủng Long',     // "Dinosaur Cave"
     princess: 'Công Chúa Ánh Dương', // "Princess Sunlight"
+    princessStyle: 'sunlight',
     intro: 'Gõ cụm từ thật nhuần nhuyễn!', // "Master your phrases!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -106,8 +123,10 @@ export const STAGES = [
   },
   {
     id: 7,
+    biome: 'coast',
     name: 'Bờ Biển Ngọc',        // "Jade Coast"
     princess: 'Công Chúa Sóng',  // "Princess Wave"
+    princessStyle: 'wave',
     intro: 'Luyện từ nhanh hơn nào!', // "Practice words faster!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -124,8 +143,10 @@ export const STAGES = [
   },
   {
     id: 8,
+    biome: 'dunes',
     name: 'Sa Mạc Vàng',         // "Golden Desert"
     princess: 'Công Chúa Cát',   // "Princess Sand"
+    princessStyle: 'sand',
     intro: 'Bắt đầu gõ cả câu!',  // "Start typing full sentences!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -142,8 +163,10 @@ export const STAGES = [
   },
   {
     id: 9,
+    biome: 'snow',
     name: 'Đỉnh Núi Tuyết',      // "Snowy Peak"
     princess: 'Công Chúa Băng',  // "Princess Ice"
+    princessStyle: 'ice',
     intro: 'Gõ câu thật chuẩn xác!', // "Type sentences accurately!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -160,8 +183,10 @@ export const STAGES = [
   },
   {
     id: 10,
+    biome: 'swamp',
     name: 'Đầm Lầy Sương',       // "Misty Swamp"
     princess: 'Công Chúa Mây',   // "Princess Cloud"
+    princessStyle: 'cloud',
     intro: 'Càng lúc càng giỏi!', // "Getting better and better!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -178,8 +203,10 @@ export const STAGES = [
   },
   {
     id: 11,
-    name: 'Núi Lửa Rực',         // "Blazing Volcano"
+    biome: 'volcano',
+    name: 'Núi Lửa Nóng Rực',         // "Blazing Volcano"
     princess: 'Công Chúa Tình Yêu', // "Princess of Love"
+    princessStyle: 'love',
     intro: 'Thử thách gần cuối rồi!', // "The near-final challenge!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -196,8 +223,10 @@ export const STAGES = [
   },
   {
     id: 12,
+    biome: 'castle',
     name: 'Thành Trì Bóng Tối',  // "Fortress of Darkness"
     princess: 'Công Chúa Ánh Sáng', // "Princess Light"
+    princessStyle: 'light',
     intro: 'Trận cuối — cứu tất cả!', // "Final battle — save everyone!"
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -214,8 +243,9 @@ export const STAGES = [
     ],
   },
   // To add more stages later: append entries here with a fresh id/name/princess/
-  // intro and a waves[] list. Everything (spawning, rewards, victory→next-stage,
-  // final-stage → GAME_COMPLETE) is driven off STAGES.length automatically.
+  // intro/biome and a waves[] list. Everything (spawning, rewards, victory→
+  // next-stage, final-stage → GAME_COMPLETE) is driven off STAGES.length
+  // automatically.
 ];
 
 export function getStage(index) {

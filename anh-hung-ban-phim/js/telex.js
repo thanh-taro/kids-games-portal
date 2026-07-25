@@ -421,7 +421,12 @@ export function stepKey(buffer, key, target) {
   // Backspace.
   if (!isTelexPrefix(render(buffer), target)) {
     const fresh = applyKey(newBuffer(), key);
-    if (target.startsWith(render(fresh))) {
+    // Telex-aware: the first key of a real retype may render as a bare vowel that
+    // only BECOMES the target's first char after its tone/shape key (o -> ô for
+    // "ông", d -> đ for "đi"). A plain string startsWith would reject those and
+    // strand the kid on the mistake, so ask isTelexPrefix whether the fresh
+    // buffer is still on the path to the target.
+    if (isTelexPrefix(render(fresh), target)) {
       return status(fresh, target, { consumed: true, restarted: true });
     }
   }

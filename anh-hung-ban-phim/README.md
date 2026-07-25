@@ -33,8 +33,8 @@ python3 serve.py 8177
   and attacks you from range.
 - **Stage Boss** (ogre) — many hits, full sentences, the toughest fight.
 
-Each cleared stage rescues a princess and grants a reward, cycling through
-**weapon → skin → skill**. Progress is saved in `localStorage`.
+Each cleared stage rescues a princess and grants a reward, alternating
+**weapon → skill**. Progress is saved in `localStorage`.
 
 Stages progress the curriculum: **letters → words → phrases → sentences**.
 
