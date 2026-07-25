@@ -347,15 +347,20 @@ SHAPE_ANCESTORS.u.add('ư');
 // ignored (the tone key comes later), and `cur`'s base must be a shape-ancestor
 // of `tgt`'s base (the shape key also comes later).
 function charOnPath(cur, tgt) {
+  // Case-INSENSITIVE throughout: the audience is kids, and a capitalized target
+  // (proper nouns like "Tết") must not demand a Shift-chord on top of learning
+  // Telex. Both sides are folded to lowercase before every comparison, so "t"
+  // satisfies "T" and a stray Shift never reads as a mistake. Only matching is
+  // case-blind — render() still shows exactly the case the kid typed.
+  cur = cur.toLowerCase();
+  tgt = tgt.toLowerCase();
   if (cur === tgt) return true;
   // Consonant shape: "dd" -> đ is two keystrokes, so a lone "d" is a valid
-  // ancestor of the target "đ" (the second d comes next). Case-preserving.
+  // ancestor of the target "đ" (the second d comes next).
   if (cur === 'd' && tgt === 'đ') return true;
-  if (cur === 'D' && tgt === 'Đ') return true;
   const ci = CHAR_INFO[cur];
   const ti = CHAR_INFO[tgt];
   if (!ci || !ti) return false;
-  if (ci.upper !== ti.upper) return false; // preserve case
   // The typed char must be LESS specified than the target, never more: you reach
   // the target by adding a tone/shape key, so a bare vowel can precede a
   // toned/shaped one — but a toned `cur` against an untoned target means an extra
@@ -443,7 +448,9 @@ function status(buffer, target, extra) {
     text,
     matchedLen: telexPrefixLen(text, target),
     mistake: !isTelexPrefix(text, target),
-    complete: text === target,
+    // Case-insensitive, like every other comparison here (see charOnPath): a kid
+    // typing "teets" finishes the target "Tết" without ever pressing Shift.
+    complete: text.toLowerCase() === target.toLowerCase(),
     restarted: false,
     consumed: false,
     ...extra,

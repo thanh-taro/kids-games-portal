@@ -11,7 +11,7 @@ import { Hero, Monster, Projectile, MONSTER_KIND } from './entities.js';
 import { ParticleSystem, drawAura } from './effects.js';
 import { TypingTracker, attachKeyboard } from './input.js';
 import { RankTracker } from './rank.js';
-import { SKILLS, SKILL_CLASS, pickWord } from './skills.js';
+import { SKILLS, SKILL_CLASS, pickWord, resolveSkill } from './skills.js';
 import { getStage, TOTAL_STAGES } from './stages.js';
 import { monstersForBiome, MONSTER_COLOR } from './monsters.js';
 import { chapterForStage, stageNumberInChapter } from './chapters.js';
@@ -139,11 +139,14 @@ function currentStage() {
   return getStage(stageIndex);
 }
 
-// Weapon color for the menu scenes. `hero` only exists from startStage() onward,
-// but STAGE_INTRO can be entered before any stage has started (straight out of
-// the tutorial), so fall back to the persisted rewards like the title does.
+// Weapon color for the menu scenes. Read from `progress.rewards` (never from the
+// live `hero`): grantReward() pushes the new reward into progress at VICTORY, but
+// `hero` is still the one built by the PREVIOUS startStage(), so asking the hero
+// would show the old blade on the reward/stage-intro scenes and only "upgrade"
+// once the next fight begins. progress is the source of truth and is also defined
+// before any stage has started (e.g. straight out of the tutorial).
 function heroWeaponColor() {
-  return hero ? hero.weaponColor : equippedLook(progress.rewards).weaponColor;
+  return equippedLook(progress.rewards).weaponColor;
 }
 
 function spawnNextWave() {
@@ -158,7 +161,10 @@ function spawnNextWave() {
   const wave = stage.waves[waveCursor];
   waveCursor++;
 
-  const skill = SKILLS[wave.skill] || SKILLS.slash;
+  // Specials are rewards: resolve the wave's requested skill down to the best
+  // one the kid has actually EARNED (skills.js resolveSkill), so an early stage
+  // never fires an ultimate that hasn't been awarded yet.
+  const skill = resolveSkill(wave.skill, hero.unlockedSkills);
   // Each stage fields monsters matching its scene — see monsters.js.
   const roster = monstersForBiome(stage.biome);
 

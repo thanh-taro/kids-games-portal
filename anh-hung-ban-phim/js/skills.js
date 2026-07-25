@@ -107,12 +107,12 @@ export const WORD_POOLS = {
     { vi: 'cây', telex: 'caay' },
     { vi: 'bé', telex: 'bes' },
     { vi: 'sữa', telex: 'suwax' },
-    { vi: 'trứng', telex: 'truwsng' },
-    { vi: 'bánh', telex: 'basnh' },
+    { vi: 'trứng', telex: 'truwngs' },
+    { vi: 'bánh', telex: 'banhs' },
     { vi: 'vịt', telex: 'vitj' },
     { vi: 'ông', telex: 'oong' },
     { vi: 'bà', telex: 'baf' },
-    { vi: 'sách', telex: 'sasch' },
+    { vi: 'sách', telex: 'sachs' },
     { vi: 'hoa', telex: 'hoa' },
     { vi: 'lá', telex: 'las' },
     { vi: 'mưa', telex: 'muwa' },
@@ -120,13 +120,13 @@ export const WORD_POOLS = {
     { vi: 'trâu', telex: 'traau' },
     { vi: 'ngựa', telex: 'nguwaj' },
     { vi: 'chim', telex: 'chim' },
-    { vi: 'ếch', telex: 'eesch' },
+    { vi: 'ếch', telex: 'eechs' },
     { vi: 'rùa', telex: 'ruaf' },
     { vi: 'cua', telex: 'cua' },
     { vi: 'kẹo', telex: 'keoj' },
-    { vi: 'nước', telex: 'nuwowsc' },
+    { vi: 'nước', telex: 'nuwowcs' },
     { vi: 'cơm', telex: 'cowm' },
-    { vi: 'áo', telex: 'aso' },
+    { vi: 'áo', telex: 'aos' },
     // family
     { vi: 'chị', telex: 'chij' },
     { vi: 'anh', telex: 'anh' },
@@ -156,12 +156,12 @@ export const WORD_POOLS = {
     { vi: 'thuyền', telex: 'thuyeenf' },
     { vi: 'tàu', telex: 'tauf' },
     // fruit
-    { vi: 'táo', telex: 'taso' },
+    { vi: 'táo', telex: 'taos' },
     { vi: 'cam', telex: 'cam' },
     { vi: 'chuối', telex: 'chuoois' },
     { vi: 'xoài', telex: 'xoaif' },
     { vi: 'dưa', telex: 'duwa' },
-    { vi: 'ổi', telex: 'oori' },
+    { vi: 'ổi', telex: 'ooir' },
     { vi: 'mít', telex: 'mits' },
     { vi: 'me', telex: 'me' },
     { vi: 'khế', telex: 'khees' },
@@ -215,19 +215,19 @@ export const WORD_POOLS = {
     { vi: 'ngôi nhà', telex: 'ngooi nhaf' },
     { vi: 'con chó', telex: 'con chos' },
     { vi: 'bông hoa', telex: 'boong hoa' },
-    { vi: 'quả táo', telex: 'quar taso' },
+    { vi: 'quả táo', telex: 'quar taos' },
     { vi: 'con gà', telex: 'con gaf' },
     { vi: 'cái bàn', telex: 'cais banf' },
-    { vi: 'bầu trời', telex: 'baauf trowfi' },
+    { vi: 'bầu trời', telex: 'baauf trowif' },
     { vi: 'mặt trăng', telex: 'mawtj trawng' },
     { vi: 'dòng sông', telex: 'dongf soong' },
     { vi: 'ngọn núi', telex: 'ngonj nuis' },
-    { vi: 'cánh đồng', telex: 'casnh ddoongf' },
+    { vi: 'cánh đồng', telex: 'canhs ddoongf' },
     { vi: 'rừng cây', telex: 'ruwngf caay' },
     { vi: 'biển xanh', telex: 'bieenr xanh' },
-    { vi: 'ông mặt trời', telex: 'oong mawtj trowfi' },
+    { vi: 'ông mặt trời', telex: 'oong mawtj trowif' },
     { vi: 'chú chim', telex: 'chus chim' },
-    { vi: 'con bướm', telex: 'con buwowsm' },
+    { vi: 'con bướm', telex: 'con buwowms' },
     { vi: 'vườn hoa', telex: 'vuwownf hoa' },
     { vi: 'trái tim', telex: 'trais tim' },
     { vi: 'quả chuối', telex: 'quar chuoois' },
@@ -236,17 +236,17 @@ export const WORD_POOLS = {
     { vi: 'đôi giày', telex: 'ddooi giayf' },
     { vi: 'cây bút', telex: 'caay buts' },
     { vi: 'ngôi sao', telex: 'ngooi sao' },
-    { vi: 'đám mây', telex: 'ddasm maay' },
+    { vi: 'đám mây', telex: 'ddams maay' },
     { vi: 'cầu vồng', telex: 'caauf voongf' },
     { vi: 'bãi biển', telex: 'baix bieenr' },
-    { vi: 'cánh diều', telex: 'casnh dieeuf' },
+    { vi: 'cánh diều', telex: 'canhs dieeuf' },
     { vi: 'đàn cá', telex: 'ddanf cas' },
     { vi: 'chú hề', telex: 'chus heef' },
     { vi: 'bạn thân', telex: 'banj thaan' },
     { vi: 'mái nhà', telex: 'mais nhaf' },
     { vi: 'hạt mưa', telex: 'hatj muwa' },
     // dấu nặng (j)
-    { vi: 'quả trứng', telex: 'quar truwsng' },
+    { vi: 'quả trứng', telex: 'quar truwngs' },
     { vi: 'hạt dẻ', telex: 'hatj der' },
     { vi: 'con nhện', telex: 'con nheenj' },
     { vi: 'giọt sương', telex: 'giotj suwowng' },
@@ -256,34 +256,66 @@ export const WORD_POOLS = {
   // Tier 4: sentences — hardest, for stage bosses / late stages.
   sentences: [
     { vi: 'em yêu mẹ', telex: 'em yeeu mej' },
-    { vi: 'trời nắng đẹp', telex: 'trowfi nawsng ddepj' },
+    { vi: 'trời nắng đẹp', telex: 'trowif nawngs ddepj' },
     { vi: 'con cá bơi', telex: 'con cas bowi' },
     { vi: 'bé đi học', telex: 'bes ddi hocj' },
     { vi: 'chim hót vui', telex: 'chim hots vui' },
     { vi: 'mèo con dễ thương', telex: 'meof con deex thuwowng' },
     { vi: 'hoa nở mùa xuân', telex: 'hoa nowr muaf xuaan' },
-    { vi: 'mặt trời lên cao', telex: 'mawtj trowfi leen cao' },
-    { vi: 'gió thổi mát rượi', telex: 'gios thoori mast ruwowji' },
+    { vi: 'mặt trời lên cao', telex: 'mawtj trowif leen cao' },
+    { vi: 'gió thổi mát rượi', telex: 'gios thooir mats ruwowij' },
     { vi: 'em chăm ngoan học giỏi', telex: 'em chawm ngoan hocj gioir' },
     { vi: 'bà kể chuyện cổ tích', telex: 'baf keer chuyeenj coor tichs' },
     { vi: 'cả nhà cùng vui', telex: 'car nhaf cungf vui' },
-    { vi: 'trăng sáng đêm rằm', telex: 'trawng sasng ddeem rawmf' },
-    { vi: 'sông chảy ra biển', telex: 'soong chary ra bieenr' },
+    { vi: 'trăng sáng đêm rằm', telex: 'trawng sangs ddeem rawmf' },
+    { vi: 'sông chảy ra biển', telex: 'soong chayr ra bieenr' },
     { vi: 'mẹ nấu cơm', telex: 'mej naaus cowm' },
     { vi: 'bố đi làm', telex: 'boos ddi lamf' },
-    { vi: 'chị đọc sách', telex: 'chij ddocj sasch' },
-    { vi: 'gà gáy sáng', telex: 'gaf gasy sasng' },
-    { vi: 'cá bơi dưới nước', telex: 'cas bowi duwowsi nuwowsc' },
+    { vi: 'chị đọc sách', telex: 'chij ddocj sachs' },
+    { vi: 'gà gáy sáng', telex: 'gaf gays sangs' },
+    { vi: 'cá bơi dưới nước', telex: 'cas bowi duwowis nuwowcs' },
     { vi: 'bé ngủ ngon', telex: 'bes ngur ngon' },
     { vi: 'ông trồng cây', telex: 'oong troongf caay' },
     { vi: 'chim bay về tổ', telex: 'chim bay veef toor' },
-    { vi: 'trời đổ mưa to', telex: 'trowfi ddoor muwa to' },
-    { vi: 'em vẽ bức tranh', telex: 'em vex buwsc tranh' },
+    { vi: 'trời đổ mưa to', telex: 'trowif ddoor muwa to' },
+    { vi: 'em vẽ bức tranh', telex: 'em vex buwcs tranh' },
     // dấu nặng (j)
     { vi: 'bé học chữ', telex: 'bes hocj chuwx' },
-    { vi: 'cá lội dưới ao', telex: 'cas looij duwowsi ao' },
-    { vi: 'mẹ giặt áo', telex: 'mej giawtj aso' },
+    { vi: 'cá lội dưới ao', telex: 'cas looij duwowis ao' },
+    { vi: 'mẹ giặt áo', telex: 'mej giawtj aos' },
     { vi: 'em nhặt lá', telex: 'em nhawtj las' },
+  ],
+  // Tier 5: HARD sentences — the endgame tier (stages 9-12 bosses).
+  //
+  // What makes these harder than tier 4 is deliberate, not just length:
+  //   - 5-8 syllables, so the kid must sustain a clean run much longer;
+  //   - tone-DENSE, with several different tones in one sentence (and adjacent
+  //     syllables carrying different tones, the classic slip);
+  //   - heavy on the shape keys that need doubling (ươ/â/ê/ô/ă) and on đ;
+  //   - every tone mark appears across the tier, nặng (j) included.
+  // Still kid-appropriate vocabulary and an encouraging tone — these are proverbs
+  // and storybook lines a child knows, never adult words chosen just to be long.
+  hard_sentences: [
+    { vi: 'bé cố gắng mỗi ngày', telex: 'bes coos gawngs mooix ngayf' },
+    { vi: 'chăm học thì sẽ giỏi', telex: 'chawm hocj thif sex gioir' },
+    { vi: 'mẹ dạy em viết chữ đẹp', telex: 'mej dayj em vieets chuwx ddepj' },
+    { vi: 'ông kể chuyện ngày xưa', telex: 'oong keer chuyeenj ngayf xuwa' },
+    { vi: 'nắng vàng rực rỡ trên đồng', telex: 'nawngs vangf ruwcj rowx treen ddoongf' },
+    { vi: 'chị dẫn em đi chợ Tết', telex: 'chij daanx em ddi chowj Teets' },
+    { vi: 'đàn cá lượn dưới mặt nước', telex: 'ddanf cas luwownj duwowis mawtj nuwowcs' },
+    { vi: 'bầy chim sẻ đậu trên cành', telex: 'baayf chim ser ddaauj treen canhf' },
+    { vi: 'trời mưa rào rồi lại nắng', telex: 'trowif muwa raof rooif laij nawngs' },
+    { vi: 'em giúp mẹ tưới luống rau', telex: 'em giups mej tuwowis luoongs rau' },
+    { vi: 'thương người như thể thương thân', telex: 'thuwowng nguwowif nhuw theer thuwowng thaan' },
+    { vi: 'một cây làm chẳng nên non', telex: 'mootj caay lamf chawngr neen non' },
+    { vi: 'ăn quả nhớ kẻ trồng cây', telex: 'awn quar nhows ker troongf caay' },
+    { vi: 'có công mài sắt có ngày nên kim', telex: 'cos coong maif sawts cos ngayf neen kim' },
+    { vi: 'anh hùng bàn phím rất giỏi', telex: 'anh hungf banf phims raats gioir' },
+    { vi: 'công chúa đã được giải cứu', telex: 'coong chuas ddax dduwowcj giair cuwus' },
+    { vi: 'bóng tối rồi cũng phải tan', telex: 'bongs toois rooif cungx phair tan' },
+    { vi: 'em quyết tâm luyện gõ nhanh', telex: 'em quyeets taam luyeenj gox nhanh' },
+    { vi: 'lửa thử vàng gian nan thử sức', telex: 'luwar thuwr vangf gian nan thuwr suwcs' },
+    { vi: 'đường xa nhưng bước chân vững', telex: 'dduwowngf xa nhuwng buwowcs chaan vuwngx' },
   ],
 };
 
@@ -291,4 +323,31 @@ export const WORD_POOLS = {
 export function pickWord(pool, index) {
   const list = WORD_POOLS[pool];
   return list[index % list.length];
+}
+
+// Special skills are REWARDS — the hero may only swing what he has actually
+// earned. Stage waves name the skill they'd *like* to use (their damage/effect
+// profile is part of the stage's escalation), but a kid replaying stage 4 on a
+// fresh save has no meteor yet, so the wave must degrade gracefully instead of
+// firing an unearned ultimate.
+//
+// SPECIAL_ORDER is the unlock order (matching REWARDS in rewards.js). Resolution
+// walks DOWN from the requested skill to the strongest special the kid owns, and
+// falls back to 'slash' if they own none — so the fight still happens, just with
+// the basic attack. `unlocked` comes from hero.unlockedSkills (applyRewards).
+export const SPECIAL_ORDER = ['fireball', 'lightning', 'meteor'];
+
+export function resolveSkill(wantedId, unlocked = ['slash']) {
+  const wanted = SKILLS[wantedId] || SKILLS.slash;
+  // The basic attack is always available.
+  if (wanted.cls === SKILL_CLASS.SIMPLE) return wanted;
+  if (unlocked.includes(wantedId)) return wanted;
+
+  // Step down the unlock ladder from just below the requested skill.
+  const wantedRank = SPECIAL_ORDER.indexOf(wantedId);
+  const from = wantedRank === -1 ? SPECIAL_ORDER.length - 1 : wantedRank - 1;
+  for (let i = from; i >= 0; i--) {
+    if (unlocked.includes(SPECIAL_ORDER[i])) return SKILLS[SPECIAL_ORDER[i]];
+  }
+  return SKILLS.slash;
 }

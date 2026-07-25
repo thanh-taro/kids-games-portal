@@ -2,6 +2,7 @@
 // Verifies the Telex engine against real Vietnamese words.
 
 import { typeString, telexPrefixLen, isTelexPrefix, newBuffer, stepKey } from './telex.js';
+import { WORD_POOLS } from './skills.js';
 
 const cases = [
   // raw keystrokes  -> expected Vietnamese
@@ -98,6 +99,15 @@ const prefixCases = [
   ['cánh d', 'cánh đồng', 6, true],   // mid-phrase: lone d toward đ, not a mistake
   ['do', 'đồng', 2, true],            // d->đ, then o->ô both on-path (typing "ddoongf")
   ['t', 'đ', 0, false],               // a real wrong consonant is still a mistake
+  // Case-insensitive: kids shouldn't have to reach for Shift. A lowercase typing
+  // of an uppercase target (and vice versa) is on-path, not a mistake.
+  ['t', 'T', 1, true],                // lowercase toward uppercase target
+  ['te', 'Tế', 2, true],              // ...through an unshaped/untoned vowel
+  ['tê', 'Tế', 2, true],
+  ['tết', 'Tết', 3, true],            // fully typed lowercase = fully matched
+  ['T', 't', 1, true],                // uppercase toward lowercase target
+  ['CHỊ', 'chị', 3, true],
+  ['b', 'Tết', 0, false],             // a genuinely wrong letter is still wrong
 ];
 for (const [cur, target, wantLen, wantPrefix] of prefixCases) {
   const gotLen = telexPrefixLen(cur, target);
@@ -133,6 +143,16 @@ const stepCases = [
   ['xd',         'đi',       'd',      false,       false,      true], // 'x' off-rails, then 'd' restarts đ-word
   // Backspace recovers: type "meo", delete, retype tone path.
   ['meo<of',     'mèo',      'mèo',    true,        false,      false],
+  // Case-insensitive completion: an uppercase target ("Tết") is satisfied by
+  // lowercase keys — a kid never has to hold Shift. The text keeps what was
+  // actually typed; only the comparison ignores case.
+  ['teets',      'Tết',      'tết',    true,        false,      false],
+  ['Teets',      'Tết',      'Tết',    true,        false,      false], // Shift still works
+  ['teets',      'tết',      'tết',    true,        false,      false],
+  ['Teets',      'tết',      'Tết',    true,        false,      false], // stray Shift is fine
+  // Auto-restart must be case-insensitive too: off the rails, then a lowercase
+  // retype of an uppercase-initial target has to wipe the mistake.
+  ['bxt',        'Tết',      't',      false,       false,      true],
 ];
 for (const [keys, target, wantText, wantComplete, wantMistake, wantRestart] of stepCases) {
   let buf = newBuffer();
@@ -151,6 +171,44 @@ for (const [keys, target, wantText, wantComplete, wantMistake, wantRestart] of s
   }
 }
 
-const total = cases.length + prefixCases.length + stepCases.length;
+// ---------------------------------------------------------------------------
+// Word-pool hints: every `telex` in skills.js WORD_POOLS is shown to the kid as
+// the on-screen keystroke guide (see drawWordPanel in main.js), so it must be
+// BOTH correct and consistently written:
+//   1. typing it really produces its `vi` word, and
+//   2. each syllable's tone key sits at the END of that syllable.
+// Telex accepts a tone key anywhere in the syllable, so 'sasch' and 'sachs' both
+// yield "sách" — but a guide that puts the tone mid-word teaches an order the
+// kid can't generalize. One rule, always: letters first, tone last.
+let poolCount = 0;
+for (const [pool, list] of Object.entries(WORD_POOLS)) {
+  for (const { vi, telex } of list) {
+    poolCount++;
+    const got = typeString(telex);
+    if (got !== vi) {
+      fail++;
+      console.log(`FAIL  ${pool} hint "${telex}" types "${got}", expected "${vi}"`);
+      continue;
+    }
+    // A tone key is "misplaced" when moving it to the end of its syllable still
+    // types the same word — i.e. it could have been written the consistent way.
+    const better = telex.split(' ').map((syl) => {
+      for (let i = 0; i < syl.length; i++) {
+        if (!'sfrxj'.includes(syl[i]) || i === syl.length - 1) continue;
+        const moved = syl.slice(0, i) + syl.slice(i + 1) + syl[i];
+        if (typeString(moved) === typeString(syl)) return moved;
+      }
+      return syl;
+    }).join(' ');
+    if (better !== telex) {
+      fail++;
+      console.log(`FAIL  ${pool} hint "${telex}" (${vi}) has a mid-syllable tone key; write it as "${better}"`);
+    } else {
+      pass++;
+    }
+  }
+}
+
+const total = cases.length + prefixCases.length + stepCases.length + poolCount;
 console.log(`\n${pass} passed, ${fail} failed, ${total} total`);
 process.exit(fail ? 1 : 0);
