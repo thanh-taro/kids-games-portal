@@ -108,7 +108,7 @@ export const CHAPTER_STORY = {
             'Thế là cuộc hành trình bắt đầu.',
             'Đường còn dài, tòa tháp đen còn xa —',
             'nhưng mỗi con chữ bạn gõ',
-            'sẽ làm bạn mạnh thêm một chút!',
+            'sẽ làm bạn mạnh thêm!',
           ],
         },
       ],
