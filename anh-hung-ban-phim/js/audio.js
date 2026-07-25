@@ -4,6 +4,21 @@
 // generated from oscillators + gain envelopes, so the whole game stays
 // asset-free. The AudioContext is created lazily and resumed on first user
 // gesture (browsers block audio until then).
+//
+// The looping background themes live in music.js, which shares this module's
+// context and master gain (see audioCtx / sfxBusGain below). The loud events
+// here duck the music briefly via `duckMusic()` so gameplay feedback always
+// cuts through the soundtrack.
+
+import { duck as duckMusic } from './music.js';
+
+// Master output level for the WHOLE game (effects + music). This was originally
+// 0.28, which was simply too quiet to hear on laptop speakers at a normal system
+// volume — the individual `peak` values passed to tone()/noise() are already
+// well under 1.0, so this gain was stacking a second, unnecessary attenuation on
+// top of them. Raising it lifts effects and music together, which keeps their
+// balance (and the ducking in music.js) intact.
+const MASTER_GAIN = 0.7;
 
 let ctx = null;
 let master = null;
@@ -15,7 +30,7 @@ function ensureCtx() {
   if (!AC) return null;
   ctx = new AC();
   master = ctx.createGain();
-  master.gain.value = 0.28; // keep it gentle for kids
+  master.gain.value = MASTER_GAIN;
   master.connect(ctx.destination);
   return ctx;
 }
@@ -26,9 +41,27 @@ export function resumeAudio() {
   if (c && c.state === 'suspended') c.resume();
 }
 
+// --- Shared plumbing for music.js -------------------------------------------
+// The looping soundtrack lives in its own module but must share this module's
+// AudioContext (a page gets one) and hang off this master gain, so that the F9
+// mute silences music and effects together — a kid pressing "mute" means all of
+// it, and two independent mutes would be a bug report waiting to happen.
+
+// The live AudioContext, creating it if needed (null if Web Audio is missing).
+export function audioCtx() {
+  return ensureCtx();
+}
+
+// The master gain every sound passes through — music.js connects its own bus
+// here rather than to ctx.destination.
+export function sfxBusGain() {
+  ensureCtx();
+  return master;
+}
+
 export function toggleMute() {
   muted = !muted;
-  if (master) master.gain.value = muted ? 0 : 0.28;
+  if (master) master.gain.value = muted ? 0 : MASTER_GAIN;
   return muted;
 }
 
@@ -98,6 +131,7 @@ export function simpleAttack() {
 
 // Special skill — a rising arpeggio + whoosh.
 export function specialAttack() {
+  duckMusic(0.5, 0.34);
   tone(392, 0, 0.09, 'triangle', 0.5);
   tone(523, 0.08, 0.09, 'triangle', 0.5);
   tone(659, 0.16, 0.09, 'triangle', 0.5);
@@ -106,6 +140,7 @@ export function specialAttack() {
 
 // Monster hit / explosion.
 export function hit() {
+  duckMusic(0.4, 0.16);
   noise(0, 0.18, 0.35);
   tone(196, 0, 0.16, 'square', 0.3);
 }
@@ -115,6 +150,7 @@ export function hit() {
 // key with the hero actually getting hurt. A muffled impact (low noise) plus
 // a warm two-note descending "ow" on a sine, ending with a gentle wobble.
 export function hurt() {
+  duckMusic(0.55, 0.3);                      // getting hit must never be missed
   noise(0, 0.1, 0.22);                       // muffled body impact
   tone(330, 0, 0.16, 'sine', 0.5);           // "ow" — round, vocal-ish
   tone(233, 0.11, 0.22, 'sine', 0.45);       // drops down (a "hurt" fall)
@@ -122,6 +158,7 @@ export function hurt() {
 
 // Victory jingle (major arpeggio flourish).
 export function victory() {
+  duckMusic(0.7, 0.95); // the jingle owns the moment; music swells back after
   const notes = [523, 659, 784, 1047];
   notes.forEach((f, i) => tone(f, i * 0.13, 0.22, 'square', 0.45));
   tone(1047, 0.55, 0.4, 'triangle', 0.4);
@@ -129,6 +166,7 @@ export function victory() {
 
 // Failure sting (descending minor).
 export function failure() {
+  duckMusic(0.7, 0.85);
   tone(440, 0, 0.2, 'sawtooth', 0.4);
   tone(370, 0.18, 0.2, 'sawtooth', 0.4);
   tone(294, 0.36, 0.4, 'sawtooth', 0.4);
@@ -136,6 +174,7 @@ export function failure() {
 
 // Reward fanfare.
 export function reward() {
+  duckMusic(0.6, 0.6);
   tone(659, 0, 0.12, 'square', 0.4);
   tone(784, 0.1, 0.12, 'square', 0.4);
   tone(1047, 0.22, 0.3, 'triangle', 0.45);
@@ -172,6 +211,7 @@ export function comboBreak() {
 // Rank-up fanfare — a bright ascending flourish that climbs higher the higher
 // the new rank, so reaching Mythic sounds grander than reaching Adventurer.
 export function rankUp(rankIndex = 1) {
+  duckMusic(0.6, 0.75);
   const base = 523 * Math.pow(2, Math.min(rankIndex, 6) / 12); // higher rank → higher
   [0, 4, 7, 12, 16].forEach((semi, i) => {
     tone(base * Math.pow(2, semi / 12), i * 0.07, 0.16, 'triangle', 0.45);
@@ -194,6 +234,7 @@ export function staffCharged() {
 // Spending the charge: a deep swell under a bright strike, so an empowered hit
 // sounds heavier than any ordinary special.
 export function staffStrike() {
+  duckMusic(0.6, 0.4);                    // the biggest hit in the game
   tone(147, 0, 0.30, 'sawtooth', 0.34);   // low swell
   tone(587, 0.03, 0.16, 'square', 0.42);
   tone(1175, 0.10, 0.22, 'triangle', 0.38);
@@ -213,6 +254,7 @@ export function shieldBlock() {
 // A boss phase falling: a descending growl into a rising sting — the sound of the
 // fight changing gear rather than ending.
 export function phaseChange() {
+  duckMusic(0.65, 0.7);
   [392, 330, 262, 196].forEach((f, i) => tone(f, i * 0.07, 0.16, 'sawtooth', 0.34));
   noise(0.05, 0.45, 0.40);
   tone(523, 0.34, 0.20, 'square', 0.36);

@@ -180,7 +180,7 @@ export const REWARDS = [
     type: 'artifact',
     id: 'staff_wisdom',
     name: 'TRƯỢNG CỦA TRÍ TUỆ',  // "THE STAFF OF WISDOM"
-    desc: 'Gõ sạch để nạp năng lượng — rồi tung đòn cực mạnh!', // "Type cleanly to charge — then unleash a mighty blow!"
+    desc: 'Gõ nạp năng lượng — rồi tung đòn cực mạnh!', // "Type to charge energy — then unleash a mighty blow!"
     artifact: 'staff',
     projectileColor: '#fff6d0',
     damageBoost: 20,

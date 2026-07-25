@@ -143,7 +143,7 @@ const LESSONS = [
     lines: [
       'Bạn đã sẵn sàng! ⚔️',
       'Gõ đúng từ (hoặc câu) trên đầu quái vật.',
-      'Gõ sạch để lên COMBO — mạnh hơn!',
+      'Gõ đúng để nạp COMBO — mạnh hơn!',
       'Chúc may mắn, anh hùng nhỏ! 🌟',
     ],
     target: null,

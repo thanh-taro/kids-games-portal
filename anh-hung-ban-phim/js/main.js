@@ -24,6 +24,7 @@ import { Combo } from './combo.js';
 import { Tutorial } from './tutorial.js';
 import * as Scenes from './scenes.js';
 import * as Audio from './audio.js';
+import * as Music from './music.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -213,6 +214,52 @@ function beginJourney() {
 function setState(next) {
   state = next;
   stateTick = 0;
+  updateMusic();
+}
+
+// ---------------------------------------------------------------------------
+// Soundtrack
+// ---------------------------------------------------------------------------
+// One place decides what should be looping, driven purely by the current state
+// (and, while playing, by the chapter). Called from setState() so every scene
+// transition picks up its theme automatically — no scene needs to remember to
+// start or stop music, and `playMusic` is a no-op when the right loop is already
+// running, so walking stage-to-stage inside a chapter never restarts the track.
+function songForState() {
+  switch (state) {
+    case STATE.TITLE:
+      return 'title';
+    case STATE.STORY:
+      return 'story';
+    case STATE.TUTORIAL:
+      return 'tutorial';
+    case STATE.STAGE_INTRO:
+    case STATE.PLAYING: {
+      // The battle theme follows the CHAPTER, not the stage: a kid plays 6-12
+      // stages inside one chapter, and a new loop every stage would make the
+      // soundtrack feel restless. The stage intro shares its chapter's theme so
+      // the music carries unbroken from the intro into the fight.
+      const chapter = chapterForStage(stageIndex);
+      return `battle${Math.min(chapter.id, 3)}`;
+    }
+    case STATE.VICTORY:
+    case STATE.REWARD:
+      return 'victory';
+    case STATE.FAILURE:
+      return 'failure';
+    case STATE.CHAPTER_END:
+    case STATE.GAME_COMPLETE:
+    case STATE.CREDITS:
+      return 'triumph';
+    default:
+      return null;
+  }
+}
+
+function updateMusic() {
+  const song = songForState();
+  if (song) Music.playMusic(song);
+  else Music.stopMusic();
 }
 
 // ---------------------------------------------------------------------------
@@ -568,6 +615,12 @@ function grantReward() {
 window.addEventListener('keydown', (e) => {
   // First user gesture unlocks the AudioContext (browsers require this).
   Audio.resumeAudio();
+  // ...and only NOW can the soundtrack actually start. The title's setState()
+  // runs at load time, long before any gesture, so its playMusic() call reaches
+  // a suspended context and schedules nothing. Re-asserting the current state's
+  // theme here is what gets the title loop going on the kid's first keypress.
+  // It's a no-op once the right song is already running.
+  updateMusic();
 
   // F9 toggles mute at any time, in EVERY state (including the tutorial, which
   // otherwise owns the keyboard). A function key is used because every letter —
@@ -576,6 +629,17 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'F9') {
     e.preventDefault();
     Audio.toggleMute();
+    return;
+  }
+
+  // F10 turns the background music off while KEEPING the sound effects — a
+  // separate control from F9 for the same reason F9 is a function key: every
+  // letter is a Telex character. Kids differ a lot here; some need the room
+  // quiet to concentrate on a long proverb but still want to hear their hits
+  // land, and a half-hour loop wears on whoever else is in the room.
+  if (e.key === 'F10') {
+    e.preventDefault();
+    Music.toggleMusic();
     return;
   }
 
@@ -921,7 +985,7 @@ function drawShieldHint() {
   if (!monster || !monster.isShielded || monster.dying) return;
   const hint = hero.staffReady
     ? '⚡ Trượng đã sẵn sàng — gõ xong từ này để phá khiên!' // "Staff ready — finish this word to break the shield!"
-    : '🛡 Khiên bóng tối! Gõ SẠCH để nạp Trượng rồi phá khiên!'; // "Dark shield! Type CLEANLY to charge the Staff, then break it!"
+    : '🛡 Khiên bóng tối! Gõ đúng để NẠP Trượng rồi phá khiên!'; // "Dark shield! Type correctly to CHARGE the Staff, then break it!"
   const hy = H - 62;
   ctx.font = '16px "PixelFont", monospace';
   const hw = ctx.measureText(hint).width;
@@ -1143,6 +1207,11 @@ function drawMuteHint() {
   const text = Audio.isMuted() ? '🔇 F9: bật tiếng' : '🔊 F9: tắt tiếng';
   plate(text, W - 20, H - 29, 14, 'right');
   drawText(ctx, text, W - 20, H - 29, 14, '#fff4d6', 'right');
+  // The music toggle sits on its own row just above, so the two controls read
+  // as a pair without either line getting long enough to crowd the corner.
+  const mtext = Music.isMusicOn() ? '🎵 F10: tắt nhạc' : '🎵 F10: bật nhạc';
+  plate(mtext, W - 20, H - 50, 14, 'right');
+  drawText(ctx, mtext, W - 20, H - 50, 14, '#fff4d6', 'right');
 }
 
 // Where the gameplay screen wants the sky body and clouds: low enough to clear
