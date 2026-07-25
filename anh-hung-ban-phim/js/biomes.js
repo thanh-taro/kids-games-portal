@@ -30,6 +30,11 @@ import {
   SHIPWRECK, LIGHTHOUSE, BOTTLE, BURIED_STATUE, OBELISK,
   FROZEN_FALL, FROZEN_TEAR, TEMPLE_PILLAR, LANTERN,
   LAVA_FALL, OBSIDIAN_BRIDGE, CASTLE_GATE,
+  // chapter 2 — the Staff quest
+  BOOKSHELF, WIND_PILLAR, MIRROR_STAND, WISDOM_TOWER, FLOAT_BOOK, STAR_TREE,
+  STAFF_WISDOM,
+  // chapter 3 — the siege
+  BONE_PILLAR, CELL_DOOR, VOID_RIFT, DEMON_THRONE, SPIRE_CROWN, DEMON_BANNER,
 } from './sprites.js';
 
 const CELL = 8; // scenery pixel size — terrain is snapped to this chunky grid
@@ -436,6 +441,462 @@ export const BIOMES = {
     weather: { kind: 'rain', color: '#8fa8d0', count: 40 },
     tint: 'rgba(10,6,26,0.28)',
   },
+
+  // =========================================================================
+  // CHAPTER 2 — "Trượng Của Trí Tuệ" (The Staff of Wisdom), stages 13-20
+  // =========================================================================
+  // THE CHAPTER'S THROUGH-LINE INVERTS CHAPTER 1'S. There, the villain's black
+  // SPIRE grew nearer every stage. Here the hero has deliberately turned AWAY
+  // from it to find a weapon, so the spire RECEDES into the distance while a new
+  // landmark — the pale, round-topped WISDOM_TOWER — grows nearer stage by stage
+  // in its place. Two towers on the horizon, one shrinking and one growing, is
+  // how eight backdrops say "we are on a detour, and it is the right one".
+  //
+  // The chapter also lightens: it starts in a dim ruined library and ends on a
+  // sunlit peak, the opposite of chapter 1's slide into darkness.
+
+  // ===== STAGE 13 — Thư Viện Cổ (The Ancient Library) =====
+  // MEANING: the first clue. A collapsed library open to the sky, its books
+  // still drifting between the shelves. Dim, dusty, and quiet — the chapter
+  // begins in study, not battle.
+  library: {
+    sky: ['#3a3352', '#5d5075'],
+    band: ['#6b5f7a', '#544a61'],
+    ground: ['#4a4257', '#38313f', '#28232d'],
+    body: { sprite: MOON, x: 0.24, y: 58, scale: 2.5 },
+    clouds: { color: '#6f6288', count: 2 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.0, tile: true, tint: '#4d4463', baseOffset: 4 },
+      // The black spire is BEHIND us now — small, and off to the left edge.
+      { sprite: SPIRE, scale: 2.2, at: 0.08, tint: '#3b3352', baseOffset: 3 },
+      // The Tower of Wisdom appears for the first time: a distant speck of hope.
+      { sprite: WISDOM_TOWER, scale: 0.7, at: 0.86, tint: '#7a7396', baseOffset: 2 },
+    ],
+    // The bookshelves are TINTED DOWN and pushed to the edges. Untinted, their
+    // multicoloured spines were the brightest, busiest thing on screen — brighter
+    // than the monsters walking in front of them — and the book creep vanished
+    // against them. Scenery must never out-read an enemy: in a typing game the kid
+    // is scanning for the word above a monster, so the monster has to pop.
+    landmark: { sprite: BOOKSHELF, at: 0.50, scale: 1.8, tint: '#4a4257' },
+    props: [
+      { sprite: BOOKSHELF, at: 0.26, scale: 1.3, tint: '#453e52' },
+      { sprite: BOOKSHELF, at: 0.92, scale: 1.5, tint: '#453e52' },
+      { sprite: FLOAT_BOOK, at: 0.42, scale: 1.4, lift: 0.52, bob: 26, bobAmt: 9, anim: 18 },
+      { sprite: FLOAT_BOOK, at: 0.60, scale: 1.1, lift: 0.38, bob: 22, bobAmt: 7, anim: 22 },
+      { sprite: FLOAT_BOOK, at: 0.82, scale: 1.6, lift: 0.62, bob: 30, bobAmt: 10, anim: 15 },
+      { sprite: RUNE, at: 0.72, scale: 1.2, lift: 0.30, bob: 20, bobAmt: 6, anim: 25 },
+    ],
+    lights: [
+      { kind: 'rays', color: '#c9b6ff', count: 4, alpha: 0.08, width: 58, slant: 0.28 },
+      { kind: 'glow', color: '#ffe08a', at: 0.50, lift: 0.40, radius: 90, alpha: 0.08, pulse: 40 },
+    ],
+    weather: { kind: 'leaves', color: '#d9d2e8', count: 16 }, // drifting loose pages
+    tint: 'rgba(20,14,36,0.20)',
+  },
+
+  // ===== STAGE 14 — Núi Vọng Gió (The Howling Peak) =====
+  // MEANING: the trial of PERSEVERANCE. Bare wind-carved cliffs high above the
+  // clouds, with nothing to look at but the long way up. The cloud layer sits
+  // BELOW the walkable band, so the kid can see how far they have already climbed.
+  windpeak: {
+    sky: ['#6a8fc4', '#a8c8e8'],
+    band: ['#9a94a8', '#7d7788'],
+    ground: ['#6e6878', '#565162', '#3e3a48'],
+    body: { sprite: SUN, x: 0.14, y: 62, scale: 3 },
+    clouds: { color: '#e2ecf8', count: 4 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.4, tile: true, tint: '#8098bc', baseOffset: 6 },
+      { sprite: SPIRE, scale: 1.8, at: 0.06, tint: '#6f7fa0', baseOffset: 3 },
+      { sprite: WISDOM_TOWER, scale: 0.9, at: 0.84, tint: '#9aa8c8', baseOffset: 2 },
+    ],
+    flyers: { sprite: BIRD, count: 6, scale: 1.0, tint: '#5c6880', band: [0.10, 0.30], speed: 1.1, flap: 4 },
+    landmark: { sprite: WIND_PILLAR, at: 0.52, scale: 2.2 },
+    props: [
+      { sprite: WIND_PILLAR, at: 0.32, scale: 1.5 },
+      { sprite: WIND_PILLAR, at: 0.70, scale: 1.8 },
+      { sprite: WIND_PILLAR, at: 0.88, scale: 1.3 },
+      { sprite: ROCK, at: 0.42, scale: 1.2 },
+    ],
+    lights: [
+      { kind: 'rays', color: '#ffffff', count: 5, alpha: 0.09, width: 64, slant: 0.5 },
+    ],
+    weather: { kind: 'snow', color: '#eaf4ff', count: 26 }, // driven ice crystals
+  },
+
+  // ===== STAGE 15 — Vực Sương Mù (The Vale of Fog) =====
+  // MEANING: the trial of CLARITY — the path is there, you just cannot see it.
+  // Everything is deliberately hazed and low-contrast EXCEPT the Tower, which
+  // glows through the murk: when you cannot see the way, follow the one clear
+  // thing you can see.
+  mistvale: {
+    sky: ['#8a94a0', '#b8c2ca'],
+    band: ['#7f8a80', '#697466'],
+    ground: ['#5f6a5c', '#4b5449', '#3a4139'],
+    body: { sprite: SUN, x: 0.20, y: 70, scale: 2.5, tint: '#d8dcd0' }, // sun through fog
+    clouds: { color: '#c8d0d4', count: 5 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.2, tile: true, tint: '#93a09a', baseOffset: 5 },
+      { sprite: SPIRE, scale: 1.5, at: 0.05, tint: '#8a94a0', baseOffset: 3 },
+      { sprite: WISDOM_TOWER, scale: 1.2, at: 0.82, tint: '#aeb8c0', baseOffset: 2 },
+    ],
+    landmark: { sprite: RUINED_ARCH, at: 0.54, scale: 1.7, tint: '#7d8a84' },
+    props: [
+      { sprite: DEAD_TREE, at: 0.28, scale: 1.3, tint: '#5e6659' },
+      { sprite: REEDS, at: 0.44, scale: 1.2 },
+      { sprite: DEAD_TREE, at: 0.72, scale: 1.5, tint: '#6a7264' },
+      { sprite: REEDS, at: 0.88, scale: 1.4 },
+    ],
+    lights: [
+      // The Tower's beacon cutting through the fog — the one clear thing.
+      { kind: 'beam', color: '#d8f0ff', at: 0.82, lift: 0.30, width: 26, spread: 2.0, alpha: 0.13, pulse: 50 },
+      { kind: 'glow', color: '#ffffff', at: 0.54, lift: 0.35, radius: 110, alpha: 0.07, pulse: 44 },
+    ],
+    weather: { kind: 'mist', color: '#cdd6da', count: 7 },
+    tint: 'rgba(180,190,196,0.16)', // the haze itself
+  },
+
+  // ===== STAGE 16 — Đền Chữ Cổ (Temple of Ancient Letters) =====
+  // MEANING: writing IS the key. A temple whose door has no handle — it opens
+  // only to a correctly written word, which is exactly what the kid is doing.
+  // Rune-carved pillars, and glyphs burning cyan in the air.
+  rune_temple: {
+    sky: ['#2e4a6a', '#4a7095'],
+    band: ['#8a8270', '#6e6758'],
+    ground: ['#6a6354', '#524c40', '#3b372e'],
+    body: { sprite: MOON, x: 0.22, y: 56, scale: 2.5 },
+    clouds: { color: '#5a7a98', count: 2 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.1, tile: true, tint: '#456484', baseOffset: 4 },
+      { sprite: SPIRE, scale: 1.3, at: 0.05, tint: '#3f5a78', baseOffset: 3 },
+      { sprite: WISDOM_TOWER, scale: 1.5, at: 0.80, tint: '#7d95ac', baseOffset: 2 },
+    ],
+    landmark: { sprite: TEMPLE_PILLAR, at: 0.52, scale: 2.0 },
+    props: [
+      { sprite: TEMPLE_PILLAR, at: 0.30, scale: 1.5 },
+      { sprite: TEMPLE_PILLAR, at: 0.72, scale: 1.7 },
+      { sprite: RUNE, at: 0.40, scale: 1.7, lift: 0.48, bob: 24, bobAmt: 8, anim: 19 },
+      { sprite: RUNE, at: 0.62, scale: 2.0, lift: 0.62, bob: 30, bobAmt: 10, anim: 16 },
+      { sprite: RUNE, at: 0.88, scale: 1.4, lift: 0.34, bob: 20, bobAmt: 7, anim: 23 },
+    ],
+    lights: [
+      { kind: 'glow', color: '#4ad4d4', at: 0.62, lift: 0.66, radius: 100, alpha: 0.11, pulse: 30 },
+      { kind: 'glow', color: '#4ad4d4', at: 0.40, lift: 0.52, radius: 80, alpha: 0.09, pulse: 36 },
+      { kind: 'rays', color: '#a8e0ff', count: 4, alpha: 0.07, width: 54, slant: 0.3 },
+    ],
+    weather: { kind: 'fireflies', color: '#7fe8ff', count: 20 }, // drifting glyph sparks
+  },
+
+  // ===== STAGE 17 — Hồ Gương (The Mirror Lake) =====
+  // MEANING: the trial of HONESTY — the hero faces his own reflection. Standing
+  // mirrors ring a still lake; the horizon is the water (so the band stays solid
+  // footing on the near shore, per the coast rule).
+  mirrorlake: {
+    sky: ['#f0b4c8', '#ffd8e0'],       // dawn pink, so reflections read warm
+    horizon: { color: '#b8d8e8', shade: '#93bcd0', height: 40 },
+    band: ['#a8b4c0', '#8a95a2'],
+    ground: ['#7d8794', '#636c78', '#4a515b'],
+    body: { sprite: SUN, x: 0.16, y: 66, scale: 3 },
+    clouds: { color: '#ffe4ea', count: 3 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.0, tile: true, tint: '#c4a8bc', baseOffset: 4 },
+      { sprite: SPIRE, scale: 1.1, at: 0.04, tint: '#a892a8', baseOffset: 3 },
+      { sprite: WISDOM_TOWER, scale: 1.9, at: 0.78, tint: '#c8c0d4', baseOffset: 2 },
+    ],
+    landmark: { sprite: MIRROR_STAND, at: 0.52, scale: 2.0 },
+    props: [
+      { sprite: MIRROR_STAND, at: 0.32, scale: 1.4 },
+      { sprite: MIRROR_STAND, at: 0.70, scale: 1.6 },
+      { sprite: MIRROR_STAND, at: 0.88, scale: 1.2 },
+      { sprite: CRYSTAL, at: 0.42, scale: 1.1 },
+    ],
+    lights: [
+      { kind: 'rays', color: '#ffe0e8', count: 5, alpha: 0.10, width: 62, slant: 0.4 },
+      { kind: 'shimmer', color: '#ffffff', count: 12, alpha: 0.09, height: 70, len: 80 },
+    ],
+    weather: { kind: 'petals', color: '#ffd8e4', count: 16 },
+  },
+
+  // ===== STAGE 18 — Rừng Sao Đêm (The Night-Star Wood) =====
+  // MEANING: the Staff's light is finally visible. A wood where the trees carry
+  // stars instead of leaves, and stars fall through the canopy. The Tower is now
+  // close enough to fill part of the sky.
+  starwood: {
+    sky: ['#1b2452', '#33407e'],
+    band: ['#2f4a52', '#243a40'],
+    ground: ['#2a4048', '#1f3038', '#16222a'],
+    body: { sprite: MOON, x: 0.18, y: 52, scale: 3.5 },
+    clouds: { color: '#3a4a86', count: 2 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.1, tile: true, tint: '#2b3768', baseOffset: 4 },
+      { sprite: SPIRE, scale: 1.0, at: 0.04, tint: '#252f5c', baseOffset: 3 },
+      { sprite: WISDOM_TOWER, scale: 2.6, at: 0.76, tint: '#5f6ba8', baseOffset: 2 },
+    ],
+    landmark: { sprite: STAR_TREE, at: 0.52, scale: 2.0 },
+    props: [
+      { sprite: STAR_TREE, at: 0.30, scale: 1.5 },
+      { sprite: STAR_TREE, at: 0.68, scale: 1.7 },
+      { sprite: STAR_TREE, at: 0.88, scale: 1.3 },
+      { sprite: FLOAT_BOOK, at: 0.44, scale: 1.2, lift: 0.46, bob: 26, bobAmt: 9, anim: 20 },
+      { sprite: LANTERN, at: 0.60, scale: 1.3, lift: 0.40, bob: 24, bobAmt: 8, anim: 22 },
+    ],
+    lights: [
+      { kind: 'aurora', colors: ['#6f8fff', '#a86cff', '#4ad4d4'], alpha: 0.11, bandH: 24, top: 0.06, wave: 30 },
+      { kind: 'glow', color: '#ffe08a', at: 0.60, lift: 0.44, radius: 70, alpha: 0.10, pulse: 26 },
+    ],
+    weather: { kind: 'starfall', color: '#ffffff', count: 26 },
+    tint: 'rgba(8,10,32,0.18)',
+  },
+
+  // ===== STAGE 19 — Tháp Trí Tuệ (The Tower of Wisdom) =====
+  // MEANING: the ascent. The kid is finally AT the tower they have watched grow
+  // for six stages — it is now the landmark itself, not a far-layer speck, and
+  // its beacon washes the whole scene.
+  wisdom_tower: {
+    sky: ['#2a3f78', '#5570b0'],
+    band: ['#a8a294', '#8a8478'],
+    ground: ['#837d70', '#67625a', '#4c4842'],
+    body: { sprite: MOON, x: 0.16, y: 54, scale: 3 },
+    clouds: { color: '#6a84c0', count: 3 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.2, tile: true, tint: '#3d5590', baseOffset: 5 },
+      // The black spire is now a distant memory at the very edge of the world.
+      { sprite: SPIRE, scale: 0.9, at: 0.03, tint: '#35487c', baseOffset: 3 },
+    ],
+    // The Tower has ARRIVED — it is the set piece now.
+    landmark: { sprite: WISDOM_TOWER, at: 0.56, scale: 3.4 },
+    props: [
+      { sprite: TEMPLE_PILLAR, at: 0.28, scale: 1.6 },
+      { sprite: RUNE, at: 0.38, scale: 1.6, lift: 0.50, bob: 24, bobAmt: 8, anim: 18 },
+      { sprite: TEMPLE_PILLAR, at: 0.86, scale: 1.5 },
+      { sprite: FLOAT_BOOK, at: 0.78, scale: 1.3, lift: 0.58, bob: 28, bobAmt: 9, anim: 21 },
+    ],
+    lights: [
+      { kind: 'beam', color: '#8ff0ff', at: 0.56, lift: 0.90, width: 44, spread: 2.6, alpha: 0.15, pulse: 40 },
+      { kind: 'glow', color: '#ffd24a', at: 0.56, lift: 0.50, radius: 120, alpha: 0.10, pulse: 34 },
+      { kind: 'rays', color: '#bfe8ff', count: 4, alpha: 0.08, width: 58, slant: 0.3 },
+    ],
+    weather: { kind: 'starfall', color: '#d8f0ff', count: 20 },
+  },
+
+  // ===== STAGE 20 — Đỉnh Trí Tuệ (The Summit of Wisdom) =====
+  // MEANING: the prize, and the chapter's brightest scene — sunrise at the top
+  // of everything, with the Staff itself waiting on the summit. Chapter 1 ended
+  // in a dark fortress; chapter 2 ends in full light, because the hero chose to
+  // seek wisdom instead of charging at the enemy.
+  wisdom_peak: {
+    sky: ['#f5c46a', '#ffe8b0'],
+    band: ['#e8e0c8', '#c8c0a8'],
+    ground: ['#c0b898', '#a09878', '#7d7658'],
+    body: { sprite: SUN, x: 0.14, y: 48, scale: 4.5 },  // full sunrise
+    clouds: { color: '#fff0cc', count: 4 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.3, tile: true, tint: '#d8b88c', baseOffset: 6 },
+      { sprite: SPIRE, scale: 0.8, at: 0.03, tint: '#c0a084', baseOffset: 3 },
+    ],
+    flyers: { sprite: BIRD, count: 5, scale: 1.1, tint: '#a08860', band: [0.10, 0.28], speed: 0.7 },
+    // The Staff, planted on the summit — the thing eight stages have been about.
+    landmark: { sprite: STAFF_WISDOM, at: 0.56, scale: 2.8 },
+    props: [
+      { sprite: TEMPLE_PILLAR, at: 0.30, scale: 1.7 },
+      { sprite: TEMPLE_PILLAR, at: 0.80, scale: 1.7 },
+      { sprite: CRYSTAL, at: 0.42, scale: 1.2 },
+      { sprite: CRYSTAL, at: 0.70, scale: 1.4 },
+    ],
+    lights: [
+      { kind: 'beam', color: '#fff6d0', at: 0.56, lift: 0.42, width: 40, spread: 2.4, alpha: 0.17, pulse: 36 },
+      { kind: 'rays', color: '#ffe8a8', count: 6, alpha: 0.11, width: 70, slant: 0.45 },
+      { kind: 'glow', color: '#ffffff', at: 0.56, lift: 0.36, radius: 130, alpha: 0.10, pulse: 30 },
+    ],
+    weather: { kind: 'petals', color: '#fff0c0', count: 18 },
+  },
+
+  // =========================================================================
+  // CHAPTER 3 — "Trận Chiến Cuối Cùng" (The Final Confrontation), stages 21-26
+  // =========================================================================
+  // THE THROUGH-LINE RESOLVES. The hero turns back toward the black spire with
+  // the Staff in hand, so it grows again — faster and larger than in chapter 1,
+  // until in the last stage the kid is standing ON it (SPIRE_CROWN is the
+  // landmark: the tower's broken top). Chapter 3 is the darkest-looking chapter
+  // in the game, lit almost entirely by rift purple and burning red.
+
+  // ===== STAGE 21 — Cầu Xương Trắng (The Bridge of White Bones) =====
+  // MEANING: the approach, and the point of no return. A bone causeway over an
+  // abyss — nothing grows here and there is nowhere to go but forward.
+  bonebridge: {
+    sky: ['#2b2036', '#4a3450'],
+    band: ['#8d8578', '#6e6860'],
+    ground: ['#6a6458', '#4e4a42', '#38352f'],
+    body: { sprite: MOON, x: 0.22, y: 56, scale: 2.5, tint: '#d8c8b0' },
+    clouds: { color: '#54405e', count: 3 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.1, tile: true, tint: '#413050', baseOffset: 4 },
+      // Back on the villain's road: the spire returns, and it is close.
+      { sprite: SPIRE, scale: 4.5, at: 0.78, tint: '#3a2a4c', baseOffset: 4 },
+    ],
+    landmark: { sprite: BONE_ARCH, at: 0.54, scale: 1.9 },
+    props: [
+      { sprite: BONE_PILLAR, at: 0.30, scale: 1.5 },
+      { sprite: BONE_PILLAR, at: 0.44, scale: 1.2 },
+      { sprite: BONE_PILLAR, at: 0.70, scale: 1.7 },
+      { sprite: BONE_PILLAR, at: 0.88, scale: 1.3 },
+    ],
+    lights: [
+      { kind: 'glow', color: '#b06cf0', at: 0.78, lift: 0.60, radius: 120, alpha: 0.11, pulse: 34 },
+      { kind: 'rays', color: '#c79dff', count: 4, alpha: 0.07, width: 56, slant: 0.35 },
+    ],
+    weather: { kind: 'ash', color: '#c8c0b8', count: 30 },
+    tint: 'rgba(14,8,26,0.24)',
+  },
+
+  // ===== STAGE 22 — Cổng Thành Quỷ (The Demon Gate) =====
+  // MEANING: breaching the wall. The gate from stage 12 seen from the OTHER
+  // side of the journey — this time the hero has the Staff, and the gate is the
+  // landmark he is about to break rather than a thing looming over him.
+  demon_gate: {
+    sky: ['#2a1830', '#4d2440'],
+    band: ['#4a4050', '#382f3e'],
+    ground: ['#443a4a', '#322a38', '#241e28'],
+    body: { sprite: MOON, x: 0.20, y: 54, scale: 2.5, tint: '#e0a0a0' },
+    clouds: { color: '#5c2c48', count: 2 },
+    far: [
+      { sprite: SPIRE, scale: 6.0, at: 0.20, tint: '#3a2044', baseOffset: 4 },
+      { sprite: SPIRE, scale: 8.0, at: 0.82, tint: '#2e1836', baseOffset: 4 },
+    ],
+    landmark: { sprite: CASTLE_GATE, at: 0.54, scale: 2.3 },
+    props: [
+      { sprite: DEMON_BANNER, at: 0.30, scale: 1.5, lift: 0.34 },
+      { sprite: DEMON_BANNER, at: 0.80, scale: 1.5, lift: 0.34 },
+      { sprite: TOWER, at: 0.92, scale: 1.4 },
+    ],
+    lights: [
+      { kind: 'glow', color: '#e0503a', at: 0.54, lift: 0.52, radius: 140, alpha: 0.13, pulse: 28 },
+      { kind: 'glow', color: '#b06cf0', at: 0.82, lift: 0.66, radius: 110, alpha: 0.10, pulse: 36 },
+    ],
+    weather: { kind: 'embers', color: '#ff7a2f', count: 26 },
+    tint: 'rgba(20,6,20,0.26)',
+  },
+
+  // ===== STAGE 23 — Ngục Tối Vô Tận (The Endless Dungeon) =====
+  // MEANING: where the stolen powers were kept. The princesses' own cells, now
+  // standing open — the kid rescued them in chapter 1, and here they see what
+  // they were rescued FROM. The only enclosed, ceilinged biome of the chapter.
+  dungeon: {
+    sky: ['#1a1622', '#2b2434'],
+    band: ['#3e3846', '#2e2a36'],
+    ground: ['#383240', '#28242e', '#1c1922'],
+    clouds: { color: null, count: 0 },
+    ceiling: [
+      { sprite: STALACTITE, at: 0.16, scale: 1.4 },
+      { sprite: STALACTITE, at: 0.40, scale: 1.8 },
+      { sprite: STALACTITE, at: 0.64, scale: 1.5 },
+      { sprite: STALACTITE, at: 0.88, scale: 1.7 },
+    ],
+    far: [
+      { sprite: SPIRE, scale: 3.0, at: 0.50, tint: '#241e2e', baseOffset: 3 },
+    ],
+    landmark: { sprite: CELL_DOOR, at: 0.54, scale: 2.1 },
+    props: [
+      { sprite: CELL_DOOR, at: 0.28, scale: 1.5 },
+      { sprite: CELL_DOOR, at: 0.74, scale: 1.6 },
+      { sprite: JAIL, at: 0.88, scale: 1.4 },
+      { sprite: LANTERN, at: 0.40, scale: 1.2, lift: 0.52, bob: 26, bobAmt: 6, anim: 24 },
+    ],
+    lights: [
+      { kind: 'glow', color: '#ffd24a', at: 0.40, lift: 0.56, radius: 80, alpha: 0.12, pulse: 30 },
+      { kind: 'glow', color: '#b06cf0', at: 0.54, lift: 0.40, radius: 90, alpha: 0.08, pulse: 40 },
+    ],
+    weather: { kind: 'drip', color: '#8fa8d0', count: 14 },
+    tint: 'rgba(6,4,14,0.30)',
+  },
+
+  // ===== STAGE 24 — Sảnh Ngai Vàng (The Throne Hall) =====
+  // MEANING: the enemy's seat of power. His empty throne, his banners, his
+  // generals — everything about him except the Devourer himself, who is waiting
+  // two stages further in. Rift purple everywhere: this is his room.
+  throne_hall: {
+    sky: ['#1e1030', '#3d1c50'],
+    band: ['#443a56', '#332c42'],
+    ground: ['#3d3450', '#2c263a', '#1e1a28'],
+    clouds: { color: '#4d2464', count: 2 },
+    far: [
+      { sprite: SPIRE, scale: 7.5, at: 0.14, tint: '#331a48', baseOffset: 4 },
+      { sprite: SPIRE, scale: 9.0, at: 0.84, tint: '#28143a', baseOffset: 4 },
+    ],
+    landmark: { sprite: DEMON_THRONE, at: 0.56, scale: 2.2 },
+    props: [
+      { sprite: DEMON_BANNER, at: 0.28, scale: 1.6, lift: 0.40 },
+      { sprite: DEMON_BANNER, at: 0.44, scale: 1.4, lift: 0.44 },
+      { sprite: DEMON_BANNER, at: 0.80, scale: 1.6, lift: 0.40 },
+      { sprite: VOID_RIFT, at: 0.90, scale: 1.3, lift: 0.44, bob: 30, bobAmt: 8, anim: 18 },
+    ],
+    lights: [
+      { kind: 'beam', color: '#c77dff', at: 0.90, lift: 0.48, width: 26, spread: 1.8, alpha: 0.13, pulse: 32 },
+      { kind: 'glow', color: '#b06cf0', at: 0.56, lift: 0.54, radius: 150, alpha: 0.13, pulse: 30 },
+      { kind: 'rays', color: '#c79dff', count: 5, alpha: 0.08, width: 60, slant: 0.3 },
+    ],
+    weather: { kind: 'embers', color: '#c77dff', count: 24 },
+    tint: 'rgba(16,4,28,0.28)',
+  },
+
+  // ===== STAGE 25 — Hư Không Bóng Tối (The Darkness Void) =====
+  // MEANING: the hero has left the world. The Devourer's own dimension, where
+  // the rules are wrong — the ground is a thin causeway in nothing, the rifts
+  // hang in mid-air, and the weather RISES instead of falling (see 'voidmotes'),
+  // which is the one detail that tells a kid instantly they are somewhere else.
+  void: {
+    sky: ['#0d0818', '#1e1030'],
+    band: ['#2e2440', '#221a30'],
+    ground: ['#282038', '#1c1628', '#120e1c'],
+    clouds: { color: null, count: 0 },
+    far: [
+      { sprite: SPIRE, scale: 5.0, at: 0.50, tint: '#1e1430', baseOffset: 3 },
+    ],
+    landmark: { sprite: VOID_RIFT, at: 0.54, scale: 2.6 },
+    props: [
+      { sprite: VOID_RIFT, at: 0.30, scale: 1.4, lift: 0.50, bob: 34, bobAmt: 10, anim: 16 },
+      { sprite: VOID_RIFT, at: 0.74, scale: 1.7, lift: 0.62, bob: 30, bobAmt: 12, anim: 20 },
+      { sprite: VOID_RIFT, at: 0.90, scale: 1.2, lift: 0.36, bob: 26, bobAmt: 8, anim: 23 },
+      { sprite: CRYSTAL, at: 0.42, scale: 1.1, tint: '#8544c4' },
+    ],
+    lights: [
+      { kind: 'beam', color: '#c77dff', at: 0.54, lift: 0.70, width: 40, spread: 2.4, alpha: 0.16, pulse: 30 },
+      { kind: 'aurora', colors: ['#8544c4', '#4a1070', '#b06cf0'], alpha: 0.12, bandH: 28, top: 0.05, wave: 40 },
+      { kind: 'glow', color: '#b06cf0', at: 0.74, lift: 0.66, radius: 110, alpha: 0.11, pulse: 26 },
+    ],
+    weather: { kind: 'voidmotes', color: '#e6b3ff', count: 34 },
+    tint: 'rgba(4,2,12,0.30)',
+  },
+
+  // ===== STAGE 26 — Đỉnh Cao Cuối Cùng (The Final Summit) =====
+  // MEANING: journey's end, on top of the spire the kid has watched since stage
+  // 1. The landmark is the tower's own broken crown, so the last backdrop of the
+  // game is the FIRST backdrop's distant speck, now underfoot. Dawn is just
+  // breaking at the horizon — the sunrise the ending pays off.
+  finalspire: {
+    sky: ['#2a1236', '#6e2c50'],       // deep purple bruising toward red dawn
+    band: ['#3e3448', '#2e2636'],
+    ground: ['#382e42', '#282030', '#1a1522'],
+    body: { sprite: SUN, x: 0.12, y: 74, scale: 3, tint: '#ff9a5a' }, // dawn, rising
+    clouds: { color: '#8a3a5c', count: 3 },
+    far: [
+      { sprite: MOUNTAINS, scale: 1.2, tile: true, tint: '#4a2044', baseOffset: 5 },
+    ],
+    // We are ON the spire now: its broken top is the set piece.
+    landmark: { sprite: SPIRE_CROWN, at: 0.58, scale: 2.4 },
+    props: [
+      { sprite: DEMON_BANNER, at: 0.28, scale: 1.5, lift: 0.42 },
+      { sprite: VOID_RIFT, at: 0.42, scale: 1.5, lift: 0.56, bob: 32, bobAmt: 10, anim: 17 },
+      { sprite: DEMON_BANNER, at: 0.86, scale: 1.4, lift: 0.42 },
+      { sprite: BONE_PILLAR, at: 0.74, scale: 1.4 },
+    ],
+    lights: [
+      { kind: 'beam', color: '#ff7a2f', at: 0.58, lift: 0.80, width: 46, spread: 2.6, alpha: 0.15, pulse: 26 },
+      { kind: 'glow', color: '#b06cf0', at: 0.42, lift: 0.60, radius: 110, alpha: 0.11, pulse: 30 },
+      { kind: 'rays', color: '#ffb37a', count: 5, alpha: 0.10, width: 64, slant: 0.4 },
+    ],
+    weather: { kind: 'embers', color: '#ffb347', count: 30 },
+    tint: 'rgba(18,4,20,0.24)',
+  },
 };
 
 export const DEFAULT_BIOME = 'training';
@@ -728,6 +1189,34 @@ export function drawBiomeLights(ctx, w, h, groundY, biome, tick) {
         }
         break;
       }
+      case 'beam': {
+        // A single VERTICAL pillar of light rising from one point — the Tower of
+        // Wisdom's beacon, and the rifts in the void. Unlike 'rays' (many slanted
+        // shafts from the sky) this is one column anchored to a thing on the
+        // ground, so it reads as something emitting light rather than sunlight
+        // coming in. It widens toward the top and fades out, which is what keeps
+        // it from looking like a solid painted rectangle.
+        const cx = w * L.at;
+        const baseY = groundY - (L.lift || 0) * groundY;
+        const top = (L.top ?? 0) * h;
+        const breathe = 0.75 + 0.25 * Math.sin(tick / (L.pulse || 46));
+        const wBase = (L.width || 30) * breathe;
+        const wTop = wBase * (L.spread || 2.2);
+        const grad = ctx.createLinearGradient(0, baseY, 0, top);
+        grad.addColorStop(0, L.color);
+        grad.addColorStop(0.35, L.color);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.globalAlpha = (L.alpha || 0.12) * breathe;
+        ctx.beginPath();
+        ctx.moveTo(cx - wBase / 2, baseY);
+        ctx.lineTo(cx + wBase / 2, baseY);
+        ctx.lineTo(cx + wTop / 2, top);
+        ctx.lineTo(cx - wTop / 2, top);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      }
     }
   }
 
@@ -860,6 +1349,83 @@ export function drawBiomeWeather(ctx, w, h, groundY, biome, tick) {
         for (let x = (i * 37) % (CELL * 4); x < w; x += CELL * 4) {
           ctx.fillRect(x, y, CELL * 2, DOT);
         }
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'starfall': {
+      // Slow-drifting star motes with occasional streaking falls — the starlit
+      // wood and the Tower of Wisdom. Most motes just twinkle in place (a sky
+      // full of streaks reads as rain); every fifth one falls diagonally.
+      for (let i = 0; i < n; i++) {
+        const falling = i % 5 === 0;
+        if (falling) {
+          const period = 220 + (i % 4) * 40;
+          const t = ((tick + i * 60) % period) / period;
+          const x = rnd(i + 3) * w + t * 160;
+          const y = t * groundY;
+          ctx.globalAlpha = 0.8 * (1 - t);
+          ctx.fillStyle = wx.color;
+          // A short tail, drawn as a few stepped pixels (no lineTo — this is a
+          // pixel-art scene and a hairline diagonal would look wrong).
+          for (let s = 0; s < 5; s++) {
+            ctx.fillRect(x - s * 3, y - s * 4, DOT, DOT);
+          }
+        } else {
+          const x = (rnd(i + 11) * w + tick * 0.12) % w;
+          const y = rnd(i + 21) * groundY * 0.8;
+          const tw = Math.sin((tick + i * 40) / 26);
+          ctx.globalAlpha = 0.35 + 0.5 * Math.max(0, tw);
+          ctx.fillStyle = wx.color;
+          ctx.fillRect(x, y, DOT, DOT);
+        }
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'leaves': {
+      // Pages/leaves tumbling on the wind: they drift sideways much faster than
+      // they fall, and rock back and forth as they go (the sine on x), which is
+      // what separates a falling page from a falling snowflake.
+      ctx.fillStyle = wx.color;
+      for (let i = 0; i < n; i++) {
+        const period = 260 + (i % 5) * 50;
+        const t = ((tick + i * 55) % period) / period;
+        const x = (rnd(i + 5) * w + t * w * 0.7 + Math.sin((tick + i * 30) / 22) * 22) % w;
+        const y = t * h;
+        ctx.globalAlpha = 0.55;
+        // A 2x1 or 1x2 fleck, alternating — reads as a page turning over.
+        const flip = Math.floor((tick + i * 17) / 14) % 2 === 0;
+        ctx.fillRect(x, y, flip ? DOT * 2 : DOT, flip ? DOT : DOT * 2);
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'ash': {
+      // Grey ash settling over the siege: slower than snow, and it DRIFTS to one
+      // side rather than falling straight, so the fortress feels windswept.
+      ctx.fillStyle = wx.color;
+      for (let i = 0; i < n; i++) {
+        const x = (rnd(i + 7) * w + tick * 0.55 + Math.sin((tick + i * 25) / 40) * 14) % w;
+        const y = (rnd(i + 17) * h + tick * 1.1) % h;
+        ctx.globalAlpha = 0.4 + 0.3 * rnd(i + 27);
+        ctx.fillRect(x, y, DOT, DOT);
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'voidmotes': {
+      // The Devourer's dimension: motes that RISE instead of falling, because
+      // gravity is wrong here. Nothing else in the game moves upward, so this one
+      // detail tells a kid instantly that they have left the world behind.
+      ctx.fillStyle = wx.color;
+      for (let i = 0; i < n; i++) {
+        const x = (rnd(i + 9) * w + Math.sin((tick + i * 33) / 50) * 18) % w;
+        const y = h - ((rnd(i + 19) * h + tick * 1.4) % h);
+        const pulse = 0.4 + 0.6 * Math.abs(Math.sin((tick + i * 21) / 30));
+        ctx.globalAlpha = pulse * 0.75;
+        const s = i % 7 === 0 ? DOT * 2 : DOT;
+        ctx.fillRect(x, y, s, s);
       }
       ctx.globalAlpha = 1;
       break;

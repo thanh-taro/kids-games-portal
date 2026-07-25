@@ -63,6 +63,70 @@ export const SKILLS = {
     effect: 'meteor', // light pillar + double shockwave + debris + big shake
     trail: { color: '#e6b3ff', fadeTo: '#5a1e8a', size: 12 }, // cosmic purple tail
   },
+
+  // ---- Chapter 2 skills: earned on the quest for the Staff of Wisdom ----
+  // The chapter's theme is that a CLEAR MIND beats brute force, so its skills
+  // are about precision and control rather than raw damage: a freezing ring, a
+  // fast volley of small blades, and finally the Staff's own holy light.
+  frostnova: {
+    id: 'frostnova',
+    cls: SKILL_CLASS.SPECIAL,
+    name: 'Băng Vũ', // "Frost Nova"
+    damage: 65,
+    projectile: { color: '#8fe3ff', size: 12, speed: 15, count: 2, special: true },
+    burst: { color: '#d8f0ff', n: 36, power: 6 },
+    shake: 14,
+    effect: 'frostnova', // expanding frost ring + drifting ice shards
+    trail: { color: '#eaffff', fadeTo: '#3fb8b0', size: 9 }, // cold vapor tail
+  },
+  windblade: {
+    id: 'windblade',
+    cls: SKILL_CLASS.SPECIAL,
+    name: 'Phong Nhẫn', // "Wind Blades"
+    damage: 58,
+    // The fastest, most numerous volley in the game — five small blades. It is
+    // the "reward for typing quickly and cleanly" skill: it LOOKS like speed.
+    projectile: { color: '#bfe8ff', size: 8, speed: 26, count: 5, special: true },
+    burst: { color: '#eaffff', n: 30, power: 7 },
+    shake: 12,
+    effect: 'windblade', // crossing slash arcs + a spiral of wind motes
+    trail: { color: '#ffffff', fadeTo: '#8fe3ff', size: 6 },
+  },
+  holylight: {
+    id: 'holylight',
+    cls: SKILL_CLASS.SPECIAL,
+    name: 'Thánh Quang', // "Holy Light"
+    damage: 85,
+    projectile: { color: '#fff2b0', size: 13, speed: 18, count: 3, special: true },
+    burst: { color: '#ffffff', n: 44, power: 8 },
+    shake: 18,
+    effect: 'holylight', // descending light pillar + radiant flash + gold motes
+    trail: { color: '#ffffff', fadeTo: '#f2c53d', size: 10 },
+  },
+
+  // ---- Chapter 3 skills: the endgame, powered by the Staff ----
+  voidrend: {
+    id: 'voidrend',
+    cls: SKILL_CLASS.SPECIAL,
+    name: 'Xé Hư Không', // "Void Rend"
+    damage: 95,
+    projectile: { color: '#b06cf0', size: 15, speed: 16, count: 3, special: true },
+    burst: { color: '#e6b3ff', n: 48, power: 9 },
+    shake: 24,
+    effect: 'voidrend', // a tear opens, collapses inward, then bursts outward
+    trail: { color: '#f0d6ff', fadeTo: '#4a1070', size: 13 },
+  },
+  dawnbreaker: {
+    id: 'dawnbreaker',
+    cls: SKILL_CLASS.SPECIAL,
+    name: 'Phá Minh', // "Dawnbreaker" — the Staff at full power
+    damage: 120,
+    projectile: { color: '#ffd24a', size: 17, speed: 20, count: 4, special: true },
+    burst: { color: '#fff6d0', n: 56, power: 11 },
+    shake: 28,
+    effect: 'dawnbreaker', // sunrise flash + twin pillars + golden shockwaves
+    trail: { color: '#ffffff', fadeTo: '#ffb347', size: 15 },
+  },
 };
 
 // Word pools by difficulty tier. The game picks a word from the tier that
@@ -317,6 +381,64 @@ export const WORD_POOLS = {
     { vi: 'lửa thử vàng gian nan thử sức', telex: 'luwar thuwr vangf gian nan thuwr suwcs' },
     { vi: 'đường xa nhưng bước chân vững', telex: 'dduwowngf xa nhuwng buwowcs chaan vuwngx' },
   ],
+
+  // Tier 6: LONG sentences — chapter 2 (the Staff quest, stages 13-20).
+  //
+  // The step up from tier 5 is ENDURANCE plus one specific Telex skill: keeping
+  // a clean run across 7-10 syllables where the tone changes on almost every
+  // one. That is the thing that actually breaks kids — not any single hard
+  // syllable, but sustaining attention while the tone key changes each word.
+  //
+  // Deliberately loaded with the pairs children mix up most:
+  //   - hỏi (r) vs ngã (x) on adjacent syllables — the classic Vietnamese slip;
+  //   - ươ (uwow) chains, the longest shape sequence in Telex;
+  //   - đ (dd) next to d, so the doubling has to be deliberate;
+  //   - words where the tone lands on the SECOND vowel of a cluster (uyê, oai).
+  // Content matches the chapter: study, patience, thinking, libraries, light.
+  long_sentences: [
+    { vi: 'người chăm đọc sách thì hiểu biết nhiều', telex: 'nguwowif chawm ddocj sachs thif hieeur bieets nhieeuf' },
+    { vi: 'muốn giỏi thì phải luyện mỗi ngày', telex: 'muoons gioir thif phair luyeenj mooix ngayf' },
+    { vi: 'trí tuệ sáng hơn mọi ngọn đèn', telex: 'tris tueej sangs hown moij ngonj ddenf' },
+    { vi: 'bé kiên nhẫn thì việc gì cũng xong', telex: 'bes kieen nhaanx thif vieecj gif cungx xong' },
+    { vi: 'gió lạnh thổi qua đỉnh núi cao', telex: 'gios lanhj thooir qua ddinhr nuis cao' },
+    { vi: 'sương mù rồi cũng phải tan đi', telex: 'suwowng muf rooif cungx phair tan ddi' },
+    { vi: 'gương sáng soi rõ lòng người thật thà', telex: 'guwowng sangs soi rox longf nguwowif thaatj thaf' },
+    { vi: 'từng con chữ đều có sức mạnh riêng', telex: 'tuwngf con chuwx ddeeuf cos suwcs manhj rieeng' },
+    { vi: 'ngôi sao nhỏ vẫn soi sáng cả rừng', telex: 'ngooi sao nhor vaanx soi sangs car ruwngf' },
+    { vi: 'em bước lên từng bậc thang của tháp', telex: 'em buwowcs leen tuwngf baacj thang cuar thaps' },
+    { vi: 'lời hứa tốt thì phải luôn giữ lấy', telex: 'lowif huwas toots thif phair luoon giuwx laays' },
+    { vi: 'chữ viết đúng là chìa khóa mở cửa', telex: 'chuwx vieets ddungs laf chiaf khoas mowr cuwar' },
+    { vi: 'đường lên đỉnh trí tuệ tuy khó mà vui', telex: 'dduwowngf leen ddinhr tris tueej tuy khos maf vui' },
+    { vi: 'ai chịu học thì trời chẳng phụ lòng', telex: 'ai chiuj hocj thif trowif chawngr phuj longf' },
+    { vi: 'gõ chậm mà đúng hơn gõ nhanh mà sai', telex: 'gox chaamj maf ddungs hown gox nhanh maf sai' },
+    { vi: 'mười ngón tay cùng nhau tạo nên phép màu', telex: 'muwowif ngons tay cungf nhau taoj neen pheps mauf' },
+  ],
+
+  // Tier 7: WISDOM SAYINGS — chapter 3 (the final siege, stages 21-26).
+  //
+  // The hardest tier in the game, and the last thing a kid types before the
+  // credits. These are real Vietnamese proverbs and storybook lines (things a
+  // Vietnamese child hears from grandparents), so the reward for finishing the
+  // hardest typing in the game is a sentence actually worth having learned.
+  //
+  // What makes them the top tier: full length (8-12 syllables), every one of the
+  // five tones inside a single line, ươ/uyê/oai clusters, and đ repeatedly.
+  wisdom_sayings: [
+    { vi: 'có chí thì nên', telex: 'cos chis thif neen' },
+    { vi: 'thất bại là mẹ thành công', telex: 'thaats baij laf mej thanhf coong' },
+    { vi: 'đi một ngày đàng học một sàng khôn', telex: 'ddi mootj ngayf ddangf hocj mootj sangf khoon' },
+    { vi: 'uống nước nhớ nguồn', telex: 'uoongs nuwowcs nhows nguoonf' },
+    { vi: 'khó khăn nào rồi cũng sẽ qua', telex: 'khos khawn naof rooif cungx sex qua' },
+    { vi: 'ánh sáng luôn mạnh hơn bóng tối', telex: 'anhs sangs luoon manhj hown bongs toois' },
+    { vi: 'người dũng cảm không bao giờ bỏ cuộc', telex: 'nguwowif dungx camr khoong bao giowf bor cuoocj' },
+    { vi: 'lòng tốt là phép màu lớn nhất', telex: 'longf toots laf pheps mauf lowns nhaats' },
+    { vi: 'một cây làm chẳng nên non ba cây chụm lại nên hòn núi cao', telex: 'mootj caay lamf chawngr neen non ba caay chumj laij neen honf nuis cao' },
+    { vi: 'trẻ em hôm nay thế giới ngày mai', telex: 'trer em hoom nay thees giowis ngayf mai' },
+    { vi: 'em đã đi hết con đường dài nhất', telex: 'em ddax ddi heets con dduwowngf daif nhaats' },
+    { vi: 'thế giới này được cứu bởi lòng kiên nhẫn', telex: 'thees giowis nayf dduwowcj cuwus bowir longf kieen nhaanx' },
+    { vi: 'mỗi con chữ em gõ là một tia sáng', telex: 'mooix con chuwx em gox laf mootj tia sangs' },
+    { vi: 'bóng tối đã tan và bình yên trở lại', telex: 'bongs toois ddax tan vaf binhf yeen trowr laij' },
+  ],
 };
 
 // Pick a word from a pool by index (wraps).
@@ -335,7 +457,14 @@ export function pickWord(pool, index) {
 // walks DOWN from the requested skill to the strongest special the kid owns, and
 // falls back to 'slash' if they own none — so the fight still happens, just with
 // the basic attack. `unlocked` comes from hero.unlockedSkills (applyRewards).
-export const SPECIAL_ORDER = ['fireball', 'lightning', 'meteor'];
+export const SPECIAL_ORDER = [
+  // chapter 1
+  'fireball', 'lightning', 'meteor',
+  // chapter 2 — the Staff quest
+  'frostnova', 'windblade', 'holylight',
+  // chapter 3 — the endgame
+  'voidrend', 'dawnbreaker',
+];
 
 export function resolveSkill(wantedId, unlocked = ['slash']) {
   const wanted = SKILLS[wantedId] || SKILLS.slash;

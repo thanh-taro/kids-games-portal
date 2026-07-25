@@ -217,8 +217,202 @@ export class ParticleSystem {
       case 'meteor':
         this._meteor(x, y, W, H);
         break;
+      // ---- chapter 2 skills ----
+      case 'frostnova':
+        this._frostnova(x, y);
+        break;
+      case 'windblade':
+        this._windblade(x, y);
+        break;
+      case 'holylight':
+        this._holylight(x, y, W, H);
+        break;
+      // ---- chapter 3 skills ----
+      case 'voidrend':
+        this._voidrend(x, y, W, H);
+        break;
+      case 'dawnbreaker':
+        this._dawnbreaker(x, y, W, H);
+        break;
+      // ---- the multi-phase boss turning a corner ----
+      case 'phasechange':
+        this._phaseChange(x, y, W, H);
+        break;
       default:
         this.burst(x, y, '#e8c33a', 20, 5);
+    }
+  }
+
+  // Frost Nova: an expanding ring of cold with ice shards thrown out flat and
+  // hanging in the air (almost no gravity) — the opposite of the fire effects,
+  // whose embers rise and whose debris falls fast.
+  _frostnova(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#d8f0ff', radius: 130, life: 26 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#8fe3ff', radius: 96, life: 22 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 44, life: 14 }));
+    this.screenShake = Math.max(this.screenShake, 12);
+    // Shards drift outward and settle slowly — frost hangs, it doesn't fall.
+    for (let i = 0; i < 40; i++) {
+      const a = (Math.PI * 2 * i) / 40 + rand(i) * 0.2;
+      const spd = 4 + (i % 6);
+      const col = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#d8f0ff' : '#8fe3ff';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, col, 34 + (i % 16), {
+          gravity: 0.04,
+          drag: 0.95,
+          size: DOT * 2,
+          fadeTo: '#3fb8b0',
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Wind Blades: several crossing slash arcs at different angles plus a spiral of
+  // small motes. Reads as SPEED (many thin fast strokes) rather than as impact.
+  _windblade(x, y) {
+    for (let s = 0; s < 4; s++) {
+      this.visuals.push(
+        new Visual('slash', x, y, {
+          color: s % 2 ? '#ffffff' : '#bfe8ff',
+          radius: 54 + s * 12,
+          life: 14 + s * 2,
+          angle: -0.9 + s * 0.55, // crossing at different angles
+        })
+      );
+    }
+    this.visuals.push(new Visual('burst', x, y, { color: '#eaffff', radius: 34, life: 10 }));
+    this.screenShake = Math.max(this.screenShake, 10);
+    // A spiral: the launch angle advances with the index, so the motes leave in a
+    // curl rather than an even starburst.
+    for (let i = 0; i < 34; i++) {
+      const a = (i / 34) * Math.PI * 4;
+      const spd = 6 + (i % 7);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd * 0.6, i % 2 ? '#ffffff' : '#bfe8ff', 22 + (i % 10), {
+          gravity: -0.02, // wind lifts
+          drag: 0.94,
+          size: DOT * 1.5,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Holy Light: a pillar of light coming DOWN onto the target, a white flash, and
+  // gold motes rising back up. The rising motes are what separate it from the
+  // meteor's falling debris.
+  _holylight(x, y, W, H) {
+    this.visuals.push(new Visual('beam', x, y, { color: '#fff6d0', w: DOT * 18, life: 20 }));
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#fff8e0', w: W, h: H, life: 12 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffffff', radius: 120, life: 24 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffd24a', radius: 84, life: 20 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 52, life: 16 }));
+    this.screenShake = Math.max(this.screenShake, 16);
+    for (let i = 0; i < 44; i++) {
+      const a = -Math.PI / 2 + (rand(i) - 0.5) * 1.8;
+      const spd = 3 + (i % 6);
+      const col = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fff6d0' : '#ffd24a';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, col, 32 + (i % 14), {
+          gravity: -0.08, // motes ASCEND — this is holy light, not an explosion
+          drag: 0.97,
+          size: DOT * 2,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Void Rend: space tears open. Particles first rush INWARD (drawn as motes
+  // launched outward with a strong inward drag is not convincing, so they are
+  // spawned on a ring and given inward velocity), then a violent outward burst.
+  _voidrend(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#2a1040', w: W, h: H, life: 10 })); // darkens, not brightens
+    this.visuals.push(new Visual('beam', x, y, { color: '#c77dff', w: DOT * 10, life: 22 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#b06cf0', radius: 140, life: 28 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#4a1070', radius: 100, life: 22 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#e6b3ff', radius: 56, life: 15 }));
+    this.screenShake = Math.max(this.screenShake, 24);
+    // The implosion: motes spawned out on a ring, travelling IN toward the tear.
+    for (let i = 0; i < 30; i++) {
+      const a = (Math.PI * 2 * i) / 30;
+      const r = 90 + rand(i) * 40;
+      const spd = 5 + (i % 4);
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r, -Math.cos(a) * spd, -Math.sin(a) * spd, '#e6b3ff', 20 + (i % 8), {
+          drag: 0.99,
+          size: DOT * 1.5,
+          fadeTo: '#4a1070',
+        })
+      );
+    }
+    // Then the outward tear.
+    for (let i = 0; i < 40; i++) {
+      const a = (Math.PI * 2 * i) / 40;
+      const spd = 6 + (i % 9);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#b06cf0' : '#f0d6ff', 30 + (i % 14), {
+          gravity: 0.1,
+          drag: 0.95,
+          size: DOT * 2.5,
+          fadeTo: '#2a0a44',
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Dawnbreaker: the Staff at full power, and the biggest effect in the game —
+  // a sunrise. A warm full-screen flash, TWIN pillars, three gold shockwaves and
+  // a wide fountain of light. It is the last skill a kid earns, so it should feel
+  // like more than the meteor they got in chapter 1.
+  _dawnbreaker(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#fff2c0', w: W, h: H, life: 16 }));
+    this.visuals.push(new Visual('beam', x - 26, y, { color: '#ffffff', w: DOT * 12, life: 24 }));
+    this.visuals.push(new Visual('beam', x + 26, y, { color: '#ffd24a', w: DOT * 12, life: 24 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffffff', radius: 170, life: 30 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffd24a', radius: 130, life: 26 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffb347', radius: 92, life: 20 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 70, life: 18 }));
+    this.screenShake = Math.max(this.screenShake, 30);
+    for (let i = 0; i < 70; i++) {
+      const a = (Math.PI * 2 * i) / 70;
+      const spd = 6 + (i % 10);
+      const col = i % 4 === 0 ? '#ffffff' : i % 4 === 1 ? '#fff6d0' : i % 4 === 2 ? '#ffd24a' : '#ffb347';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd - 3, col, 36 + (i % 18), {
+          gravity: 0.18,
+          drag: 0.96,
+          size: DOT * 2.5,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // A boss phase falling. NOT a death (the monster is still standing), so it is
+  // deliberately different from `death`: a dark implosion followed by a rising
+  // column of energy, reading as "he is changing", not "he is gone".
+  _phaseChange(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#3a1050', w: W, h: H, life: 14 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#e0503a', radius: 150, life: 30 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#b06cf0', radius: 110, life: 24 }));
+    this.visuals.push(new Visual('beam', x, y, { color: '#ff7a2f', w: DOT * 16, life: 26 }));
+    this.screenShake = Math.max(this.screenShake, 30);
+    // A column of energy erupting upward out of him.
+    for (let i = 0; i < 50; i++) {
+      const a = -Math.PI / 2 + (rand(i) - 0.5) * 0.9;
+      const spd = 7 + (i % 9);
+      const col = i % 3 === 0 ? '#ff7a2f' : i % 3 === 1 ? '#b06cf0' : '#ffd24a';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, col, 34 + (i % 16), {
+          gravity: 0.1,
+          drag: 0.97,
+          size: DOT * 2.5,
+          shrink: true,
+        })
+      );
     }
   }
 

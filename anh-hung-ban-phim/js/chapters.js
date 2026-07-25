@@ -5,30 +5,44 @@
 // stage/reward/progress machinery — which works off one 0-based stage index —
 // stays untouched. Chapters are a presentation grouping on top of that.
 //
-// Adding a future chapter later:
-//   1. Append its stages to STAGES[] in stages.js.
-//   2. Flip its `comingSoon` off and set stageStart (= previous chapter's
-//      stageStart + stageCount) and stageCount here.
-// Nothing else needs to change.
-
-import { STAGES } from './stages.js';
+// The three chapters follow the prologue: the King's request (rescue the ten
+// princesses), the quest for the Staff of Wisdom (courage alone is not enough),
+// and the final confrontation with the World Devourer.
+//
+// The ranges must TILE STAGES exactly — no gap, no overlap, ending exactly at
+// STAGES.length. `chapterForStage` falls back to the last chapter rather than
+// throwing, so a gap would show up only as a wrong on-screen label; `verify.js`
+// asserts the tiling instead. Counts are written out literally (not derived from
+// STAGES.length) so that adding a stage to the wrong chapter FAILS the check
+// instead of silently absorbing it.
+//
+// Each chapter's narration (opening pages, closing pages) lives in story.js,
+// keyed by the `id` here.
 
 export const CHAPTERS = [
   {
     id: 1,
-    name: 'Giải Cứu Những Nàng Công Chúa Bị Bắt Cóc', // "Rescue the Kidnapped Princesses"
-    subtitle: 'Câu chuyện đầu tiên của người anh hùng.', // "The hero's first tale."
-    stageStart: 0,      // 0-based index into STAGES[] of this chapter's first stage
-    stageCount: STAGES.length, // Chapter 1 currently holds every existing stage
+    name: 'Lời Thỉnh Cầu Của Đức Vua', // "The King's Request"
+    subtitle: 'Giải cứu mười nàng công chúa.', // "Rescue the ten princesses."
+    stageStart: 0,
+    stageCount: 12, // stages 1-12: two warm-ups + the ten princess rescues
     comingSoon: false,
   },
   {
     id: 2,
-    name: 'Chương Kế Tiếp',             // "The Next Chapter"
-    subtitle: 'Cuộc phiêu lưu mới đang chờ...', // "A new adventure awaits..."
-    stageStart: STAGES.length,
-    stageCount: 0,
-    comingSoon: true,
+    name: 'Trượng Của Trí Tuệ',        // "The Staff of Wisdom"
+    subtitle: 'Đi tìm cây trượng cổ xưa.', // "Seek the ancient staff."
+    stageStart: 12,
+    stageCount: 8, // stages 13-20: the trials, ending at the Staff's Guardian
+    comingSoon: false,
+  },
+  {
+    id: 3,
+    name: 'Trận Chiến Cuối Cùng',      // "The Final Confrontation"
+    subtitle: 'Đánh bại Kẻ Nuốt Thế Giới.', // "Defeat the World Devourer."
+    stageStart: 20,
+    stageCount: 6, // stages 21-26: the siege, ending with the Demon King
+    comingSoon: false,
   },
 ];
 
@@ -61,9 +75,22 @@ export function isChapterFinale(stageIndex) {
   return stageIndex === c.stageStart + c.stageCount - 1;
 }
 
+// Is this stage the FIRST of its chapter? (The chapter's opening story plays
+// before it.)
+export function isChapterStart(stageIndex) {
+  const c = chapterForStage(stageIndex);
+  return stageIndex === c.stageStart;
+}
+
 // The next chapter after the one containing stageIndex, or null if none.
 export function nextChapter(stageIndex) {
   const c = chapterForStage(stageIndex);
   const pos = CHAPTERS.indexOf(c);
   return pos >= 0 && pos + 1 < CHAPTERS.length ? CHAPTERS[pos + 1] : null;
+}
+
+// Is this the very last chapter with playable stages? (Its finale ends the game
+// and rolls the Final Ending rather than handing off to a next chapter.)
+export function isFinalChapter(chapter) {
+  return chapter === PLAYABLE_CHAPTERS[PLAYABLE_CHAPTERS.length - 1];
 }

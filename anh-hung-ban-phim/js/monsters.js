@@ -137,6 +137,143 @@ export const BIOME_MONSTERS = {
     stagebossName: 'CHÚA TỂ BÓNG TỐI', // "THE DARK LORD"
     deathColor: '#b06cf0',
   },
+
+  // ===== CHAPTER 2 — the quest for the Staff of Wisdom =====
+  // These are GUARDIANS of knowledge, not beasts: books, wind, mirrors, statues.
+  // The whole chapter fields a different KIND of enemy from chapter 1's animals
+  // and ogres, so a new chapter looks new the moment the first wave walks in.
+  library: {
+    creep: 'creep_book',
+    boss: 'boss_scribe',
+    stageboss: 'boss_guardian_statue',
+    creepName: 'Sách Bay',          // "Flying Book"
+    bossName: 'Thư Lại Mực',        // "Ink Scribe"
+    stagebossName: 'Thủ Thư Cổ',    // "Ancient Librarian"
+    deathColor: '#d9d9e0',
+  },
+  windpeak: {
+    creep: 'creep_gust',
+    boss: 'boss_windserpent',
+    stageboss: 'boss_windserpent',
+    creepName: 'Gió Xoáy',          // "Wind Sprite"
+    bossName: 'Xà Phong',           // "Wind Serpent"
+    stagebossName: 'Xà Phong Chúa', // "Great Wind Serpent"
+    deathColor: '#8fe3ff',
+  },
+  mistvale: {
+    creep: 'creep_gust',
+    boss: 'boss_formless',
+    stageboss: 'boss_formless',
+    creepName: 'Hơi Sương',         // "Mist Wisp"
+    bossName: 'Bóng Sương',         // "Mist Shadow"
+    stagebossName: 'Chúa Sương Mù', // "Lord of Fog"
+    deathColor: '#cfe8f5',
+  },
+  rune_temple: {
+    creep: 'creep_glyph',
+    boss: 'boss_guardian_statue',
+    stageboss: 'boss_guardian_statue',
+    creepName: 'Chữ Sống',          // "Living Glyph"
+    bossName: 'Tượng Thủ Đền',      // "Temple Statue"
+    stagebossName: 'Tượng Thủ Lớn', // "Great Temple Statue"
+    deathColor: '#4ad4d4',
+  },
+  mirrorlake: {
+    creep: 'creep_mirror',
+    boss: 'boss_formless',
+    stageboss: 'boss_guardian_statue',
+    creepName: 'Mảnh Gương',        // "Mirror Shard"
+    bossName: 'Bóng Trong Gương',   // "Shadow in the Mirror"
+    stagebossName: 'Chính Mình',    // "Yourself" — the trial of honesty
+    deathColor: '#b8d8f0',
+  },
+  starwood: {
+    creep: 'creep_book',
+    boss: 'boss_scribe',
+    stageboss: 'boss_windserpent',
+    creepName: 'Trang Sao',         // "Star Page"
+    bossName: 'Thư Lại Sao',        // "Star Scribe"
+    stagebossName: 'Xà Sao Đêm',    // "Night-Star Serpent"
+    deathColor: '#ffe08a',
+  },
+  wisdom_tower: {
+    creep: 'creep_glyph',
+    boss: 'boss_guardian_statue',
+    stageboss: 'boss_scribe',
+    creepName: 'Chữ Thức',          // "Waking Glyph"
+    bossName: 'Tượng Canh Tháp',    // "Tower Sentinel"
+    stagebossName: 'Đại Thư Lại',   // "Grand Scribe"
+    deathColor: '#4ad4d4',
+  },
+  wisdom_peak: {
+    creep: 'creep_mirror',
+    boss: 'boss_guardian_statue',
+    // The chapter's finale: the Guardian who HOLDS the Staff.
+    stageboss: 'stageboss_staffguardian',
+    creepName: 'Mảnh Sáng',         // "Shard of Light"
+    bossName: 'Tượng Thủ Cuối',     // "Last Statue"
+    stagebossName: 'THỦ VỆ TRƯỢNG', // "GUARDIAN OF THE STAFF"
+    deathColor: '#fff2b0',
+  },
+
+  // ===== CHAPTER 3 — the siege of the Demon King's fortress =====
+  // His ARMY: bone soldiers, gate wardens, jailers, generals, void horrors, and
+  // at the end the World Devourer himself.
+  bonebridge: {
+    creep: 'creep_bone',
+    boss: 'boss_general',
+    stageboss: 'boss_warden',
+    creepName: 'Xương Lính',        // "Bone Soldier"
+    bossName: 'Tướng Quỷ',          // "Demon General"
+    stagebossName: 'Quản Cổng Sắt', // "Iron Warden"
+    deathColor: '#e8e4dc',
+  },
+  demon_gate: {
+    creep: 'creep_gateeye',
+    boss: 'boss_warden',
+    stageboss: 'boss_warden',
+    creepName: 'Mắt Cổng',          // "Gate Eye"
+    bossName: 'Quản Cổng Sắt',      // "Iron Warden"
+    stagebossName: 'Quản Cổng Lớn', // "Great Warden"
+    deathColor: '#8f8aa8',
+  },
+  dungeon: {
+    creep: 'creep_key',
+    boss: 'boss_jailer',
+    stageboss: 'boss_jailer',
+    creepName: 'Chìa Khóa Sống',    // "Living Key"
+    bossName: 'Cai Ngục',           // "Jailer"
+    stagebossName: 'Chúa Ngục',     // "Warden of the Deep"
+    deathColor: '#ffd24a',
+  },
+  throne_hall: {
+    creep: 'creep_helmet',
+    boss: 'boss_general',
+    stageboss: 'boss_general',
+    creepName: 'Mũ Sống',           // "Haunted Helmet"
+    bossName: 'Tướng Quỷ',          // "Demon General"
+    stagebossName: 'Đại Tướng Quỷ', // "Grand Demon General"
+    deathColor: '#e0503a',
+  },
+  void: {
+    creep: 'creep_void',
+    boss: 'boss_formless',
+    stageboss: 'boss_formless',
+    creepName: 'Mảnh Hư Không',     // "Void Fragment"
+    bossName: 'Bóng Vô Hình',       // "Formless Shadow"
+    stagebossName: 'Hư Không Sống', // "The Living Void"
+    deathColor: '#b06cf0',
+  },
+  finalspire: {
+    creep: 'creep_void',
+    boss: 'boss_general',
+    // THE final fight of the whole game — the prologue's villain.
+    stageboss: 'stageboss_devourer',
+    creepName: 'Mảnh Hư Không',     // "Void Fragment"
+    bossName: 'Đại Tướng Quỷ',      // "Grand Demon General"
+    stagebossName: 'KẺ NUỐT THẾ GIỚI', // "THE WORLD DEVOURER"
+    deathColor: '#ff7a2f',
+  },
 };
 
 // Resolve a biome's roster, filling anything unset from DEFAULT_MONSTERS.

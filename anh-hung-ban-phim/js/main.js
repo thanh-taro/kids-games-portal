@@ -14,7 +14,11 @@ import { RankTracker } from './rank.js';
 import { SKILLS, SKILL_CLASS, pickWord, resolveSkill } from './skills.js';
 import { getStage, TOTAL_STAGES } from './stages.js';
 import { monstersForBiome, MONSTER_COLOR } from './monsters.js';
-import { chapterForStage, stageNumberInChapter } from './chapters.js';
+import {
+  chapterForStage, stageNumberInChapter, isChapterFinale, isChapterStart,
+  nextChapter, isFinalChapter,
+} from './chapters.js';
+import { openingFor, closingFor, openingTitle, closingTitle } from './story.js';
 import { rewardForStage, loadProgress, saveProgress, resetProgress, applyRewards, equippedLook } from './rewards.js';
 import { Combo } from './combo.js';
 import { Tutorial } from './tutorial.js';
@@ -54,13 +58,16 @@ window.addEventListener('resize', resize);
 
 const STATE = {
   TITLE: 'title',
+  STORY: 'story',              // paged narration (story.js); SPACE turns, ESC skips
   TUTORIAL: 'tutorial',
   STAGE_INTRO: 'stage_intro',
   PLAYING: 'playing',
   VICTORY: 'victory',
   REWARD: 'reward',
+  CHAPTER_END: 'chapter_end',  // a whole chapter cleared → celebrate, then story
   FAILURE: 'failure',
   GAME_COMPLETE: 'game_complete',
+  CREDITS: 'credits',          // the credits roll, after the Final Ending
 };
 
 // --- Persistent + session state ---
@@ -112,6 +119,95 @@ function finishTutorial() {
   } else {
     setState(STATE.TITLE);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Story flow
+// ---------------------------------------------------------------------------
+// The narration is a queue of pages plus an `after` action naming where to go
+// when the pages run out (or when the kid presses ESC to skip — skipping must
+// land in exactly the same place as reading, or ESC would strand them).
+//
+// `after` values:
+//   'tutorial'    → the Telex lessons, then the first stage (first play only)
+//   'stage'       → straight into the upcoming stage's intro
+//   'nextchapter' → a chapter just closed: open the NEXT chapter's story, then
+//                   its first stage (this is the chapter-to-chapter hand-off)
+//   'ending'      → the Final Ending (after the last chapter's closing pages)
+//   'title'       → back to the title (replaying the story from the menu)
+let story = { pages: [], page: 0, title: '', after: 'stage' };
+
+function startStory(pages, title, after) {
+  // Nothing to show (a chapter with no narration) → go straight on.
+  if (!pages || pages.length === 0) {
+    finishStory(after);
+    return;
+  }
+  story = { pages, page: 0, title, after };
+  setState(STATE.STORY);
+}
+
+// Where the story hands off. Called both when the pages run out and on ESC, so
+// skipping always lands exactly where reading would have.
+function finishStory(after) {
+  if (after === 'tutorial') {
+    // First-ever play: the King has given the mission, NOW teach the craft.
+    startTutorial(STATE.STAGE_INTRO);
+    return;
+  }
+  if (after === 'ending') {
+    setState(STATE.GAME_COMPLETE);
+    return;
+  }
+  if (after === 'title') {
+    setState(STATE.TITLE);
+    return;
+  }
+  if (after === 'nextchapter') {
+    // A chapter's closing pages just ended. grantReward() already advanced
+    // progress.stage into the next chapter's first stage, so beginJourney()
+    // picks up that chapter's OPENING story and then its first stage.
+    beginJourney();
+    return;
+  }
+  stageIndex = progress.stage;
+  setState(STATE.STAGE_INTRO);
+}
+
+// Has this chapter's opening story already been shown? Persisted, so a kid who
+// closes the tab mid-chapter isn't made to re-read the prologue.
+function storySeen(chapterId) {
+  return Array.isArray(progress.seenStory) && progress.seenStory.includes(chapterId);
+}
+
+function markStorySeen(chapterId) {
+  if (!Array.isArray(progress.seenStory)) progress.seenStory = [];
+  if (!progress.seenStory.includes(chapterId)) {
+    progress.seenStory.push(chapterId);
+    saveProgress(progress);
+  }
+}
+
+// Begin play at `progress.stage`: if that stage opens a chapter whose story the
+// kid hasn't seen, narrate it first. Otherwise go straight to the stage intro
+// (or the tutorial, on a first-ever play).
+function beginJourney() {
+  stageIndex = progress.stage;
+  const chapter = chapterForStage(stageIndex);
+  const needsTutorial = !progress.seenTutorial;
+
+  if (isChapterStart(stageIndex) && !storySeen(chapter.id)) {
+    markStorySeen(chapter.id);
+    // On a first-ever play the tutorial comes AFTER the prologue: the King
+    // gives the mission, then the hero learns to write.
+    startStory(openingFor(chapter.id), openingTitle(chapter.id), needsTutorial ? 'tutorial' : 'stage');
+    return;
+  }
+  if (needsTutorial) {
+    startTutorial(STATE.STAGE_INTRO);
+    return;
+  }
+  setState(STATE.STAGE_INTRO);
 }
 
 function setState(next) {
@@ -205,6 +301,9 @@ function spawnNextWave() {
       standGap: 360,
       attackEvery: 480,
       attackDamage: 15,
+      // A wave may declare `phases` (stage 26's World Devourer) — the fight then
+      // runs as several shorter bars instead of one long one. See Monster.phases.
+      phases: wave.phases,
     });
     monster.skill = skill;
     monster.displayName = roster.stagebossName;
@@ -273,6 +372,22 @@ tracker.onComplete = (clean = true) => {
     Audio.comboBreak();
   }
 
+  // The Staff of Wisdom: a CLEANLY typed word adds a charge; once full, THIS
+  // strike is the empowered one and the charge is spent on it. Accuracy is what
+  // charges it (not speed), so the artifact rewards exactly the skill the game
+  // is teaching. `empowered` rides on the projectile so the hit that lands
+  // knows it was the charged one.
+  let empowered = false;
+  if (hero.hasStaff) {
+    if (hero.staffReady) {
+      hero.spendStaff();
+      empowered = true;
+      Audio.staffStrike();
+    } else if (clean && hero.chargeStaff()) {
+      Audio.staffCharged(); // just filled — tell the kid it's ready
+    }
+  }
+
   const startX = hero.x + hero.sprite.w * DOT * hero.scale;
   const startY = hero.y + (hero.sprite.h * DOT * hero.scale) / 2;
   const targetX = monster.x + monster.width / 2;
@@ -281,19 +396,25 @@ tracker.onComplete = (clean = true) => {
   const color = hero.weaponColor && skill.cls === SKILL_CLASS.SIMPLE ? hero.weaponColor : pj.color;
   const speed = pj.speed + (hero.projectileSpeedBonus || 0);
   tracker.clear();
+  // An empowered strike is visibly bigger and gold-white — it should read as
+  // "that was different" without needing to be explained.
+  const sizeMul = empowered ? 1.6 : 1;
   for (let i = 0; i < pj.count; i++) {
     const offset = (i - (pj.count - 1) / 2) * 10;
     const proj = new Projectile(startX, startY + offset, targetX, {
       speed,
-      color,
-      size: pj.size,
+      color: empowered ? '#fff6d0' : color,
+      size: pj.size * sizeMul,
       special: pj.special,
     });
     proj.isLeadHit = i === 0;
-    proj.trailCfg = skill.trail || { color, size: pj.size * 0.8 };
+    proj.empowered = empowered;
+    proj.trailCfg = empowered
+      ? { color: '#ffffff', fadeTo: '#ffd24a', size: pj.size * 1.2 }
+      : skill.trail || { color, size: pj.size * 0.8 };
     projectiles.push(proj);
   }
-  if (skill.shake) shakeTimer = skill.shake;
+  if (skill.shake) shakeTimer = empowered ? skill.shake + 10 : skill.shake;
 };
 
 function onProjectileHit(p) {
@@ -314,11 +435,40 @@ function onProjectileHit(p) {
   if (particles.screenShake > shakeTimer) shakeTimer = particles.screenShake;
   monster.reactToHit(); // white flash + knockback
   Audio.hit();
+
+  // A SHIELDED phase (the World Devourer's first form) takes no damage from an
+  // ordinary strike — only the charged Staff pierces it. The hit still lands
+  // visibly and audibly, and the HUD explains why nothing happened (see
+  // drawBossBar), so it reads as "I need the charged hit" rather than "it's
+  // broken". This is the mechanical payoff of the whole chapter-2 quest.
+  if (monster.isShielded && !p.empowered) {
+    Audio.shieldBlock();
+    particles.burst(cx, cy, '#b06cf0', 18, 5);
+    assignBossWord(); // give them the next word to build charge with
+    return;
+  }
+
   // Combo multiplier lets a clean hit chew through extra hit-points, so bosses
   // fall faster the cleaner you type. Always at least 1. (The combo was already
-  // grown at word-completion time in onComplete.)
-  const hitPower = Math.max(1, Math.round(juice));
-  for (let h = 0; h < hitPower && !monster.isDefeated; h++) monster.registerHit();
+  // grown at word-completion time in onComplete.) An empowered Staff strike hits
+  // for a lot more — a charged blow should visibly gut a health bar.
+  let hitPower = Math.max(1, Math.round(juice));
+  if (p.empowered) hitPower += 3;
+  let phaseChanged = false;
+  for (let h = 0; h < hitPower && !monster.isDefeated; h++) {
+    if (monster.registerHit() === 'phase') {
+      phaseChanged = true;
+      break; // a phase change ends this strike — the next bar starts fresh
+    }
+  }
+  if (phaseChanged) {
+    // A turning point in the fight: big flourish, hard shake, new word.
+    particles.play('phasechange', cx, cy, W, H);
+    shakeTimer = Math.max(shakeTimer, 30);
+    Audio.phaseChange();
+    assignBossWord();
+    return;
+  }
   if (!monster.isDefeated) {
     assignBossWord(); // boss survives → next word
   } else {
@@ -429,6 +579,29 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  // The story scene: SPACE turns the page, ESC skips the rest of the narration.
+  // Handled BEFORE the tutorial branch and before the generic SPACE handling so
+  // paging can't be mistaken for a menu confirm.
+  if (state === STATE.STORY) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      Audio.confirm();
+      finishStory(story.after);
+      return;
+    }
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (story.page + 1 < story.pages.length) {
+        story.page++;
+        Audio.storyPage(); // soft page-turn, not a menu confirm
+      } else {
+        Audio.confirm();
+        finishStory(story.after);
+      }
+    }
+    return;
+  }
+
   // Tutorial owns the keyboard while active: EVERY printable key is a typing
   // character for the practice lessons, plus space/backspace, and ESC to skip.
   if (state === STATE.TUTORIAL) {
@@ -451,10 +624,18 @@ window.addEventListener('keydown', (e) => {
     startTutorial(STATE.TITLE);
     return;
   }
+  // S on the title replays the CURRENT chapter's story, for a kid who skipped it
+  // (or just wants the tale again). Returns to the title, not into a stage.
+  if ((e.key === 's' || e.key === 'S') && state === STATE.TITLE) {
+    const chapter = chapterForStage(progress.stage);
+    Audio.confirm();
+    startStory(openingFor(chapter.id), openingTitle(chapter.id), 'title');
+    return;
+  }
   if (e.key === 'r' || e.key === 'R') {
     if (state === STATE.TITLE) {
       resetProgress();
-      progress = { stage: 0, rewards: [], seenTutorial: false, rankStats: {} };
+      progress = { stage: 0, rewards: [], seenTutorial: false, seenStory: [], rankStats: {} };
       stageIndex = 0;
       rank.reset(); // R on the title is a full wipe → also clear the lifetime rank
       Audio.confirm();
@@ -468,13 +649,9 @@ window.addEventListener('keydown', (e) => {
   Audio.confirm();
 
   if (state === STATE.TITLE) {
-    // First-ever start: teach Telex before the first stage.
-    if (!progress.seenTutorial) {
-      startTutorial(STATE.STAGE_INTRO);
-      return;
-    }
-    stageIndex = progress.stage;
-    setState(STATE.STAGE_INTRO);
+    // Story first (the King's request), then the tutorial, then the stage —
+    // beginJourney() decides which of those the kid actually needs.
+    beginJourney();
   } else if (state === STATE.STAGE_INTRO) {
     startStage();
   } else if (state === STATE.VICTORY) {
@@ -482,19 +659,36 @@ window.addEventListener('keydown', (e) => {
     Audio.reward();
     setState(STATE.REWARD);
   } else if (state === STATE.REWARD) {
-    if (stageIndex + 1 >= TOTAL_STAGES) {
+    // Clearing a chapter's LAST stage ends the chapter: celebrate the chapter,
+    // then play its closing narration. Otherwise just walk on to the next stage.
+    if (isChapterFinale(stageIndex)) {
+      setState(STATE.CHAPTER_END);
+    } else if (stageIndex + 1 >= TOTAL_STAGES) {
+      // Belt-and-braces: should be unreachable (the last stage is always a
+      // chapter finale), but never leave the kid stuck on the reward screen.
       setState(STATE.GAME_COMPLETE);
     } else {
       stageIndex += 1;
       setState(STATE.STAGE_INTRO);
     }
+  } else if (state === STATE.CHAPTER_END) {
+    // The chapter's closing pages. After the FINAL chapter they lead into the
+    // Final Ending; after any other chapter they lead into the next chapter's
+    // opening story (queued by beginJourney once progress has advanced).
+    const chapter = chapterForStage(stageIndex);
+    const last = isFinalChapter(chapter);
+    startStory(closingFor(chapter.id), closingTitle(chapter.id), last ? 'ending' : 'nextchapter');
   } else if (state === STATE.FAILURE) {
     startStage(); // retry same stage
   } else if (state === STATE.GAME_COMPLETE) {
+    // The curtain call leads into the credits roll.
+    setState(STATE.CREDITS);
+  } else if (state === STATE.CREDITS) {
     // Reset stage/reward progress for a replay, but KEEP the lifetime rank —
     // finishing the game is an achievement, not a reason to lose your Mythic
     // badge. Kids who finished already know how to play, so skip the tutorial.
-    progress = { stage: 0, rewards: [], seenTutorial: true, rankStats: rank.serialize() };
+    // The story is marked unseen again so a replay gets the full tale.
+    progress = { stage: 0, rewards: [], seenTutorial: true, seenStory: [], rankStats: rank.serialize() };
     stageIndex = 0;
     saveProgress(progress);
     setState(STATE.TITLE);
@@ -505,11 +699,84 @@ window.addEventListener('keydown', (e) => {
 attachKeyboard(tracker);
 
 // ---------------------------------------------------------------------------
+// Debug hook (development only)
+// ---------------------------------------------------------------------------
+// With 26 stages across 3 chapters, reaching a late scene by playing is not a
+// practical way to check it renders — the chapter-2/3 boundaries are ~500 typed
+// words in. This exposes just enough to jump the state machine when the page is
+// served from localhost, so scenes can be verified without a save-file edit and
+// a 20-minute play. It is inert on any real deployment (GitHub Pages), and it
+// only ever WRITES state — nothing in the game reads from it.
+if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+  window.__debug = {
+    // Jump to a stage (0-based) and enter it directly.
+    goStage(i) {
+      stageIndex = Math.max(0, Math.min(i, TOTAL_STAGES - 1));
+      progress.stage = stageIndex;
+      startStage();
+    },
+    // Force a scene without playing to it.
+    setState(name) {
+      const target = STATE[name] || name;
+      if (target === STATE.REWARD) pendingReward = rewardForStage(stageIndex);
+      setState(target);
+    },
+    // Set up the exact post-victory state at a chapter finale: `stageIndex` is
+    // the stage just CLEARED while progress.stage has already advanced to the
+    // next chapter's first stage (what grantReward() does). This is the state the
+    // CHAPTER_END → closing-story → next-chapter-opening hand-off runs from.
+    atChapterFinale(clearedStageIndex) {
+      stageIndex = clearedStageIndex;
+      progress.stage = Math.min(clearedStageIndex + 1, TOTAL_STAGES - 1);
+      progress.seenStory = [chapterForStage(clearedStageIndex).id];
+      saveProgress(progress);
+      setState(STATE.CHAPTER_END);
+    },
+    // Play a chapter's opening / closing narration on demand.
+    story(chapterId, which = 'opening') {
+      if (which === 'closing') startStory(closingFor(chapterId), closingTitle(chapterId), 'title');
+      else startStory(openingFor(chapterId), openingTitle(chapterId), 'title');
+    },
+    // Skip to the final wave of the current stage (for boss/phase testing).
+    lastWave() {
+      const stage = currentStage();
+      waveCursor = stage.waves.length - 1;
+      monster = null;
+      spawnNextWave();
+    },
+    // Fill the Staff so a charged strike can be tested immediately.
+    chargeStaff() {
+      if (hero) {
+        hero.hasStaff = true;
+        hero.staffCharge = hero.staffChargeFull;
+      }
+    },
+    // Read out what's on screen right now.
+    info() {
+      return {
+        state,
+        stageIndex,
+        stage: currentStage().name,
+        chapter: chapterForStage(stageIndex).id,
+        wave: `${waveCursor}/${currentStage().waves.length}`,
+        monster: monster && {
+          name: monster.barName,
+          hits: `${monster.hitsLeft}/${monster.maxHits}`,
+          phase: monster.phases ? `${monster.phaseIndex + 1}/${monster.phases.length}` : null,
+          shielded: monster.isShielded,
+          word: monster.word && monster.word.vi,
+        },
+        staff: hero && hero.hasStaff ? `${hero.staffCharge}/${hero.staffChargeFull}` : null,
+      };
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Render helpers (gameplay HUD + entities)
 // ---------------------------------------------------------------------------
 function drawTargetWord() {
   if (!monster || monster.dying || !monster.word) return;
-  const cx = Math.min(Math.max(monster.x + monster.width / 2, 110), W - 110);
   const topY = monster.y - 58;
   const word = monster.word;
   const matched = tracker.matchedLen();
@@ -519,6 +786,22 @@ function drawTargetWord() {
   const size = 26;
   ctx.font = `${size}px "PixelFont", monospace`;
   const textW = ctx.measureText(word.vi).width;
+  // Where the word plate sits. Normally it floats above the monster, but the late
+  // pools are whole proverbs ("đi một ngày đàng học một sàng khôn") and bosses
+  // hold their ground far to the RIGHT, so a plate anchored to the monster ran
+  // clean off the screen edge — and an unreadable target word makes the game
+  // unplayable, not merely ugly.
+  //
+  // So: a plate that is a large fraction of the screen width is CENTRED instead
+  // of tracking the monster. The word is what the kid is reading, and dead centre
+  // is both always on screen and the easiest place to read a long line from.
+  // The +32 is the plate's own 14px overhang past the text plus a real screen
+  // margin — clamping to exactly the plate half-width left it flush against the
+  // canvas edge, which reads as "cut off" even when it technically fits.
+  const halfPlate = textW / 2 + 32;
+  const cx = halfPlate * 2 > W * 0.55
+    ? W / 2
+    : Math.min(Math.max(monster.x + monster.width / 2, halfPlate), W - halfPlate);
   const bg = isSpecial ? '#3a1a1a' : '#2b2b2b';
   drawRect(ctx, cx - textW / 2 - 14, topY - 10, textW + 28, size + 20, bg);
   if (isSpecial) drawRect(ctx, cx - textW / 2 - 14, topY - 10, textW + 28, 3, '#c0392b');
@@ -577,22 +860,107 @@ function drawTargetWord() {
 
 function drawBossBar() {
   if (!monster || monster.kind === MONSTER_KIND.CREEP) return;
-  const cx = Math.min(Math.max(monster.x + monster.width / 2, 130), W - 130);
   const barW = 200;
   const barH = 12;
+
+  // A phased boss shows its PHASE name (see Monster.barName), so the kid watches
+  // the fight escalate: "Shadow Shield" → "Fury" → "Desperation".
+  const name = monster.barName;
+  ctx.font = '19px "PixelFont", monospace';
+  const nameW = ctx.measureText(name).width;
+  // Clamp to whichever is wider — the name plate or the bar (plus the hit-count
+  // text that hangs off its right end). The final boss's phase names are long
+  // ("KẺ NUỐT THẾ GIỚI — Khiên Bóng Tối") and ran off the right edge under the
+  // old fixed 130px margin.
+  const half = Math.max(nameW / 2 + 10, barW / 2 + 50);
+  const cx = Math.min(Math.max(monster.x + monster.width / 2, half), W - half);
   const barX = cx - barW / 2;
   const barY = Math.max(monster.y - 118, 118); // never ride up into the cloud strip
 
   // Dark plate behind the name for legibility on the sky.
-  ctx.font = '19px "PixelFont", monospace';
-  const nameW = ctx.measureText(monster.displayName).width;
   drawRect(ctx, cx - nameW / 2 - 8, barY - 30, nameW + 16, 25, '#1a1423');
-  drawText(ctx, monster.displayName, cx, barY - 26, 19, '#fff4d6', 'center');
+  drawText(ctx, name, cx, barY - 26, 19, '#fff4d6', 'center');
   drawRect(ctx, barX - 3, barY - 3, barW + 6, barH + 6, '#1a1423');
   const frac = monster.hitsLeft / monster.maxHits;
   drawRect(ctx, barX, barY, barW, barH, '#5a5a5a');
-  drawRect(ctx, barX, barY, barW * frac, barH, '#e0503a');
+  // A shielded phase's bar is purple, not red — it looks like something you
+  // cannot hurt yet, which is exactly what it is.
+  drawRect(ctx, barX, barY, barW * frac, barH, monster.isShielded ? '#b06cf0' : '#e0503a');
   drawText(ctx, `${monster.hitsLeft}/${monster.maxHits}`, barX + barW + 8, barY - 2, 15, '#fff4d6', 'left');
+
+  // Phase pips, so a kid can see how many forms are left rather than being
+  // surprised when the bar refills.
+  if (monster.phases) {
+    const n = monster.phases.length;
+    const pipW = 12;
+    const gap = 5;
+    const totalW = n * pipW + (n - 1) * gap;
+    const px = cx - totalW / 2;
+    const py = barY + barH + 6;
+    drawRect(ctx, px - 3, py - 3, totalW + 6, pipW + 6, '#1a1423');
+    for (let i = 0; i < n; i++) {
+      // Past phases are spent (dark), the current one pulses, future ones wait.
+      const done = i < monster.phaseIndex;
+      const cur = i === monster.phaseIndex;
+      const col = done ? '#3a3350' : cur ? (tick % 40 < 20 ? '#ffd24a' : '#e0503a') : '#7a7290';
+      drawRect(ctx, px + i * (pipW + gap), py, pipW, pipW, col);
+    }
+  }
+
+}
+
+// The shield hint: when an ordinary hit cannot get through, SAY so, and say what
+// to do about it — without this a kid just sees their attacks doing nothing and
+// concludes the game is broken.
+//
+// Drawn on its OWN fixed row just above the bottom typing hint, not anchored to
+// the boss: it is a long sentence, the boss stands far right, and the target-word
+// plate already occupies the space under the health bar. A fixed row can collide
+// with nothing.
+function drawShieldHint() {
+  if (!monster || !monster.isShielded || monster.dying) return;
+  const hint = hero.staffReady
+    ? '⚡ Trượng đã sẵn sàng — gõ xong từ này để phá khiên!' // "Staff ready — finish this word to break the shield!"
+    : '🛡 Khiên bóng tối! Gõ SẠCH để nạp Trượng rồi phá khiên!'; // "Dark shield! Type CLEANLY to charge the Staff, then break it!"
+  const hy = H - 62;
+  ctx.font = '16px "PixelFont", monospace';
+  const hw = ctx.measureText(hint).width;
+  drawRect(ctx, W / 2 - hw / 2 - 10, hy - 4, hw + 20, 26, '#3a1a4a');
+  drawText(ctx, hint, W / 2, hy, 16, hero.staffReady ? '#ffe27a' : '#e0b3ff', 'center');
+}
+
+// The Staff of Wisdom's charge meter (only once the artifact is earned): five
+// pips that fill with each CLEANLY typed word, then a "ready" flare. Placed under
+// the combo meter on the left, where the kid is already watching their streak.
+//
+// Accuracy is what fills it — a fumbled word adds nothing — so the meter is a
+// standing, visible reward for the exact skill the game teaches.
+function drawStaffMeter() {
+  if (!hero || !hero.hasStaff) return;
+  const x = 26;
+  // Sits below the combo meter block; the combo readout only appears from 2x, so
+  // this keeps a fixed slot rather than jumping as the combo comes and goes.
+  const y = 150;
+  const full = hero.staffChargeFull;
+  const ready = hero.staffReady;
+
+  const label = ready ? '⚡ TRƯỢNG SẴN SÀNG!' : 'TRƯỢNG TRÍ TUỆ';
+  ctx.font = '15px "PixelFont", monospace';
+  const lw = ctx.measureText(label).width;
+  const pipW = 16;
+  const gap = 4;
+  const pipsW = full * pipW + (full - 1) * gap;
+  const boxW = Math.max(lw, pipsW) + 16;
+  drawRect(ctx, x - 8, y - 4, boxW, 46, '#1a1423');
+  // The label pulses gold when charged, so "ready" is visible peripherally.
+  const labelCol = ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : '#cfc8dd';
+  drawText(ctx, label, x, y, 15, labelCol, 'left');
+
+  for (let i = 0; i < full; i++) {
+    const on = i < hero.staffCharge;
+    const col = ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : on ? '#8ff0ff' : '#3a3350';
+    drawRect(ctx, x + i * (pipW + gap), y + 22, pipW, 12, col);
+  }
 }
 
 function drawHUD() {
@@ -847,8 +1215,10 @@ function renderPlaying() {
 
   drawBossBar();
   drawTargetWord();
+  drawShieldHint();
   drawHUD();
   drawComboMeter();
+  drawStaffMeter();
   drawRankHUD();
   // Bottom hints on dark plates: biome grounds range from dark volcanic rock to
   // near-white snow, so light text alone would vanish on the bright ones.
@@ -880,6 +1250,16 @@ function loop() {
       }, getStage(progress.stage).biome);
       break;
     }
+    case STATE.STORY:
+      Scenes.drawStory(
+        ctx, W, H, tick,
+        story.title,
+        story.pages[story.page],
+        story.page,
+        story.pages.length,
+        getStage(Math.min(progress.stage, TOTAL_STAGES - 1)).biome,
+      );
+      break;
     case STATE.TUTORIAL:
       tutorial.update();
       tutorial.draw(ctx, W, H);
@@ -900,11 +1280,23 @@ function loop() {
     case STATE.REWARD:
       Scenes.drawReward(ctx, W, H, tick, pendingReward, currentStage().biome);
       break;
+    case STATE.CHAPTER_END:
+      Scenes.drawChapterEnd(
+        ctx, W, H, tick,
+        chapterForStage(stageIndex), stageIndex,
+        currentStage().biome, heroWeaponColor(),
+      );
+      break;
     case STATE.FAILURE:
       Scenes.drawFailure(ctx, W, H, tick, currentStage(), heroWeaponColor());
       break;
     case STATE.GAME_COMPLETE:
       Scenes.drawGameComplete(ctx, W, H, tick, stageIndex, currentStage().biome, heroWeaponColor());
+      break;
+    case STATE.CREDITS:
+      // `stateTick` (reset by setState) drives the scroll, so the roll always
+      // starts from the bottom edge rather than mid-scroll.
+      Scenes.drawCredits(ctx, W, H, tick, stateTick, currentStage().biome);
       break;
   }
 

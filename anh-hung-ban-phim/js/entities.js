@@ -12,13 +12,18 @@ export const MONSTER_KIND = {
   STAGEBOSS: 'stageboss',
 };
 
+// Cleanly typed words needed to fill the Staff of Wisdom's charge meter. Five is
+// tuned so a kid meets a charged strike a few times per stage — often enough to
+// feel like theirs, rare enough to stay a moment.
+export const STAFF_CHARGE_FULL = 5;
+
 export class Hero {
   constructor(x, groundY) {
     this.x = x;
     this.groundY = groundY;
     this.scale = 1.4; // wider landscape world, nudged up a touch for presence
-    this.maxHp = 250;
-    this.hp = 250;
+    this.maxHp = 1000;
+    this.hp = 1000;
     this.frame = 0;
     this.animTimer = 0;
     // Derived from equipped weapon (Milestone 4+); defaults for now.
@@ -26,6 +31,42 @@ export class Hero {
     this.attackAnim = 0; // counts down while showing an attack lunge
     this.attackMax = 14; // total frames of the lunge
     this.hurtRecoil = 0; // >0 while recoiling backward from taking a hit
+
+    // --- The Staff of Wisdom (chapter 2's artifact reward) -----------------
+    // Set by rewards.applyRewards. `staffCharge` counts CLEANLY typed words
+    // toward STAFF_CHARGE_FULL; at full, the next completed word fires an
+    // empowered hit (bigger effect, extra damage, and the only thing that
+    // pierces the World Devourer's shielded phase).
+    //
+    // Charging on CLEAN words specifically is the point: the artifact rewards
+    // typing accurately, not fast. A kid who backspaces their way through a word
+    // gets no charge from it.
+    this.hasStaff = false;
+    this.staffCharge = 0;
+  }
+
+  // Words of clean typing needed to fill the Staff.
+  get staffChargeFull() {
+    return STAFF_CHARGE_FULL;
+  }
+
+  get staffReady() {
+    return this.hasStaff && this.staffCharge >= STAFF_CHARGE_FULL;
+  }
+
+  // A cleanly typed word charges the Staff. Returns true on the frame it becomes
+  // full (so the caller can play the "charged!" cue exactly once).
+  chargeStaff() {
+    if (!this.hasStaff || this.staffCharge >= STAFF_CHARGE_FULL) return false;
+    this.staffCharge++;
+    return this.staffCharge >= STAFF_CHARGE_FULL;
+  }
+
+  // Spend a full charge on an empowered strike.
+  spendStaff() {
+    if (!this.staffReady) return false;
+    this.staffCharge = 0;
+    return true;
   }
 
   // Smooth 0..1 lunge amount (peaks early, eases back) for the attack animation.
@@ -103,6 +144,73 @@ export class Monster {
     // Hit reaction: brief white flash + knockback shove when struck.
     this.hitFlash = 0;     // frames of white-flash remaining
     this.knockback = 0;    // horizontal px offset pushed back (decays to 0)
+
+    // --- Multi-phase bosses (the World Devourer, stage 26) ------------------
+    // `opts.phases` is a list of { name, hits, shielded?, attackEvery?,
+    // attackDamage? }. Instead of one long health bar, the fight becomes several
+    // shorter ones: exhausting a phase's hits does NOT kill the monster, it
+    // advances to the next phase (a flourish + a fresh bar + harder attacks).
+    // The final phase's last hit kills it.
+    //
+    // `shielded` marks a phase that ORDINARY hits cannot damage — only an
+    // empowered (charged-Staff) hit gets through. main.js checks
+    // `isShielded` before applying damage and shows the kid a hint.
+    this.phases = Array.isArray(opts.phases) && opts.phases.length ? opts.phases : null;
+    this.phaseIndex = 0;
+    this.phaseFlash = 0;   // frames of phase-transition flourish remaining
+    if (this.phases) {
+      const p = this.phases[0];
+      this.maxHits = p.hits || this.maxHits;
+      this.hitsLeft = this.maxHits;
+      if (p.attackEvery) {
+        this.attackEvery = p.attackEvery;
+        this.attackTimer = p.attackEvery;
+      }
+      if (p.attackDamage) this.attackDamage = p.attackDamage;
+    }
+  }
+
+  // The current phase object, or null for an ordinary single-phase monster.
+  get phase() {
+    return this.phases ? this.phases[this.phaseIndex] : null;
+  }
+
+  // Is this monster currently immune to ordinary hits? (Only a charged-Staff hit
+  // pierces a shielded phase — see onProjectileHit in main.js.)
+  get isShielded() {
+    const p = this.phase;
+    return !!(p && p.shielded);
+  }
+
+  // Is there another phase after the current one?
+  get hasNextPhase() {
+    return !!(this.phases && this.phaseIndex + 1 < this.phases.length);
+  }
+
+  // Advance to the next phase: refill the bar, take on that phase's attack
+  // cadence, and start the transition flourish. Returns the new phase.
+  advancePhase() {
+    this.phaseIndex++;
+    const p = this.phases[this.phaseIndex];
+    this.maxHits = p.hits || this.maxHits;
+    this.hitsLeft = this.maxHits;
+    if (p.attackEvery) {
+      this.attackEvery = p.attackEvery;
+      this.attackTimer = p.attackEvery;
+    }
+    if (p.attackDamage) this.attackDamage = p.attackDamage;
+    this.phaseFlash = 40;
+    // A phase change shoves him back hard — it should FEEL like a turning point.
+    this.knockback = 22;
+    this.hitFlash = 10;
+    return p;
+  }
+
+  // The name to show on the health bar: a phase's own name when it has one, so
+  // the kid sees the fight escalate ("Shadow Shield" → "Fury" → "Desperation").
+  get barName() {
+    const p = this.phase;
+    return (p && p.name) || this.displayName;
   }
 
   // Called when a projectile lands (whether or not it defeats the monster).
@@ -130,6 +238,7 @@ export class Monster {
 
     // Decay hit-reaction state each frame.
     if (this.hitFlash > 0) this.hitFlash--;
+    if (this.phaseFlash > 0) this.phaseFlash--;
     if (this.knockback > 0.3) this.knockback *= 0.7;
     else this.knockback = 0;
 
@@ -168,17 +277,30 @@ export class Monster {
   }
 
   // Killed by the player's typing (counts toward score).
+  //
+  // For a multi-phase boss, running the bar to zero does not kill it while
+  // another phase remains — it advances instead. Returns 'phase' when that
+  // happened, 'dead' when the monster actually died, or '' otherwise, so main.js
+  // can play the right flourish.
   registerHit() {
     this.hitsLeft = Math.max(0, this.hitsLeft - 1);
-    if (this.hitsLeft === 0) {
-      this.dying = true;
-      this.deathTimer = 0;
-      this.killedByPlayer = true;
+    if (this.hitsLeft > 0) return '';
+    if (this.hasNextPhase) {
+      this.advancePhase();
+      return 'phase';
     }
+    this.dying = true;
+    this.deathTimer = 0;
+    this.killedByPlayer = true;
+    return 'dead';
   }
 
+  // "Out of hit points AND out of phases" — i.e. actually finished. A phased boss
+  // whose current bar is empty but has another phase left is NOT defeated, and
+  // this is what stops main.js's damage loop from over-killing through phases in
+  // one landing (see the hitPower loop in onProjectileHit).
   get isDefeated() {
-    return this.hitsLeft === 0;
+    return this.hitsLeft === 0 && !this.hasNextPhase;
   }
 
   // True once the death animation has fully played and the monster can be removed.

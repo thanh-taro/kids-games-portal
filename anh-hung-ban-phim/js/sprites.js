@@ -1545,6 +1545,9 @@ export const SPRITES = {
   boss_bogspirit: BOSS_BOGSPIRIT,
   boss_firedemon: BOSS_FIREDEMON,
   boss_sorcerer: BOSS_SORCERER,
+  // Chapters 2 and 3 add their own rosters at the BOTTOM of this file, via an
+  // Object.assign onto SPRITES — their sprite consts are defined below this
+  // literal, so they cannot be named here.
 };
 
 // Prop sprites for the desert scene (drawn as scenery, not entities).
@@ -2697,6 +2700,1425 @@ export const CASTLE_GATE = {
       'kLLkMM.MMMMMM.MMkLLk',
       'kLLkMMMMMMMMMMMMkLLk',
       'kkkkkkkkkkkkkkkkkkkk',
+    ],
+  ],
+};
+
+// ===========================================================================
+// STORY SCENE PROPS (see story.js / drawStoryArt in scenes.js)
+// ===========================================================================
+
+// --- The King. 16 x 20, same grid as the hero so they stand together. -------
+//
+// A second humanoid, so it obeys the same four rules the hero and princesses do
+// (see the humanoid notes above): eyes are single DARK pixels on skin; the HAIR
+// mass (here a white beard + hair) frames the face BEFORE the crown goes on; the
+// scepter is HELD, running vertically from a fist with a gold orb finial; and
+// frame 2 moves only the robe hem.
+//
+// What makes him read as a KING rather than "another guy in a hat":
+//   - the crown is WIDER than his head and sits on hair, never on bare skin —
+//     a band directly on the outline row merges into one stripe;
+//   - the beard is the biggest single mass on the face, which is what says
+//     "old and important" at 16px;
+//   - the robe FLARES toward the hem (a straight tunic reads as a peasant), and
+//     an ermine-white collar breaks up the purple.
+//
+// The hair uses the off-white shade 'w', NOT the hair-brown 'H' the hero uses:
+// at this size an old king is read almost entirely from "white hair + white
+// beard", and brown hair above a white beard read as a young man in a costume.
+const KING_BODY = [
+  '                ',
+  '     kkkkkk     ', // crown: three points, wider than the head below it
+  '    kYkYkYkYk   ',
+  '    kYYYYYYYk   ', // solid gold band...
+  '    kkkkkkkkk   ', // ...on its own outline row, above the hair
+  '     kwwwwk     ', // white hair under the band
+  '    kwSSSSwk    ',
+  '    kwSkSkwk    ', // eyes: single dark pixels
+  '    kwSSSSwk    ',
+  '     kwwwwk     ', // white beard — the dominant face mass
+  '    kwwwwwwk    ',
+  '   kPkwwwwkPk   ', // shoulders, beard overhanging the collar
+  '  kPPkwwwwkPPk  ', // ermine collar
+  '  kPPPPPPPPPPk  ',
+  ' kPPPpPPPPpPPPk ',
+  ' kPPPPPPPPPPPPk ',
+  ' kPPpPPPPPPpPPk ',
+  'kPPPPPPPPPPPPPPk', // robe flares toward the hem
+  'kPPpPPPPPPPPpPPk',
+  'kkkkkkkkkkkkkkkk',
+];
+
+// Frame 2: ONLY the two hem rows differ (the robe sways). Torso columns above
+// are byte-identical, so he never appears to squat or drift sideways.
+const KING_BODY_SWAY = [
+  ...KING_BODY.slice(0, 17),
+  'kPPPPPPPPPPPPPPk',
+  'kPPpPPPPPPPPpPPk',
+  ' kkkkkkkkkkkkkk ',
+];
+
+export const KING = { w: 16, h: 20, frames: [KING_BODY, KING_BODY_SWAY] };
+
+// --- The throne. 18 x 22. A tall gold-trimmed seat with a high back. --------
+// Deliberately NOT symmetrical about a face-like center: the back is a fan of
+// vertical gold ribs (an even pair of shapes over a horizontal seat would read
+// as eyes over a mouth — the trap documented for CASTLE_GATE).
+export const THRONE = {
+  w: 18,
+  h: 22,
+  frames: [
+    [
+      '    kkkkkkkkkk    ',
+      '   kYYkYYkYYkYk   ', // fan of ribs along the crest
+      '   kYkkkkkkkkYk   ',
+      '  kY&&&&&&&&&&Yk  ', // crimson cushion back
+      '  kY&&&&&&&&&&Yk  ',
+      '  kY&&*&&&&*&&Yk  ',
+      '  kY&&&&&&&&&&Yk  ',
+      '  kY&&&&&&&&&&Yk  ',
+      '  kY&&*&&&&*&&Yk  ',
+      '  kY&&&&&&&&&&Yk  ',
+      '  kY&&&&&&&&&&Yk  ',
+      '  kYkkkkkkkkkkYk  ',
+      ' kYYYYYYYYYYYYYYk ', // armrests flare out past the back
+      ' kY&&&&&&&&&&&&Yk ', // seat
+      ' kY&&&&&&&&&&&&Yk ',
+      ' kYkkkkkkkkkkkkYk ',
+      ' kYk        kYk   ',
+      ' kYk        kYk   ', // legs
+      ' kYk        kYk   ',
+      'kYYYk      kYYYk  ',
+      'kyyyk      kyyyk  ',
+      'kkkkk      kkkkk  ',
+    ],
+  ],
+};
+
+// --- The Staff of Wisdom. 10 x 24. Chapter 2's prize. -----------------------
+// It must read as a STAFF and not a torch or a spear: a long plain shaft, and at
+// the top an OPEN ring (not a solid blob) cradling a glowing gem. The ring is
+// what distinguishes a wizard's staff silhouette from a weapon's.
+export const STAFF_WISDOM = {
+  w: 10,
+  h: 24,
+  frames: [
+    [
+      '   kkkk   ',
+      '  kYYYYk  ', // open ring — the gem floats INSIDE it
+      ' kYYkkYYk ',
+      ' kYk  kYk ',
+      ' kYk CkYk ', // gem, offset so the ring stays visibly open
+      ' kYkCCkYk ',
+      ' kYYkCkYk ',
+      '  kYYYYk  ',
+      '   kYYk   ',
+      '   kTTk   ', // wooden shaft
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kYYk   ', // gold ferrule at the foot
+      '   kkkk   ',
+    ],
+    [
+      // Frame 2: only the GEM pixels move (it pulses/rotates inside the ring).
+      // The ring, shaft, and ferrule are byte-identical.
+      '   kkkk   ',
+      '  kYYYYk  ',
+      ' kYYkkYYk ',
+      ' kYk  kYk ',
+      ' kYkCCkYk ',
+      ' kYkCCkYk ',
+      ' kYYkkkYk ',
+      '  kYYYYk  ',
+      '   kYYk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kTtk   ',
+      '   kTTk   ',
+      '   kYYk   ',
+      '   kkkk   ',
+    ],
+  ],
+};
+
+// ===========================================================================
+// CHAPTER 2 MONSTERS — "Trượng Của Trí Tuệ" (The Staff of Wisdom)
+// ===========================================================================
+// The quest for the Staff is fought against GUARDIANS of knowledge, not beasts:
+// animated books, wind spirits, mirror shards, statues. That reads differently
+// from chapter 1's animals/ogres on purpose — a new chapter should look new.
+//
+// Every one keeps to the house rules: black 'k' outline all the way round,
+// base + shade tone, white 'W' eyes (monsters are big enough for them, unlike
+// the humanoids), and frame 2 differing only in the parts that should move.
+
+// --- Library creep: "Sách Bay" (Flying Book). 14 x 12 ---
+// Shape: an OPEN book seen head-on — two wing-like covers spread from a dark
+// spine, with white page blocks inside them. Eyes sit on the SPINE so it reads
+// as alive without the covers turning into a face.
+//
+// Two things were learned the hard way here. The first pass was 12x10 with a
+// brown ('H') cover and mostly-white body, and in the dim library biome it was
+// both too small and too pale — it disappeared against the scenery. So:
+//   - the cover is saturated CRIMSON ('&' / '*'), the one hue nothing else in
+//     this biome uses, and the palest pixels are confined to the inner pages;
+//   - the body is SOLID (no hollow middle), because a small sprite with a gap
+//     down the centre breaks into two shapes at gameplay scale.
+// In a typing game the kid's eye has to find the monster instantly to read the
+// word above it, so creep legibility beats scenery detail every time.
+export const CREEP_BOOK = {
+  w: 14,
+  h: 12,
+  frames: [
+    [
+      '              ',
+      '   kk    kk   ',
+      '  k&&k  k&&k  ',   // crimson covers spread like wings
+      ' k&&wwkk&&ww k',
+      ' k&&wwk&&&wwk ',
+      ' k&*wwkWkWwwk ',   // eyes on the dark spine
+      ' k&&wwk&&&wwk ',
+      ' k&&wwkk&&wwk ',
+      '  k&*wwwww*k  ',
+      '   k&&&&&&k   ',
+      '    kkkkkk    ',
+      '              ',
+    ],
+    [
+      '              ',
+      '  kk      kk  ',   // covers FLAP wider — the only change
+      ' k&&k    k&&k ',
+      ' k&&wwkk&&ww k',
+      ' k&&wwk&&&wwk ',
+      ' k&*wwkWkWwwk ',
+      ' k&&wwk&&&wwk ',
+      ' k&&wwkk&&wwk ',
+      '  k&*wwwww*k  ',
+      '   k&&&&&&k   ',
+      '    kkkkkk    ',
+      '              ',
+    ],
+  ],
+};
+
+// --- Windpeak creep: "Gió Xoáy" (Wind Sprite). 12 x 10 ---
+// Shape: a spiral of wind — stacked crescents that step sideways, widest in the
+// middle. NOT a circle with a face: the offset crescents are what say "moving
+// air". Only the tail curl differs between frames, so it looks like it spins.
+export const CREEP_GUST = {
+  w: 12,
+  h: 10,
+  frames: [
+    [
+      '            ',
+      '   kkkk     ',
+      '  kAAAAk    ',
+      ' kAAWAAAk   ',   // single eye in the vortex
+      ' kAAAAAAAk  ',
+      '  kaaAAAAk  ',
+      '   kaaAAk   ',
+      '     kaak   ',   // tail curls right
+      '      kk    ',
+      '            ',
+    ],
+    [
+      '            ',
+      '    kkkk    ',
+      '   kAAAAk   ',
+      '  kAAAWAAk  ',
+      ' kAAAAAAAk  ',
+      ' kAAAAaak   ',
+      '  kAAaak    ',
+      '  kaak      ',   // tail curls left — reads as a spin
+      '   kk       ',
+      '            ',
+    ],
+  ],
+};
+
+// --- Mirrorlake creep: "Mảnh Gương" (Mirror Shard). 12 x 12 ---
+// Shape: a tall diamond shard of glass. All straight lines and sharp angles — a
+// rounded shard reads as a gem or a sweet.
+//
+// Legibility note (learned from the first pass, same lesson as CREEP_BOOK): the
+// shard was pale ice-blue 'e' on a black outline, and the mirrorlake biome is a
+// PALE dawn scene — it vanished into the ground. It now carries a band of dark
+// teal 'c' down one whole face, so the silhouette has internal contrast of its
+// own and does not depend on the background being dark. The white 'W' glint
+// riding down the light face is what still says "mirror" rather than "rock".
+export const CREEP_MIRROR = {
+  w: 12,
+  h: 12,
+  frames: [
+    [
+      '     kk     ',
+      '    kWek    ',   // bright highlight edge
+      '   keeWck   ',
+      '  keeeWcck  ',
+      '  keWeeccck ',
+      ' keeWeecccck',
+      ' keeeeecccck',
+      ' kceeeecccck',
+      '  kcceecckk ',
+      '   kcccck   ',
+      '    kcck    ',
+      '     kk     ',
+    ],
+    [
+      '     kk     ',
+      '    keWk    ',   // the glint SLIDES down the light face
+      '   keeWck   ',
+      '  keWeecck  ',
+      '  keeWeccck ',
+      ' keeeWecccck',
+      ' keeeeecccck',
+      ' kceeeecccck',
+      '  kcceecckk ',
+      '   kcccck   ',
+      '    kcck    ',
+      '     kk     ',
+    ],
+  ],
+};
+
+// --- Library boss: "Thư Lại Mực" (the Ink Scribe). 18 x 16 ---
+// A hooded scribe of living ink. Reads as a scribe because of the QUILL held
+// upright in one hand (a diagonal quill read as a feather duster) and the open
+// ledger across its middle. The hood is a void with two white eyes, echoing the
+// Dark Sorcerer so the chapter still feels like the same world.
+export const BOSS_SCRIBE = {
+  w: 18,
+  h: 16,
+  frames: [
+    [
+      '       kkkk       ',
+      '      kMMMMk      ',   // hood
+      '     kMMMMMMk     ',
+      '    kM......Mk  k ',   // hood shadow; quill tip top-right
+      '    kM.WkkW.Mk kWk',
+      '    kM......Mk kWk',
+      '    kkM....Mkk kWk',   // quill shaft — vertical, clearly held
+      '   kMMMkkkkMMMkkWk',
+      '  kMMMMMMMMMMMMkWk',
+      '  kMMwwwwwwwwMMkYk',   // open ledger (white pages) + gold nib
+      '  kMMwwwwwwwwMMk  ',
+      '  kMMMMMMMMMMMMk  ',
+      '  kMMMMMMMMMMMMk  ',
+      '   kMMMMMMMMMMk   ',
+      '    kkkkkkkkkk    ',
+      '                  ',
+    ],
+    [
+      '                  ',
+      '       kkkk       ',
+      '      kMMMMk      ',
+      '     kMMMMMMk     ',
+      '    kM......Mk  k ',
+      '    kM.WkkW.Mk kWk',
+      '    kM......Mk kWk',
+      '    kkM....Mkk kWk',
+      '   kMMMkkkkMMMkkWk',
+      '  kMMMMMMMMMMMMkWk',
+      '  kMMwwwwwwwwMMkYk',
+      '  kMMwwwwwwwwMMk  ',
+      '  kMMMMMMMMMMMMk  ',
+      '  kMMMMMMMMMMMMk  ',
+      '   kMMMMMMMMMMk   ',
+      '    kkkkkkkkkk    ',
+    ],
+  ],
+};
+
+// --- Windpeak boss: "Xà Phong" (the Wind Serpent). 20 x 16 ---
+// A sky serpent coiling through the air. It reads as a serpent because the body
+// is ONE continuous tapering S-curve with a distinct wedge head and no limbs —
+// the moment you add feet it becomes a dragon. Frame 2 shifts the coil.
+export const BOSS_WINDSERPENT = {
+  w: 20,
+  h: 16,
+  frames: [
+    [
+      '   kkkk             ',
+      '  kAAAAk            ',
+      ' kAWAAAAk           ',   // wedge head, white eye
+      ' kAAAAAAkk          ',
+      ' kkaaAAAAAkk        ',
+      '   kkaaAAAAAkk      ',
+      '     kkaaAAAAAkk    ',
+      '       kkaaAAAAAk   ',   // body tapers as it recedes
+      '         kkaaAAAAk  ',
+      '           kkaaAAAk ',
+      '         kkaaAAAAk  ',   // and coils back
+      '       kkaaAAAAk    ',
+      '     kkaaAAAk       ',
+      '      kkaak         ',
+      '       kk           ',   // tail tip
+      '                    ',
+    ],
+    [
+      '                    ',
+      '   kkkk             ',
+      '  kAAAAk            ',
+      ' kAWAAAAk           ',
+      ' kAAAAAAkk          ',
+      ' kkaaAAAAAkk        ',
+      '   kkaaAAAAAkk      ',
+      '     kkaaAAAAAkk    ',
+      '       kkaaAAAAAk   ',
+      '         kkaaAAAAk  ',
+      '        kkaaAAAAk   ',
+      '      kkaaAAAAk     ',
+      '     kkaaAAAk       ',
+      '      kkaak         ',
+      '       kk           ',
+      '                    ',
+    ],
+  ],
+};
+
+// --- Rune-temple boss: "Tượng Thủ Đền" (the Temple Statue). 18 x 18 ---
+// A stone guardian statue, awake. Built from ARCHITECTURE like the Dark Lord:
+// square shoulders, a carved rune on its chest, straight sides, blocky fists.
+// Its eyes are cyan (the rune light) rather than white, so it reads as animated
+// stone rather than a living creature.
+export const BOSS_GUARDIAN_STATUE = {
+  w: 18,
+  h: 18,
+  frames: [
+    [
+      '     kkkkkk       ',
+      '    kLLLLLLk      ',   // blocky head
+      '    kLCLLCLk      ',   // cyan rune-light eyes
+      '    kLLLLLLk      ',
+      '    kkLLLLkk      ',
+      '  kkkkLLLLkkkk    ',   // square shoulders
+      ' kLLLkLLLLkLLLk   ',
+      ' kLLLkLLLLkLLLk   ',
+      ' kLLLkLCCLkLLLk   ',   // carved rune on the chest
+      ' kLLLkLCCLkLLLk   ',
+      ' kkkkkLLLLkkkkk   ',
+      '  kllkLLLLkllk    ',
+      '  kLLkLLLLkLLk    ',   // arms hang straight, fists blocky
+      '  kkkkLLLLkkkk    ',
+      '     kLLLLk       ',
+      '    kkLLLLkk      ',
+      '    kllk kllk     ',   // stone feet
+      '    kkkk kkkk     ',
+    ],
+    [
+      '     kkkkkk       ',
+      '    kLLLLLLk      ',
+      '    kLCLLCLk      ',
+      '    kLLLLLLk      ',
+      '    kkLLLLkk      ',
+      '  kkkkLLLLkkkk    ',
+      ' kLLLkLLLLkLLLk   ',
+      ' kLLLkLLLLkLLLk   ',
+      ' kLLLkLCCLkLLLk   ',
+      ' kLLLkLCCLkLLLk   ',
+      ' kkkkkLLLLkkkkk   ',
+      '  kllkLLLLkllk    ',
+      '  kLLkLLLLkLLk    ',
+      '  kkkkLLLLkkkk    ',
+      '     kLLLLk       ',
+      '    kkLLLLkk      ',
+      '   kllk   kllk    ',   // stance widens — stone shifting its weight
+      '   kkkk   kkkk    ',
+    ],
+  ],
+};
+
+// --- Chapter 2 finale: "THỦ VỆ TRƯỢNG" (the Guardian of the Staff). 22 x 22 ---
+// The last trial before the Staff. NOT a monster — a towering armored sentinel
+// holding the Staff itself, which is the whole point of the silhouette: the
+// glowing ringed staff rises above its shoulder so the kid SEES the prize they
+// are fighting for. Gold armor, cyan visor slit (a slit, not eyes — it is a
+// helmet, and two eye-dots would make it cute), and a cloak of straight lines.
+export const STAGEBOSS_STAFFGUARDIAN = {
+  w: 22,
+  h: 22,
+  frames: [
+    [
+      '                kkkk  ',
+      '     kkkkkk    kYYYYk ',   // the Staff's ring, held high
+      '    kYYYYYYk  kYYkkYYk',
+      '   kYYYYYYYYk kYk  kYk',
+      '   kYkkkkkkYk kYkCCkYk',   // helmet crest
+      '   kYCCCCCCYk kYYkCkYk',   // cyan visor SLIT — not eyes
+      '   kYYYYYYYYk  kYYYYk ',
+      '   kkYYYYYYkk   kYYk  ',
+      ' kkkkYYYYYYkkkk kTTk  ',   // pauldrons; staff shaft
+      'kYYYkYYYYYYkYYYkkTtk  ',
+      'kYYYkYYYYYYkYYYkkTTk  ',
+      'kYYYkYYCCYYkYYYkkTtk  ',   // cyan sigil on the breastplate
+      'kYYYkYYCCYYkYYYkkTTk  ',
+      'kkkkkYYYYYYkkkkkkTtk  ',
+      ' kyykYYYYYYkyyk kTTk  ',
+      ' kYYkYYYYYYkYYk kTtk  ',
+      ' kkkkYYYYYYkkkk kYYk  ',   // gold ferrule
+      '    kYYYYYYk    kkkk  ',
+      '   kkYYYYYYkk         ',
+      '   kPPk  kPPk         ',   // cloak falls in straight lines
+      '   kPPk  kPPk         ',
+      '   kkkk  kkkk         ',
+    ],
+    [
+      '                kkkk  ',
+      '     kkkkkk    kYYYYk ',
+      '    kYYYYYYk  kYYkkYYk',
+      '   kYYYYYYYYk kYk  kYk',
+      '   kYkkkkkkYk kYkCCkYk',
+      '   kYCCCCCCYk kYkCCkYk',   // the staff's GEM pulses (only change up top)
+      '   kYYYYYYYYk  kYYYYk ',
+      '   kkYYYYYYkk   kYYk  ',
+      ' kkkkYYYYYYkkkk kTTk  ',
+      'kYYYkYYYYYYkYYYkkTtk  ',
+      'kYYYkYYYYYYkYYYkkTTk  ',
+      'kYYYkYYCCYYkYYYkkTtk  ',
+      'kYYYkYYCCYYkYYYkkTTk  ',
+      'kkkkkYYYYYYkkkkkkTtk  ',
+      ' kyykYYYYYYkyyk kTTk  ',
+      ' kYYkYYYYYYkYYk kTtk  ',
+      ' kkkkYYYYYYkkkk kYYk  ',
+      '    kYYYYYYk    kkkk  ',
+      '   kkYYYYYYkk         ',
+      '  kPPk    kPPk        ',   // cloak flares — extremities only
+      '  kPPk    kPPk        ',
+      '  kkkk    kkkk        ',
+    ],
+  ],
+};
+
+// ===========================================================================
+// CHAPTER 2 SCENERY (see BIOMES entries library..wisdom_peak in biomes.js)
+// ===========================================================================
+
+// --- A leaning bookshelf, half-collapsed. 14 x 20. The ruined library. ------
+// Reads as a bookshelf because of the horizontal SHELF lines with coloured book
+// spines standing between them. The frame leans (the right column is one row
+// taller) so it says "ruin" rather than "furniture".
+export const BOOKSHELF = {
+  w: 14,
+  h: 20,
+  frames: [
+    [
+      ' kkkkkkkkkkkk ',
+      ' kTTTTTTTTTTk ',
+      ' kTkkkkkkkkTk ',
+      ' kTk1&5&9&kTk ',   // book spines, mixed colours
+      ' kTk1&5&9&kTk ',
+      ' kTkkkkkkkkTk ',
+      ' kTk&79&15kTk ',
+      ' kTk&79&15kTk ',
+      ' kTkkkkkkkkTk ',
+      ' kTk5&&91&kTk ',
+      ' kTk5&&91&kTk ',
+      ' kTkkkkkkkkTk ',
+      ' kTk9&5&&7kTk ',
+      ' kTk9&5&&7kTk ',
+      ' kTkkkkkkkkTk ',
+      ' kTk1&79&5kTk ',
+      ' kTk1&79&5kTk ',
+      ' kTkkkkkkkkTk ',
+      ' kTTTTTTTTTTk ',
+      ' kkkkkkkkkkkk ',
+    ],
+  ],
+};
+
+// --- A wind-carved stone pillar. 8 x 22. Windpeak. --------------------------
+// Narrow, tapering, with the wind-bitten notches all on ONE side — an evenly
+// notched pillar reads as a decorative column; asymmetric erosion reads as wind.
+export const WIND_PILLAR = {
+  w: 8,
+  h: 22,
+  frames: [
+    [
+      '  kkkk  ',
+      ' kLLLLk ',
+      ' kLLLLk ',
+      'kLLLLLk ',
+      'kLLLLLk ',
+      ' kLLLLk ',
+      '  kLLLk ',   // bitten in
+      ' kLLLLk ',
+      'kLLLLLk ',
+      'kLLLLLk ',
+      ' kLLLLk ',
+      '  kLLLk ',   // and again
+      ' kLLLLk ',
+      'kLLLLLk ',
+      'kLLLLLk ',
+      'kLLLLLk ',
+      ' kLLLLk ',
+      ' kLLLLk ',
+      'kLLLLLk ',
+      'kLLLLLk ',
+      'kllllllk',
+      'kkkkkkkk',
+    ],
+  ],
+};
+
+// --- A standing mirror, cracked. 12 x 20. Mirrorlake. -----------------------
+// The trial of honesty: the hero meets his own reflection. A gold frame with a
+// pale glass field and ONE diagonal crack — a spiderweb of cracks turns to mush
+// at this size, a single clean diagonal reads instantly.
+export const MIRROR_STAND = {
+  w: 12,
+  h: 20,
+  frames: [
+    [
+      '  kkkkkkkk  ',
+      ' kYYYYYYYYk ',
+      ' kYkkkkkkYk ',
+      ' kYkeeeeekYk',
+      ' kYkeeeekkYk',   // crack begins
+      ' kYkeeekWkYk',
+      ' kYkeekWekYk',
+      ' kYkekWeekYk',
+      ' kYkkWeeekYk',
+      ' kYkWeeeekYk',
+      ' kYkeeeeekYk',
+      ' kYkeeeeekYk',
+      ' kYkeeeeekYk',
+      ' kYkkkkkkYk ',
+      ' kYYYYYYYYk ',
+      '  kkkYYkkk  ',
+      '    kYYk    ',   // stand
+      '   kYYYYk   ',
+      '  kyyyyyyk  ',
+      '  kkkkkkkk  ',
+    ],
+  ],
+};
+
+// --- The Tower of Wisdom, seen from afar. 16 x 30. --------------------------
+// Chapter 2's beacon, the counterpart to the villain's SPIRE: where the spire is
+// black and jagged, this is pale stone and ROUND-TOPPED, with lit windows
+// climbing in a spiral. The silhouette difference is the point — a kid should be
+// able to tell at a glance which tower is which on the horizon.
+export const WISDOM_TOWER = {
+  w: 16,
+  h: 30,
+  frames: [
+    [
+      '      kkkk      ',
+      '     kCCCCk     ',   // glowing beacon at the crown
+      '    kCCCCCCk    ',
+      '   kkkkkkkkkk   ',
+      '   kLLLLLLLLk   ',
+      '   kLLLLLLLLk   ',
+      '  kkkkkkkkkkkk  ',
+      '  kLLLLLLLLLLk  ',
+      '  kLLLLYYLLLLk  ',   // lit windows spiral down...
+      '  kLLLLYYLLLLk  ',
+      '  kLLLLLLLLLLk  ',
+      '  kLLYYLLLLLLk  ',
+      '  kLLYYLLLLLLk  ',
+      '  kLLLLLLLLLLk  ',
+      ' kLLLLLLLLYYLLk ',
+      ' kLLLLLLLLYYLLk ',
+      ' kLLLLLLLLLLLLk ',
+      ' kLLLLYYLLLLLLk ',
+      ' kLLLLYYLLLLLLk ',
+      ' kLLLLLLLLLLLLk ',
+      ' kLLLLLLLLYYLLk ',
+      ' kLLLLLLLLYYLLk ',
+      ' kLLLLLLLLLLLLk ',
+      'kLLLLYYLLLLLLLLk',
+      'kLLLLYYLLLLLLLLk',
+      'kLLLLLLLLLLLLLLk',
+      'kLLLLLLLLLLLLLLk',
+      'kllllllllllllllk',
+      'kllllllllllllllk',
+      'kkkkkkkkkkkkkkkk',
+    ],
+  ],
+};
+
+// --- A floating open book, drifting. 10 x 8. Library / starwood props. ------
+export const FLOAT_BOOK = {
+  w: 10,
+  h: 8,
+  frames: [
+    [
+      '          ',
+      '  kk  kk  ',
+      ' kHwkkwHk ',
+      ' kHwwwwHk ',
+      ' kHwwwwHk ',
+      '  kHwwHk  ',
+      '   kkkk   ',
+      '          ',
+    ],
+    [
+      '          ',
+      ' kk    kk ',   // pages flap
+      ' kHwkkwHk ',
+      ' kHwwwwHk ',
+      ' kHwwwwHk ',
+      '  kHwwHk  ',
+      '   kkkk   ',
+      '          ',
+    ],
+  ],
+};
+
+// --- A star-blossom tree. 16 x 22. Starwood. --------------------------------
+// A slender trunk under a crown of small star-lights rather than leaf mass —
+// the gaps are deliberate, so the night sky shows through and it reads as
+// "starlit wood" instead of "another pine".
+export const STAR_TREE = {
+  w: 16,
+  h: 22,
+  frames: [
+    [
+      '    k  k  k     ',
+      '   kWk kWk k    ',   // star blossoms
+      '  k kFFFk kWk   ',
+      ' kWkFFFFFFk k   ',
+      '  kFFFWFFFFk    ',
+      ' kFFFFFFFWFFk   ',
+      'kFFWFFFFFFFFFk  ',
+      ' kFFFFFWFFFFk   ',
+      '  kFFFFFFFFk    ',
+      ' kWkFFFFFFkWk   ',
+      '   kFFFFFFk     ',
+      '    kFFFFk      ',
+      '     kTTk       ',
+      '     kTtk       ',
+      '     kTTk       ',
+      '     kTtk       ',
+      '     kTTk       ',
+      '    kTTTtk      ',
+      '    kTtTTk      ',
+      '   kTTTTTtk     ',
+      '   kttttttk     ',
+      '   kkkkkkkk     ',
+    ],
+  ],
+};
+
+// ===========================================================================
+// CHAPTER 3 MONSTERS — "Trận Chiến Cuối Cùng" (The Final Confrontation)
+// ===========================================================================
+// The siege of the Demon King's fortress. These are his ARMY: bone soldiers,
+// gate wardens, jailers, generals, void horrors — and the World Devourer.
+// Palette leans on 'M' dark stone, 'P' rift purple, 'R' burning red and bone
+// white 'w', so chapter 3 reads darker than either chapter before it.
+
+// --- Bonebridge creep: "Xương Lính" (Bone Soldier). 12 x 12 ---
+// A skull on a ribcage — no arms, no legs, so it reads as a rising remnant
+// rather than a full skeleton (which needs far more pixels to be legible).
+export const CREEP_BONE = {
+  w: 12,
+  h: 12,
+  frames: [
+    [
+      '            ',
+      '   kkkkkk   ',
+      '  kwwwwwwk  ',   // skull
+      '  kwkwwkwk  ',   // dark eye sockets
+      '  kwwwwwwk  ',
+      '  kwkkkkwk  ',   // teeth
+      '   kwwwwk   ',
+      '  kkwwwwkk  ',
+      ' kwkwwwwkwk ',   // ribs
+      ' kwkwwwwkwk ',
+      '  kkwwwwkk  ',
+      '   kkkkkk   ',
+    ],
+    [
+      '   kkkkkk   ',
+      '  kwwwwwwk  ',   // the whole thing RISES one row (it floats up)
+      '  kwkwwkwk  ',
+      '  kwwwwwwk  ',
+      '  kwkkkkwk  ',
+      '   kwwwwk   ',
+      '  kkwwwwkk  ',
+      ' kwkwwwwkwk ',
+      ' kwkwwwwkwk ',
+      '  kkwwwwkk  ',
+      '   kkkkkk   ',
+      '            ',
+    ],
+  ],
+};
+
+// --- Gate creep: "Mắt Cổng" (Gate Eye). 12 x 10 ---
+// A floating watcher-eye set in a dark iron ring: the gate's alarm. One big
+// pupil, which is exactly what a single-eye monster needs — two would read as a
+// face and lose the "watcher" idea.
+export const CREEP_GATEEYE = {
+  w: 12,
+  h: 10,
+  frames: [
+    [
+      '            ',
+      '   kkkkkk   ',
+      '  kMMMMMMk  ',   // iron ring
+      ' kMWWWWWWMk ',
+      ' kMWWkkWWMk ',   // pupil, centred
+      ' kMWWkkWWMk ',
+      ' kMWWWWWWMk ',
+      '  kMMMMMMk  ',
+      '   kkkkkk   ',
+      '            ',
+    ],
+    [
+      '            ',
+      '   kkkkkk   ',
+      '  kMMMMMMk  ',
+      ' kMWWWWWWMk ',
+      ' kMWkkWWWMk ',   // pupil LOOKS left — the only change
+      ' kMWkkWWWMk ',
+      ' kMWWWWWWMk ',
+      '  kMMMMMMk  ',
+      '   kkkkkk   ',
+      '            ',
+    ],
+  ],
+};
+
+// --- Dungeon creep: "Chìa Khóa Sống" (Living Key). 12 x 10 ---
+// The jailer's key, animated. Reads as a key from the toothed shaft plus the
+// ring-shaped bow at one end; the little red eye in the bow says it's alive.
+export const CREEP_KEY = {
+  w: 12,
+  h: 10,
+  frames: [
+    [
+      '            ',
+      '  kkkk      ',
+      ' kIIIIk     ',   // bow (ring)
+      ' kIkRIk     ',   // red eye
+      ' kIIIIkkkkk ',
+      '  kIIIIIIIk ',   // shaft
+      '   kkkIkIkk ',   // teeth
+      '     kkkkk  ',
+      '            ',
+      '            ',
+    ],
+    [
+      '            ',
+      '            ',
+      '  kkkk      ',
+      ' kIIIIk     ',
+      ' kIkRIk     ',
+      ' kIIIIkkkkk ',
+      '  kIIIIIIIk ',
+      '   kkIkIkkk ',   // teeth shift — it turns in the air
+      '     kkkkk  ',
+      '            ',
+    ],
+  ],
+};
+
+// --- Void creep: "Mảnh Hư Không" (Void Fragment). 12 x 12 ---
+// A hole in reality: a dark diamond with a rift-purple rim and a starfield
+// inside. It must NOT be outlined in black like everything else — the rim is
+// purple, so it reads as an opening rather than a solid object.
+export const CREEP_VOID = {
+  w: 12,
+  h: 12,
+  frames: [
+    [
+      '     PP     ',
+      '    P..P    ',
+      '   P.W..P   ',
+      '  P..W...P  ',
+      ' P...W....P ',
+      'P..W....W..P',
+      'P....W.....P',
+      ' P..W.....P ',
+      '  P...W..P  ',
+      '   P....P   ',
+      '    P..P    ',
+      '     PP     ',
+    ],
+    [
+      '     PP     ',
+      '    P..P    ',
+      '   P..W.P   ',   // the stars inside DRIFT
+      '  P.W....P  ',
+      ' P....W...P ',
+      'P.W......W.P',
+      'P...W......P',
+      ' P.....W..P ',
+      '  P..W...P  ',
+      '   P....P   ',
+      '    P..P    ',
+      '     PP     ',
+    ],
+  ],
+};
+
+// --- Gate boss: "Quản Cổng Sắt" (the Iron Warden). 20 x 18 ---
+// A hulking gate-keeper made of the gate itself: iron plate body, a barred visor
+// and a huge padlock hanging on its chest. The padlock is the read — it says
+// "this thing keeps you OUT" better than any weapon would.
+export const BOSS_WARDEN = {
+  w: 20,
+  h: 18,
+  frames: [
+    [
+      '     kkkkkkkk       ',
+      '    kMMMMMMMMk      ',
+      '    kMkkkkkkMk      ',
+      '    kMkRkkRkMk      ',   // barred visor with burning slits
+      '    kMkkkkkkMk      ',
+      '    kMMMMMMMMk      ',
+      '  kkkkMMMMMMkkkk    ',
+      ' kMMMkMMMMMMkMMMk   ',
+      ' kMMMkMkIIkMkMMMk   ',   // padlock body
+      ' kMMMkMkIIkMkMMMk   ',
+      ' kMMMkMMkkMMkMMMk   ',
+      ' kkkkkMMMMMMkkkkk   ',
+      '  kMMkMMMMMMkMMk    ',
+      '  kMMkMMMMMMkMMk    ',
+      '  kkkkMMMMMMkkkk    ',
+      '     kMMMMMMk       ',
+      '    kMMk  kMMk      ',
+      '    kkkk  kkkk      ',
+    ],
+    [
+      '     kkkkkkkk       ',
+      '    kMMMMMMMMk      ',
+      '    kMkkkkkkMk      ',
+      '    kMkRkkRkMk      ',
+      '    kMkkkkkkMk      ',
+      '    kMMMMMMMMk      ',
+      '  kkkkMMMMMMkkkk    ',
+      ' kMMMkMMMMMMkMMMk   ',
+      ' kMMMkMkIIkMkMMMk   ',
+      ' kMMMkMkIIkMkMMMk   ',
+      ' kMMMkMMkkMMkMMMk   ',
+      ' kkkkkMMMMMMkkkkk   ',
+      '  kMMkMMMMMMkMMk    ',
+      '  kMMkMMMMMMkMMk    ',
+      '  kkkkMMMMMMkkkk    ',
+      '     kMMMMMMk       ',
+      '   kMMk    kMMk     ',   // stance widens
+      '   kkkk    kkkk     ',
+    ],
+  ],
+};
+
+// --- Dungeon boss: "Cai Ngục" (the Jailer). 18 x 18 ---
+// A gaunt warder carrying a lantern on a hook. The LANTERN is the silhouette
+// cue: a small bright box held out to one side, which is what a jailer walking a
+// dark corridor looks like. Hooded, so it stays in the fortress's visual family.
+export const BOSS_JAILER = {
+  w: 18,
+  h: 18,
+  frames: [
+    [
+      '      kkkk        ',
+      '     kMMMMk       ',
+      '    kM....Mk      ',
+      '    kM.RR.Mk      ',   // two red eyes in the hood's void
+      '    kM....Mk      ',
+      '    kkM..Mkk      ',
+      '   kMMMkkMMMk kkk ',   // arm out to the side; lantern hook
+      '  kMMMMMMMMMMkkYk ',
+      '  kMMMMMMMMMMkYYk ',   // lantern, glowing
+      '  kMMMMMMMMMMkkYk ',
+      '  kMMMMMMMMMMk kkk',
+      '  kMMMMMMMMMMk    ',
+      '  kMMMMMMMMMMk    ',
+      '   kMMMMMMMMk     ',
+      '   kMMMMMMMMk     ',
+      '   kMMk  kMMk     ',
+      '   kMMk  kMMk     ',
+      '   kkkk  kkkk     ',
+    ],
+    [
+      '      kkkk        ',
+      '     kMMMMk       ',
+      '    kM....Mk      ',
+      '    kM.RR.Mk      ',
+      '    kM....Mk      ',
+      '    kkM..Mkk      ',
+      '   kMMMkkMMMk kkk ',
+      '  kMMMMMMMMMMkkYk ',
+      '  kMMMMMMMMMMkYYk ',
+      '  kMMMMMMMMMMkkYk ',
+      '  kMMMMMMMMMMk kkk',
+      '  kMMMMMMMMMMk    ',
+      '  kMMMMMMMMMMk    ',
+      '   kMMMMMMMMk     ',
+      '   kMMMMMMMMk     ',
+      '   kMMkkkkMMk     ',   // robe closes — extremities only
+      '   kMMk  kMMk     ',
+      '   kkkk  kkkk     ',
+    ],
+  ],
+};
+
+// --- Throne-hall boss: "Tướng Quỷ" (the Demon General). 20 x 20 ---
+// The Demon King's champion: horned, armored, holding a broad axe. Horns sweep
+// OUTWARD and up (curling inward read as a cute ram); the axe head is a solid
+// wedge so it can't be mistaken for a shield.
+export const BOSS_GENERAL = {
+  w: 20,
+  h: 20,
+  frames: [
+    [
+      'k          k    kkk ',
+      'kR       Rk    kIIIk',   // horns sweeping out
+      ' kR     Rk    kIIIIk',   // axe head — a solid wedge
+      '  kRkkkkRk    kIIIIk',
+      '  kRRRRRRk     kIIIk',
+      '  kRkWkWkk      kIk ',   // white eyes
+      '  kRRRRRRk      kIk ',
+      '   kkRRkk       kTk ',   // haft
+      ' kkkkRRkkkk     kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kkkkkRRkkkkk    kkk ',
+      ' krrkRRkrrk         ',
+      ' kRRkRRkRRk         ',
+      ' kkkkRRkkkk         ',
+      '   kRRRRk           ',
+      '   kRRkRRk          ',
+      '   kkk kkk          ',
+    ],
+    [
+      'k          k    kkk ',
+      'kR       Rk    kIIIk',
+      ' kR     Rk    kIIIIk',
+      '  kRkkkkRk    kIIIIk',
+      '  kRRRRRRk     kIIIk',
+      '  kRkWkWkk      kIk ',
+      '  kRRRRRRk      kIk ',
+      '   kkRRkk       kTk ',
+      ' kkkkRRkkkk     kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kRRRkRRkRRRk    kTk ',
+      'kkkkkRRkkkkk    kkk ',
+      ' krrkRRkrrk         ',
+      ' kRRkRRkRRk         ',
+      ' kkkkRRkkkk         ',
+      '   kRRRRk           ',
+      '  kRRk kRRk         ',   // stance widens
+      '  kkk   kkk         ',
+    ],
+  ],
+};
+
+// --- Void boss: "Bóng Vô Hình" (the Formless Shadow). 20 x 18 ---
+// A shape that never settles: a ragged column of dark with a rift-purple core
+// and three white eyes at uneven heights. The UNEVEN eyes are what make it
+// unsettling — evenly spaced ones would read as a face.
+export const BOSS_FORMLESS = {
+  w: 20,
+  h: 18,
+  frames: [
+    [
+      '     kkkk           ',
+      '    k....k          ',
+      '   k..PP..k         ',
+      '   k.PWP..k         ',   // eye 1, high
+      '  k..PPP...k        ',
+      '  k...PP..W.k       ',   // eye 2, mid-right
+      ' k....PPP...k       ',
+      ' k...PPPPP..k       ',
+      ' k..PPPPPP...k      ',
+      'k..W.PPPP....k      ',   // eye 3, low-left
+      'k....PPPP....k      ',
+      'k...PPPPPP...k      ',
+      ' k..PPPPPP..k       ',
+      ' k...PPPP...k       ',
+      '  k..PPPP..k        ',
+      '  k.k.kk.k.k        ',   // ragged, dissolving hem
+      '   k  kk  k         ',
+      '                    ',
+    ],
+    [
+      '      kkkk          ',
+      '     k....k         ',
+      '    k..PP..k        ',
+      '    k..PWP.k        ',   // the eyes MIGRATE — it has no fixed form
+      '   k..PPP...k       ',
+      '   kW..PP...k       ',
+      '  k....PPP..k       ',
+      '  k..PPPPP..k       ',
+      ' k...PPPPPP..k      ',
+      ' k....PPPP.W.k      ',
+      ' k...PPPP....k      ',
+      ' k..PPPPPP...k      ',
+      '  k.PPPPPP..k       ',
+      '  k..PPPP...k       ',
+      '   k.PPPP..k        ',
+      '   k.k.kk.kk        ',
+      '    k  kk k         ',
+      '                    ',
+    ],
+  ],
+};
+
+// --- THE FINAL BOSS: "KẺ NUỐT THẾ GIỚI" (the World Devourer). 24 x 26 ---
+// The prologue's villain in his true form — bigger than anything else in the
+// game, as the last boss must be. Built on the Dark Lord's principle (all hard
+// angles, architecture not anatomy) but escalated: a crown of SIX spires, a maw
+// where a chest should be (he devours worlds — the mouth is the whole idea, and
+// putting it on the torso rather than the head is what stops him reading as a
+// big cartoon face), and a mantle of straight rift-purple falls.
+export const STAGEBOSS_DEVOURER = {
+  w: 24,
+  h: 26,
+  frames: [
+    [
+      '  k   k  kk  k   k      ',
+      '  kR  kR kRk kR  kR     ',   // six-spire crown
+      '  kRk kRkkRkkRk kRk     ',
+      '  kRRkkRRkRRkRRkkRR     ',
+      '  kkRRRRRRRRRRRRRRk     ',
+      '   kMMMMMMMMMMMMMk      ',   // brow
+      '   kMkRRkMMMkRRkMk      ',   // burning eyes, set wide and square
+      '   kMkRRkMMMkRRkMk      ',
+      '   kMMMMMMMMMMMMMk      ',
+      ' kkkkMMMMMMMMMMMkkkk    ',   // square shoulders
+      'kPPPkMMMMMMMMMMMkPPPk   ',
+      'kPPPkMkkkkkkkkkMkPPPk   ',
+      'kPPPkMkWkWkWkWkMkPPPk   ',   // THE MAW — teeth across the torso
+      'kPPPkMkkkkkkkkkMkPPPk   ',
+      'kPPPkMkPPPPPPPkMkPPPk   ',   // rift glowing inside the maw
+      'kPPPkMkPPPPPPPkMkPPPk   ',
+      'kPPPkMkkkkkkkkkMkPPPk   ',
+      'kPPPkMkWkWkWkWkMkPPPk   ',   // lower teeth
+      'kPPPkMMMMMMMMMMMkPPPk   ',
+      'kkkkkMMMMMMMMMMMkkkkk   ',
+      ' kppkMMMMMMMMMMMkppk    ',
+      ' kPPkMMMMMMMMMMMkPPk    ',
+      ' kPPkkkkkkkkkkkkkPPk    ',
+      ' kPPk kMMk kMMk kPPk    ',
+      ' kPPk kMMk kMMk kPPk    ',
+      ' kkkk kkkk kkkk kkkk    ',
+    ],
+    [
+      '  k   k  kk  k   k      ',
+      '  kR  kR kRk kR  kR     ',
+      '  kRk kRkkRkkRk kRk     ',
+      '  kRRkkRRkRRkRRkkRR     ',
+      '  kkRRRRRRRRRRRRRRk     ',
+      '   kMMMMMMMMMMMMMk      ',
+      '   kMkRRkMMMkRRkMk      ',
+      '   kMkRRkMMMkRRkMk      ',
+      '   kMMMMMMMMMMMMMk      ',
+      ' kkkkMMMMMMMMMMMkkkk    ',
+      'kPPPkMMMMMMMMMMMkPPPk   ',
+      'kPPPkMkkkkkkkkkMkPPPk   ',
+      'kPPPkMkWkWkWkWkMkPPPk   ',
+      'kPPPkMkkkkkkkkkMkPPPk   ',
+      'kPPPkMkpPPPPPpkMkPPPk   ',   // the rift inside the maw PULSES
+      'kPPPkMkpPPPPPpkMkPPPk   ',
+      'kPPPkMkkkkkkkkkMkPPPk   ',
+      'kPPPkMkWkWkWkWkMkPPPk   ',
+      'kPPPkMMMMMMMMMMMkPPPk   ',
+      'kkkkkMMMMMMMMMMMkkkkk   ',
+      ' kppkMMMMMMMMMMMkppk    ',
+      ' kPPkMMMMMMMMMMMkPPk    ',
+      ' kPPkkkkkkkkkkkkkPPk    ',
+      'kPPk  kMMk kMMk  kPPk   ',   // mantle flares wider
+      'kPPk  kMMk kMMk  kPPk   ',
+      'kkkk  kkkk kkkk  kkkk   ',
+    ],
+  ],
+};
+
+// --- Chapter 2 + 3 sprite registration ---------------------------------------
+// These consts are defined below the SPRITES literal above, so they are attached
+// here. Every id must match the roster names in monsters.js (verify.js asserts
+// that every roster sprite id resolves in SPRITES).
+Object.assign(SPRITES, {
+  // chapter 2 — the quest for the Staff
+  creep_book: CREEP_BOOK,
+  creep_gust: CREEP_GUST,
+  creep_mirror: CREEP_MIRROR,
+  boss_scribe: BOSS_SCRIBE,
+  boss_windserpent: BOSS_WINDSERPENT,
+  boss_guardian_statue: BOSS_GUARDIAN_STATUE,
+  stageboss_staffguardian: STAGEBOSS_STAFFGUARDIAN,
+  // chapter 3 — the siege
+  creep_bone: CREEP_BONE,
+  creep_gateeye: CREEP_GATEEYE,
+  creep_key: CREEP_KEY,
+  creep_void: CREEP_VOID,
+  boss_warden: BOSS_WARDEN,
+  boss_jailer: BOSS_JAILER,
+  boss_general: BOSS_GENERAL,
+  boss_formless: BOSS_FORMLESS,
+  stageboss_devourer: STAGEBOSS_DEVOURER,
+});
+
+// ===========================================================================
+// CHAPTER 3 SCENERY (see BIOMES entries bonebridge..finalspire in biomes.js)
+// ===========================================================================
+
+// --- A cracked bone pillar. 10 x 20. Bonebridge. ----------------------------
+// Vertebrae stacked into a column — the horizontal joint lines are what say
+// "bone" rather than "stone", so they stay strongly contrasted.
+export const BONE_PILLAR = {
+  w: 10,
+  h: 20,
+  frames: [
+    [
+      '  kkkkkk  ',
+      ' kwwwwwwk ',
+      ' kkkkkkkk ',
+      '  kwwwwk  ',
+      ' kwwwwwwk ',
+      ' kkkkkkkk ',
+      '  kwwwwk  ',
+      ' kwwwwwwk ',
+      ' kkkkkkkk ',
+      '  kwwwwk  ',
+      ' kwwwwwwk ',
+      ' kkkkkkkk ',
+      '  kwwwwk  ',
+      ' kwwwwwwk ',
+      ' kkkkkkkk ',
+      '  kwwwwk  ',
+      ' kwwwwwwk ',
+      'kwwwwwwwwk',
+      'kwwwwwwwwk',
+      'kkkkkkkkkk',
+    ],
+  ],
+};
+
+// --- A cell door with bars. 12 x 18. Dungeon. -------------------------------
+// Where the princesses' stolen powers were kept. The bars are the read; the door
+// stands slightly AJAR (the right edge is offset) because an open cell says
+// "they were here and they are gone" better than a shut one.
+export const CELL_DOOR = {
+  w: 12,
+  h: 18,
+  frames: [
+    [
+      ' kkkkkkkkkk ',
+      ' kMMMMMMMMk ',
+      ' kMkkkkkkMk ',
+      ' kMk.k.k.Mk ',   // bars over darkness
+      ' kMk.k.k.Mk ',
+      ' kMk.k.k.Mk ',
+      ' kMk.k.k.Mk ',
+      ' kMk.k.k.Mk ',
+      ' kMkkkkkkMk ',
+      ' kMMMMMMMMk ',
+      ' kMMkIIkMMk ',   // lock plate, hanging open
+      ' kMMkIkkMMk ',
+      ' kMMMMMMMMk ',
+      ' kMk.k.k.Mk ',
+      ' kMk.k.k.Mk ',
+      ' kMk.k.k.Mk ',
+      ' kMMMMMMMMk ',
+      ' kkkkkkkkkk ',
+    ],
+  ],
+};
+
+// --- A rift in the air. 14 x 20. Void / throne hall. ------------------------
+// A tear in reality: a vertical slash, WIDEST in the middle, rift-purple edged
+// with white heat. No black outline (it is a hole, not an object).
+export const VOID_RIFT = {
+  w: 14,
+  h: 20,
+  frames: [
+    [
+      '      PP      ',
+      '     PWP      ',
+      '     PWP      ',
+      '    PPWPP     ',
+      '    PWWWP     ',
+      '   PPWWWPP    ',
+      '   PWWWWWP    ',
+      '  PPWWWWWPP   ',
+      '  PWWWWWWWP   ',
+      '  PWWWWWWWP   ',
+      '  PPWWWWWPP   ',
+      '   PWWWWWP    ',
+      '   PPWWWPP    ',
+      '    PWWWP     ',
+      '    PPWPP     ',
+      '     PWP      ',
+      '     PWP      ',
+      '      PP      ',
+      '              ',
+      '              ',
+    ],
+    [
+      '      PP      ',
+      '      PP      ',
+      '     PWP      ',
+      '     PWPP     ',
+      '    PPWWP     ',
+      '    PWWWP     ',
+      '   PPWWWPP    ',
+      '   PWWWWWP    ',
+      '  PPWWWWWPP   ',
+      '  PWWWWWWWP   ',
+      '  PWWWWWWWP   ',
+      '  PPWWWWWPP   ',
+      '   PWWWWWP    ',
+      '   PPWWWPP    ',
+      '    PWWWP     ',
+      '    PPWPP     ',
+      '     PWP      ',
+      '      PP      ',
+      '      PP      ',
+      '              ',
+    ],
+  ],
+};
+
+// --- The Demon King's throne. 18 x 24. Throne hall landmark. ----------------
+// The dark counterpart of THRONE: same idea, but the crest is a fan of SPIKES
+// instead of gold ribs, and it is built from black iron with a rift-purple seat.
+export const DEMON_THRONE = {
+  w: 18,
+  h: 24,
+  frames: [
+    [
+      '  k  k  k  k  k   ',
+      '  kR kR kR kR kR  ',   // spike crest
+      '  kRkkRkkRkkRkkR  ',
+      '  kMMMMMMMMMMMMk  ',
+      '  kMPPPPPPPPPPMk  ',   // rift-purple back
+      '  kMPPPPPPPPPPMk  ',
+      '  kMPpPPPPPPpPMk  ',
+      '  kMPPPPPPPPPPMk  ',
+      '  kMPPPPPPPPPPMk  ',
+      '  kMPpPPPPPPpPMk  ',
+      '  kMPPPPPPPPPPMk  ',
+      '  kMPPPPPPPPPPMk  ',
+      '  kMkkkkkkkkkkMk  ',
+      ' kMMMMMMMMMMMMMMk ',
+      ' kMPPPPPPPPPPPPMk ',   // seat
+      ' kMPPPPPPPPPPPPMk ',
+      ' kMkkkkkkkkkkkkMk ',
+      ' kMk        kMk   ',
+      ' kMk        kMk   ',
+      ' kMk        kMk   ',
+      'kMMMk      kMMMk  ',
+      'kMMMk      kMMMk  ',
+      'kkkkk      kkkkk  ',
+      '                  ',
+    ],
+  ],
+};
+
+// --- The final spire's broken crown. 18 x 26. Finalspire landmark. ----------
+// The top of the villain's tower, reached at last: jagged black stone with the
+// rift burning through its cracks. Asymmetric on purpose (the left side is
+// broken lower) so it reads as a ruin at the end of a siege.
+export const SPIRE_CROWN = {
+  w: 18,
+  h: 26,
+  frames: [
+    [
+      '        k  k      ',
+      '     k  kM kMk    ',
+      '    kMk kMkkMk    ',
+      '   kMMkkkMMkMMk   ',
+      '   kMMMMMMMMMMk   ',
+      '   kMMPPMMMMMMk   ',   // rift glowing through the cracks
+      '   kMMPPMMPPMMk   ',
+      '   kMMMMMMPPMMk   ',
+      '  kMMMMMMMMMMMMk  ',
+      '  kMMPPMMMMMMMMk  ',
+      '  kMMPPMMMMPPMMk  ',
+      '  kMMMMMMMMPPMMk  ',
+      '  kMMMMMMMMMMMMk  ',
+      ' kMMMMPPMMMMMMMMk ',
+      ' kMMMMPPMMMMMMMMk ',
+      ' kMMMMMMMMMPPMMMk ',
+      ' kMMMMMMMMMPPMMMk ',
+      ' kMMMMMMMMMMMMMMk ',
+      'kMMMMPPMMMMMMMMMMk',
+      'kMMMMPPMMMMMMMMMMk',
+      'kMMMMMMMMMMMPPMMMk',
+      'kMMMMMMMMMMMPPMMMk',
+      'kMMMMMMMMMMMMMMMMk',
+      'kMMMMMMMMMMMMMMMMk',
+      'kMMMMMMMMMMMMMMMMk',
+      'kkkkkkkkkkkkkkkkkk',
+    ],
+  ],
+};
+
+// --- A tattered war banner of the fortress. 10 x 18. -----------------------
+// Torn at the bottom edge (the fringe is uneven), rift-purple field with a red
+// slash — the Demon King's mark.
+export const DEMON_BANNER = {
+  w: 10,
+  h: 18,
+  frames: [
+    [
+      ' kkkkkkkk ',
+      ' kPPPPPPk ',
+      ' kPPRRPPk ',
+      ' kPRRRRPk ',   // red slash mark
+      ' kPPRRPPk ',
+      ' kPPPPPPk ',
+      ' kPPPPPPk ',
+      ' kPpPPpPk ',
+      ' kPPPPPPk ',
+      ' kPPPPPPk ',
+      ' kPpPPpPk ',
+      ' kPPPPPPk ',
+      ' kPkPPkPk ',   // tattered fringe — uneven on purpose
+      ' kPk kPk  ',
+      ' kk   kk  ',
+      '          ',
+      '          ',
+      '          ',
+    ],
+    [
+      ' kkkkkkkk ',
+      ' kPPPPPPk ',
+      ' kPPRRPPk ',
+      ' kPRRRRPk ',
+      ' kPPRRPPk ',
+      ' kPPPPPPk ',
+      ' kPPPPPPk ',
+      ' kPpPPpPk ',
+      ' kPPPPPPk ',
+      ' kPPPPPPk ',
+      ' kPpPPpPk ',
+      ' kPPPPPPk ',
+      ' kPkPPkPk ',
+      '  kPkPPk  ',   // fringe sways
+      '   kk kk  ',
+      '          ',
+      '          ',
+      '          ',
     ],
   ],
 };

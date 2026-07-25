@@ -12,7 +12,7 @@ can be served straight from **GitHub Pages**.
 
 | Game | Folder | What it is |
 |------|--------|------------|
-| **Anh Hùng Bàn Phím** (Cứu Công Chúa) | [`anh-hung-ban-phim/`](anh-hung-ban-phim/) | A 2D pixel-art typing game that teaches kids to type Vietnamese with the Telex input method. Fight monsters by typing the word above them and rescue the princess! |
+| **Anh Hùng Bàn Phím** (Cứu Công Chúa) | [`anh-hung-ban-phim/`](anh-hung-ban-phim/) | A 2D pixel-art typing game that teaches kids to type Vietnamese with the Telex input method. Fight monsters by typing the word above them — a 26-stage, three-chapter story: rescue ten kidnapped princesses, seek the Staff of Wisdom, and defeat the World Devourer. |
 
 *More games coming soon.*
 

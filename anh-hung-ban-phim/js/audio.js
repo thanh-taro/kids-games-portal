@@ -178,3 +178,50 @@ export function rankUp(rankIndex = 1) {
   });
   tone(base * 3, 0.4, 0.45, 'square', 0.35);
 }
+
+// --- Staff of Wisdom (chapter 2's artifact) ---------------------------------
+
+// The Staff just reached full charge: a bright, hopeful two-note "ready!" chime
+// with a shimmer on top. Deliberately distinct from comboTierUp (which is also a
+// rising pair) by having a third, much higher sparkle — a kid needs to tell
+// "combo went up" from "my big attack is ready" without looking.
+export function staffCharged() {
+  tone(659, 0, 0.10, 'triangle', 0.40);
+  tone(988, 0.08, 0.14, 'triangle', 0.42);
+  tone(1976, 0.18, 0.26, 'sine', 0.28); // high shimmer
+}
+
+// Spending the charge: a deep swell under a bright strike, so an empowered hit
+// sounds heavier than any ordinary special.
+export function staffStrike() {
+  tone(147, 0, 0.30, 'sawtooth', 0.34);   // low swell
+  tone(587, 0.03, 0.16, 'square', 0.42);
+  tone(1175, 0.10, 0.22, 'triangle', 0.38);
+  noise(0.02, 0.30, 0.34);
+}
+
+// --- Multi-phase boss (stage 26) --------------------------------------------
+
+// An ordinary hit turned away by a shielded phase: a dull, muffled clank with no
+// bright partials, so it clearly reads as "that did nothing".
+export function shieldBlock() {
+  tone(196, 0, 0.09, 'square', 0.26);
+  tone(147, 0.06, 0.14, 'triangle', 0.22);
+  noise(0, 0.10, 0.16);
+}
+
+// A boss phase falling: a descending growl into a rising sting — the sound of the
+// fight changing gear rather than ending.
+export function phaseChange() {
+  [392, 330, 262, 196].forEach((f, i) => tone(f, i * 0.07, 0.16, 'sawtooth', 0.34));
+  noise(0.05, 0.45, 0.40);
+  tone(523, 0.34, 0.20, 'square', 0.36);
+  tone(784, 0.46, 0.28, 'triangle', 0.34);
+}
+
+// A page of story text turning — very soft, so paging the prologue doesn't
+// sound like a menu confirm.
+export function storyPage() {
+  tone(523, 0, 0.05, 'triangle', 0.18);
+  noise(0, 0.05, 0.08);
+}

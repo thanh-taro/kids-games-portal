@@ -22,13 +22,21 @@ import * as Audio from './audio.js';
 // A lesson with no `target` is a "read-only" intro slide (advance with SPACE).
 const LESSONS = [
   {
-    title: 'Chào mừng!',
-    // "Welcome! You type Vietnamese words to attack monsters and rescue the
-    //  princess. Let's learn how to type — it's easy!"
+    title: 'Lời dặn của Đức Vua', // "The King's instruction"
+    // Framed as the King's parting advice, because the prologue (story.js) has
+    // just shown him saying "learn to TYPE our language well — the monsters of
+    // darkness fear nothing more than a word typed correctly". The tutorial IS
+    // that training, so it opens in the same voice (and the same wording — the
+    // skill is TYPING, gõ, not handwriting) instead of as a separate manual.
+    // "The King said: monsters of darkness fear a word typed correctly! You type
+    //  Vietnamese to attack them and rescue the princesses. Let's train — it's
+    //  easy!"
     lines: [
-      'Bạn gõ chữ Tiếng Việt để đánh quái vật',
-      'và cứu công chúa! 🏰',
-      'Cùng học gõ chữ nhé — dễ lắm!',
+      'Đức Vua đã dặn: lũ quái vật bóng tối',
+      'rất sợ một con chữ được gõ CHÍNH XÁC! ⚔️',
+      'Bạn gõ chữ Tiếng Việt để đánh chúng',
+      'và cứu các nàng công chúa. 🏰',
+      'Cùng luyện nhé — dễ lắm!',
     ],
     target: null,
   },
@@ -160,7 +168,12 @@ const LINE_PITCH = 34;
 // the word visually centred between the label and the chip row, which sits
 // CHIP_ROW_BOTTOM_GAP above the bottom of a CARD_H-tall card.
 const WORD_TOP = 70;
-const CARD_H = 158;
+// The chip row's active key wears a glow ring (+4px) and a bouncing ▼ pointer
+// that reaches ~20px above the chip, so the row needs clearance above it that
+// the old 158px card didn't have — at 158 the arrow reached up into the 44px
+// target word's descenders. 186 keeps the word, the pointer and the chips as
+// three visually separate bands.
+const CARD_H = 186;
 const CHIP_ROW_BOTTOM_GAP = 14;
 const CHIP_H = 26; // key-hint chip size; also the height of the solved-flourish row
 
@@ -176,6 +189,13 @@ export class Tutorial {
     this.solved = false;    // current lesson's target has been typed
     this.solvedTimer = 0;   // frames since solved (for the "correct!" flourish)
     this.mistake = false;
+    // How many of the lesson's hint keys have been typed correctly. This is the
+    // NEXT key to press, so the chip row can spotlight exactly one key — a kid
+    // hunting for the letter on the keyboard needs "press THIS one now", not a
+    // row of eight equally-bright chips they have to count through themselves.
+    // Counted from keystrokes, not from the target's matched chars: the two
+    // differ whenever Telex spends several keys on one char (m-e-o-f -> "mèo").
+    this.keyIndex = 0;
     this.tick = 0;
   }
 
@@ -203,6 +223,7 @@ export class Tutorial {
     this.solved = false;
     this.solvedTimer = 0;
     this.mistake = false;
+    this.keyIndex = 0;
     Audio.confirm();
   }
 
@@ -228,8 +249,17 @@ export class Tutorial {
 
     if (key === 'Backspace') {
       this.mistake = false;
+      this.keyIndex = Math.max(0, this.keyIndex - 1);
       return;
     }
+
+    // Track which hint key to spotlight next. A correct key steps forward; a
+    // retype-from-scratch (stepKey's auto-restart) snaps back to "one key in",
+    // since the kid is now on their first keystroke again; a plain mistake holds
+    // the spotlight where it is, so the chip they still need to press keeps
+    // glowing instead of running ahead of them.
+    if (r.restarted) this.keyIndex = 1;
+    else if (!r.mistake) this.keyIndex++;
 
     if (r.complete) {
       this.solved = true;
@@ -358,6 +388,16 @@ export class Tutorial {
       // A space is invisible, so draw the gap the kid must type as a small
       // underscore bar — otherwise "con gà" reads as one blank stretch and
       // there is no visual cue that SPACE is a keystroke of its own.
+      // Underline the letter being worked on right now, in the same gold as the
+      // active key chip — so the word and the chip row point at the same thing
+      // and the kid can read "this letter comes from this key" off the card.
+      // Kept tight under the glyphs (not at +size+4): lower down it collided
+      // with the chip row's ▼ pointer and the two gold marks merged into one
+      // unreadable smudge.
+      const isCursor = !this.solved && !this.mistake && i === matched;
+      if (isCursor) {
+        drawRect(ctx, dx + 2, wy + size * 0.95, Math.max(6, chW - 4), 4, '#ffe08a');
+      }
       if (ch === ' ') {
         const barW = Math.max(6, chW - 6);
         drawRect(ctx, dx + 3, wy + size * 0.72, barW, 4, i < matched ? '#5fc23c' : '#6b6490');
@@ -370,15 +410,47 @@ export class Tutorial {
 
     // Key-hint chips: the raw keys to press, e.g. m e o f. A '␣' token becomes
     // a wide SPACE bar chip so the space key looks like the real keyboard key.
+    //
+    // Exactly ONE chip is the "press this now" chip — the kid is hunting for a
+    // letter on a keyboard they can't touch-type yet, so the row has to point at
+    // a single key. Already-typed chips go dim green (done, don't look here),
+    // the next one is bright gold, lifted, and pulsing under a bouncing arrow,
+    // and later ones stay dim so they read as "not yet".
     if (lesson.keys && !this.solved) {
       let kx = cx - chips.totalW / 2;
       const ky = y + cardH - CHIP_ROW_BOTTOM_GAP - chips.chip;
-      for (const k of chips.keys) {
+      const next = this.keyIndex;
+      for (let i = 0; i < chips.keys.length; i++) {
+        const k = chips.keys[i];
         const isSpace = k === '␣';
         const w = isSpace ? chips.spaceW : chips.chip;
-        drawRect(ctx, kx, ky, w, chips.chip, '#4a4470');
-        drawRect(ctx, kx, ky, w, 3, '#f2c53d');
-        drawText(ctx, isSpace ? 'SPACE' : k.toUpperCase(), kx + w / 2, ky + 6, isSpace ? 13 : 15, '#fff4d6', 'center');
+        const isNext = i === next;
+        const isDone = i < next;
+
+        // The active chip breathes and sits a couple of px proud of the row, so
+        // it's findable by motion alone — a kid scanning the keyboard catches
+        // movement in the corner of their eye faster than a color change.
+        const pulse = isNext ? (Math.sin(this.tick * 0.18) + 1) / 2 : 0;
+        const lift = isNext ? 2 + Math.round(pulse * 2) : 0;
+        const cy = ky - lift;
+
+        let body = '#4a4470';
+        let cap = '#f2c53d';
+        let ink = '#fff4d6';
+        if (isDone) { body = '#2f5233'; cap = '#5fc23c'; ink = '#9fd68e'; }
+        else if (isNext) { body = '#7a6a1e'; cap = '#ffe08a'; ink = '#fffbe8'; }
+        else { ink = '#a49dc4'; cap = '#8a7a3a'; }
+
+        if (isNext) {
+          // Glow ring + bouncing pointer above the key to press.
+          drawRect(ctx, kx - 4, cy - 4, w + 8, chips.chip + 8, '#ffe08a');
+          drawRect(ctx, kx - 2, cy - 2, w + 4, chips.chip + 4, '#1a1423');
+          const bob = Math.round(pulse * 3);
+          drawText(ctx, '▼', kx + w / 2, cy - 16 - bob, 14, '#ffe08a', 'center');
+        }
+        drawRect(ctx, kx, cy, w, chips.chip, body);
+        drawRect(ctx, kx, cy, w, 3, cap);
+        drawText(ctx, isSpace ? 'SPACE' : k.toUpperCase(), kx + w / 2, cy + 6, isSpace ? 13 : 15, ink, 'center');
         kx += w + chips.gap;
       }
     }
