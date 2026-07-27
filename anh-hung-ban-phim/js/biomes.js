@@ -211,7 +211,7 @@ export const BIOMES = {
       { sprite: STALACTITE, at: 0.76, scale: 1.4 },
       { sprite: STALACTITE, at: 0.88, scale: 2.0 },
     ],
-    landmark: { sprite: BROKEN_CAGE, at: 0.66, scale: 2.0 },  // ← her trace, big
+    landmark: { sprite: BROKEN_CAGE, at: 0.66, scale: 2.4 },  // ← her trace, big
     props: [
       { sprite: CRYSTAL, at: 0.26, scale: 1.6 },
       { sprite: STALAGMITE, at: 0.40, scale: 1.2 },
@@ -278,7 +278,7 @@ export const BIOMES = {
       { sprite: SPIRE, scale: 1.3, at: 0.82, tint: '#5f7f96', baseOffset: 56 },
     ],
     flyers: { sprite: BIRD, count: 5, scale: 1.2, tint: '#ffffff', band: [0.18, 0.46], speed: 0.7 },
-    landmark: { sprite: SHIPWRECK, at: 0.56, scale: 1.7 },
+    landmark: { sprite: SHIPWRECK, at: 0.56, scale: 2.2 },
     props: [
       { sprite: LIGHTHOUSE, at: 0.24, scale: 1.5 },
       { sprite: PALM, at: 0.80, scale: 1.4 },
@@ -334,7 +334,7 @@ export const BIOMES = {
       { sprite: MOUNTAINS, scale: 2.8, tile: true, tint: '#8fa8c8', baseOffset: 8 },
       { sprite: SPIRE, scale: 2.1, at: 0.86, tint: '#5a6f92', baseOffset: 2 },
     ],
-    landmark: { sprite: FROZEN_FALL, at: 0.26, scale: 2.0 },
+    landmark: { sprite: FROZEN_FALL, at: 0.26, scale: 2.4 },
     props: [
       { sprite: SNOWY_FIR, at: 0.44, scale: 1.4 },
       { sprite: FROZEN_TEAR, at: 0.56, scale: 1.6 },   // ← her trace
@@ -394,7 +394,7 @@ export const BIOMES = {
       { sprite: MOUNTAINS, scale: 1.8, tile: true, tint: '#7a3020', baseOffset: 8 },
       { sprite: SPIRE, scale: 3.0, at: 0.86, tint: '#4a2038', baseOffset: 2 },
     ],
-    landmark: { sprite: LAVA_FALL, at: 0.30, scale: 2.2 },
+    landmark: { sprite: LAVA_FALL, at: 0.30, scale: 2.4 },
     props: [
       { sprite: OBSIDIAN_BRIDGE, at: 0.58, scale: 1.5, lift: 0.26 },
       { sprite: VOLCANIC_SPIRE, at: 0.76, scale: 1.6 },
@@ -427,7 +427,7 @@ export const BIOMES = {
       { sprite: SPIRE, scale: 9.5, at: 0.80, tint: '#2e2449', baseOffset: 4 },
     ],
     flyers: { sprite: BIRD, count: 5, scale: 1.2, tint: '#2b2740', band: [0.12, 0.34], speed: 0.75, dir: -1, flap: 5 },
-    landmark: { sprite: CASTLE_GATE, at: 0.52, scale: 1.9 },
+    landmark: { sprite: CASTLE_GATE, at: 0.52, scale: 2.3 },
     props: [
       { sprite: JAIL, at: 0.76, scale: 1.5 },
       { sprite: TOWER, at: 0.90, scale: 1.4 },
@@ -477,7 +477,7 @@ export const BIOMES = {
     // than the monsters walking in front of them — and the book creep vanished
     // against them. Scenery must never out-read an enemy: in a typing game the kid
     // is scanning for the word above a monster, so the monster has to pop.
-    landmark: { sprite: BOOKSHELF, at: 0.50, scale: 1.8, tint: '#4a4257' },
+    landmark: { sprite: BOOKSHELF, at: 0.50, scale: 2.1, tint: '#4a4257' },
     props: [
       { sprite: BOOKSHELF, at: 0.26, scale: 1.3, tint: '#453e52' },
       { sprite: BOOKSHELF, at: 0.92, scale: 1.5, tint: '#453e52' },
@@ -539,7 +539,7 @@ export const BIOMES = {
       { sprite: SPIRE, scale: 1.5, at: 0.05, tint: '#8a94a0', baseOffset: 3 },
       { sprite: WISDOM_TOWER, scale: 1.2, at: 0.82, tint: '#aeb8c0', baseOffset: 2 },
     ],
-    landmark: { sprite: RUINED_ARCH, at: 0.54, scale: 1.7, tint: '#7d8a84' },
+    landmark: { sprite: RUINED_ARCH, at: 0.54, scale: 2.1, tint: '#7d8a84' },
     props: [
       { sprite: DEAD_TREE, at: 0.28, scale: 1.3, tint: '#5e6659' },
       { sprite: REEDS, at: 0.44, scale: 1.2 },
@@ -602,7 +602,7 @@ export const BIOMES = {
       { sprite: SPIRE, scale: 1.1, at: 0.04, tint: '#a892a8', baseOffset: 3 },
       { sprite: WISDOM_TOWER, scale: 1.9, at: 0.78, tint: '#c8c0d4', baseOffset: 2 },
     ],
-    landmark: { sprite: MIRROR_STAND, at: 0.52, scale: 2.0 },
+    landmark: { sprite: MIRROR_STAND, at: 0.52, scale: 2.4 },
     props: [
       { sprite: MIRROR_STAND, at: 0.32, scale: 1.4 },
       { sprite: MIRROR_STAND, at: 0.70, scale: 1.6 },
@@ -733,7 +733,7 @@ export const BIOMES = {
       // Back on the villain's road: the spire returns, and it is close.
       { sprite: SPIRE, scale: 4.5, at: 0.78, tint: '#3a2a4c', baseOffset: 4 },
     ],
-    landmark: { sprite: BONE_ARCH, at: 0.54, scale: 1.9 },
+    landmark: { sprite: BONE_ARCH, at: 0.54, scale: 2.2 },
     props: [
       { sprite: BONE_PILLAR, at: 0.30, scale: 1.5 },
       { sprite: BONE_PILLAR, at: 0.44, scale: 1.2 },

@@ -267,3 +267,225 @@ export function storyPage() {
   tone(523, 0, 0.05, 'triangle', 0.18);
   noise(0, 0.05, 0.08);
 }
+
+// --- Boss warning ------------------------------------------------------------
+
+// A stageboss is about to spawn: a low held horn-stab dyad (root + fifth) with
+// a rumble underneath, deliberately LOW and SUSTAINED rather than rising —
+// phaseChange()/rankUp() climb to feel triumphant; this one just sits there and
+// growls, so a kid reads it as "danger ahead", not "something good happened".
+export function bossWarning() {
+  duckMusic(0.6, 0.9);
+  tone(98, 0, 0.5, 'sawtooth', 0.32);
+  tone(147, 0, 0.5, 'sawtooth', 0.24);
+  noise(0, 0.5, 0.3);
+  tone(98, 0.55, 0.35, 'sawtooth', 0.26);
+  tone(147, 0.55, 0.35, 'sawtooth', 0.20);
+}
+
+// --- Stageboss signature attacks (see bossattacks.js) -----------------------
+// One cue per stageboss, played the instant its telegraphed attack lands (not
+// on the windup — a kid should see the charge-up but only HEAR the impact, so
+// the sound stays the confirming "it landed" cue rather than a second warning
+// competing with the windup glow). All duck the music like any other loud
+// combat hit.
+
+// Ground Slam (stageboss_ogre): a heavy low thud + rumble.
+export function bossGroundSlam() {
+  duckMusic(0.55, 0.35);
+  noise(0, 0.22, 0.4);
+  tone(98, 0, 0.28, 'sine', 0.4);
+  tone(65, 0.05, 0.3, 'sawtooth', 0.3);
+}
+
+// Fire Breath (boss_dragon): a roar sweeping down into a fiery whoosh.
+export function bossFireBreath() {
+  duckMusic(0.55, 0.4);
+  tone(220, 0, 0.3, 'sawtooth', 0.32);
+  tone(160, 0.08, 0.32, 'sawtooth', 0.3);
+  noise(0.02, 0.35, 0.36);
+}
+
+// Shadow Bolt (stageboss_darklord): a low ominous boom, short and dark.
+export function bossShadowBolt() {
+  duckMusic(0.5, 0.3);
+  tone(110, 0, 0.24, 'sine', 0.4);
+  tone(73, 0.04, 0.26, 'sawtooth', 0.28);
+  noise(0, 0.14, 0.22);
+}
+
+// Ink Splatter (boss_scribe): a wet slap.
+export function bossInkSplatter() {
+  duckMusic(0.45, 0.22);
+  noise(0, 0.1, 0.32);
+  tone(180, 0.03, 0.1, 'triangle', 0.3);
+}
+
+// Gale Slash (boss_windserpent): a sharp fast whoosh.
+export function bossGaleSlash() {
+  duckMusic(0.4, 0.2);
+  tone(1400, 0, 0.08, 'sine', 0.24);
+  noise(0, 0.14, 0.26);
+}
+
+// Stone Fist (boss_guardian_statue): grinding stone into a heavy crack —
+// the longest, heaviest cue in the set, matching its 40-frame windup.
+export function bossStoneFist() {
+  duckMusic(0.6, 0.4);
+  tone(85, 0, 0.34, 'sawtooth', 0.34);
+  noise(0.04, 0.3, 0.4);
+  tone(120, 0.28, 0.12, 'square', 0.3);
+}
+
+// Shadow Grasp (boss_formless / Devourer phase 1): a low moan/whisper.
+export function bossShadowGrasp() {
+  duckMusic(0.5, 0.35);
+  tone(140, 0, 0.4, 'sine', 0.26);
+  tone(150, 0.1, 0.36, 'sine', 0.2);
+  noise(0.02, 0.3, 0.14);
+}
+
+// Arcane Pulse (stageboss_staffguardian): a crystalline chime.
+export function bossArcanePulse() {
+  duckMusic(0.45, 0.3);
+  tone(988, 0, 0.14, 'sine', 0.3);
+  tone(1480, 0.06, 0.2, 'triangle', 0.26);
+}
+
+// Iron Slam (boss_warden): a metallic clank.
+export function bossIronSlam() {
+  duckMusic(0.5, 0.28);
+  tone(330, 0, 0.06, 'square', 0.32);
+  tone(220, 0.03, 0.1, 'square', 0.28);
+  noise(0, 0.16, 0.3);
+}
+
+// Lantern Curse (boss_jailer): deliberately dull and muffled, like
+// shieldBlock() — an eerie ring rather than a loud impact.
+export function bossLanternCurse() {
+  duckMusic(0.4, 0.4);
+  tone(220, 0, 0.3, 'sine', 0.2);
+  tone(330, 0.15, 0.3, 'sine', 0.14);
+}
+
+// War Cry Slash (boss_general): a battle horn stab, then a slash.
+export function bossWarCrySlash() {
+  duckMusic(0.55, 0.3);
+  tone(196, 0, 0.18, 'sawtooth', 0.36);
+  tone(294, 0.1, 0.1, 'square', 0.3);
+  noise(0.08, 0.12, 0.28);
+}
+
+// Void Maw (Devourer phase 2): a deep roar.
+export function bossVoidMaw() {
+  duckMusic(0.6, 0.4);
+  tone(90, 0, 0.36, 'sawtooth', 0.36);
+  tone(65, 0.1, 0.34, 'sine', 0.3);
+  noise(0.02, 0.3, 0.3);
+}
+
+// Devour Sky (Devourer phase 3): the biggest cue in the set — a guttural
+// scream over a low sustained drone.
+export function bossDevourSky() {
+  duckMusic(0.65, 0.6);
+  tone(200, 0, 0.3, 'sawtooth', 0.4);
+  tone(150, 0.06, 0.34, 'sawtooth', 0.34);
+  tone(60, 0.1, 0.5, 'sine', 0.32);
+  noise(0.04, 0.4, 0.4);
+}
+
+// Fallback for a stageboss sprite with no roster entry in bossattacks.js.
+export function bossGenericSlash() {
+  duckMusic(0.45, 0.25);
+  tone(392, 0, 0.1, 'square', 0.3);
+  noise(0, 0.12, 0.24);
+}
+
+// --- Princess support (chapters 2-3 — see princesses.js) --------------------
+// Every cast plays this shared warm chime FIRST (a gentle bell, not a fanfare
+// — this is someone helping, not an achievement, so it's deliberately softer
+// than rankUp/reward), then the ability's own cue layers on top of it.
+
+export function princessCast() {
+  duckMusic(0.5, 0.5);
+  tone(1047, 0, 0.14, 'sine', 0.30);
+  tone(1319, 0.09, 0.18, 'sine', 0.26);
+}
+
+// Hoa's Heal — a warm rising major third, soft sine, no percussion.
+export function princessHeal() {
+  tone(523, 0, 0.16, 'sine', 0.34);
+  tone(659, 0.10, 0.22, 'sine', 0.32);
+}
+
+// Mây's Full Heal — heal's cue, wider and with a shimmering top note (this
+// only fires at a real crisis, so it should feel like a bigger relief).
+export function princessFullHeal() {
+  tone(392, 0, 0.18, 'sine', 0.34);
+  tone(523, 0.10, 0.20, 'sine', 0.34);
+  tone(784, 0.22, 0.30, 'sine', 0.28);
+}
+
+// Ánh Dương's Shield — a bright metallic "ting" (the dome snapping into
+// place), distinct from staffCharged's triad so it doesn't read as "ready".
+export function princessShield() {
+  tone(880, 0, 0.10, 'triangle', 0.36);
+  tone(1319, 0.06, 0.20, 'sine', 0.30);
+}
+
+// The shield popping to block a hit — a quick glassy chime, satisfying but
+// clearly "that worked", the opposite mood of shieldBlock()'s dull clank.
+export function princessShieldBreak() {
+  tone(1319, 0, 0.08, 'triangle', 0.34);
+  tone(988, 0.05, 0.10, 'triangle', 0.28);
+  noise(0, 0.06, 0.10);
+}
+
+// Băng's Freeze — a crystalline descending chime, icy (sine + high partial).
+export function princessFreeze() {
+  tone(988, 0, 0.10, 'sine', 0.30);
+  tone(784, 0.07, 0.10, 'sine', 0.28);
+  tone(1568, 0.10, 0.18, 'sine', 0.18);
+}
+
+// Cát's Slow — a low, dragging descending glide, matching the sluggish visual.
+export function princessSlow() {
+  tone(330, 0, 0.20, 'triangle', 0.28);
+  tone(262, 0.14, 0.26, 'triangle', 0.26);
+}
+
+// Sóng Biển's Knockback — a whoosh (noise sweep) plus a low thud, like a wave.
+export function princessKnockback() {
+  noise(0, 0.22, 0.30);
+  tone(220, 0, 0.16, 'sine', 0.30);
+}
+
+// Sao's Star Nova — a quick bright twinkle arpeggio.
+export function princessStarNova() {
+  duckMusic(0.4, 0.3);
+  [784, 988, 1319].forEach((f, i) => tone(f, i * 0.05, 0.10, 'triangle', 0.32));
+}
+
+// Ánh Sáng's Light Nova — star nova's cue, bigger and duckier (fires on a
+// dramatic phase-change beat, so it should have real weight).
+export function princessLightNova() {
+  duckMusic(0.6, 0.6);
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.05, 0.14, 'triangle', 0.36));
+  noise(0, 0.2, 0.2);
+}
+
+// Tình Yêu's Staff Charge — echoes staffCharged()'s own two-note "ready"
+// shape (since that's mechanically what just happened) but rounder/softer,
+// so it reads as "given to you" rather than "you earned it".
+export function princessStaffCharge() {
+  tone(659, 0, 0.12, 'sine', 0.32);
+  tone(988, 0.08, 0.16, 'sine', 0.30);
+  tone(1976, 0.16, 0.22, 'sine', 0.20);
+}
+
+// Dòng Suối's Cleanse — the quietest cue in the roster, a soft two-note
+// ripple, matching a rescue from a stuck moment rather than a triumph.
+export function princessCleanse() {
+  tone(587, 0, 0.10, 'sine', 0.24);
+  tone(784, 0.08, 0.14, 'sine', 0.20);
+}

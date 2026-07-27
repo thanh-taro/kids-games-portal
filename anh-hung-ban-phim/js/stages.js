@@ -100,7 +100,7 @@ export const STAGES = [
     id: 4,
     biome: 'forest',
     name: 'Rừng Rậm',            // "Deep Forest"
-    princess: 'Công Chúa Suối',  // "Princess Stream"
+    princess: 'Công Chúa Dòng Suối',  // "Princess Stream"
     princessStyle: 'stream',
     intro: 'Ghép chữ thành từ!', // "Combine letters into words!"
     // 13 waves. Lightning (awarded for stage 3) joins; meteor is NOT here — it is
@@ -155,6 +155,7 @@ export const STAGES = [
     princessStyle: 'sunlight',
     intro: 'Gõ cụm từ thật nhuần nhuyễn!', // "Master your phrases!"
     // 15 waves. Meteor (awarded for stage 5) finally debuts on the stageboss.
+    // Phrases stay the ceiling here — sentences don't debut until stage 12.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -167,20 +168,21 @@ export const STAGES = [
       { type: 'boss', pool: 'phrases', skill: 'lightning' },
       { type: 'elite', pool: 'phrases', skill: 'lightning' },
       { type: 'boss', pool: 'phrases', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
       { type: 'elite', pool: 'phrases', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'stageboss', pool: 'phrases', skill: 'meteor' },
     ],
   },
   {
     id: 7,
     biome: 'coast',
     name: 'Bờ Biển Ngọc',        // "Jade Coast"
-    princess: 'Công Chúa Sóng',  // "Princess Wave"
+    princess: 'Công Chúa Sóng Biển',  // "Princess Wave"
     princessStyle: 'wave',
     intro: 'Luyện từ nhanh hơn nào!', // "Practice words faster!"
-    // 16 waves. Full kit from here on; sentences take over the back half.
+    // 16 waves. Full kit from here on; phrases take over the back half —
+    // sentences are still saved for stage 12.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -192,12 +194,12 @@ export const STAGES = [
       { type: 'boss', pool: 'phrases', skill: 'lightning' },
       { type: 'boss', pool: 'phrases', skill: 'lightning' },
       { type: 'elite', pool: 'phrases', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
       { type: 'elite', pool: 'phrases', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'stageboss', pool: 'phrases', skill: 'meteor' },
     ],
   },
   {
@@ -206,9 +208,9 @@ export const STAGES = [
     name: 'Sa Mạc Vàng',         // "Golden Desert"
     princess: 'Công Chúa Cát',   // "Princess Sand"
     princessStyle: 'sand',
-    intro: 'Bắt đầu gõ cả câu!',  // "Start typing full sentences!"
-    // 18 waves. The stageboss is the kid's first HARD sentence — one long line as
-    // the climax, after a stage of ordinary ones.
+    intro: 'Gõ cụm từ dài hơn nào!', // "Type even longer phrases!"
+    // 18 waves. Phrases carry the whole stage — sentences are still saved for
+    // the chapter finale at stage 12.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -218,16 +220,16 @@ export const STAGES = [
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'phrases', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
       { type: 'elite', pool: 'phrases', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'stageboss', pool: 'phrases', skill: 'meteor' },
     ],
   },
   {
@@ -236,8 +238,9 @@ export const STAGES = [
     name: 'Đỉnh Núi Tuyết',      // "Snowy Peak"
     princess: 'Công Chúa Băng',  // "Princess Ice"
     princessStyle: 'ice',
-    intro: 'Gõ câu thật chuẩn xác!', // "Type sentences accurately!"
-    // 19 waves. Hard sentences start appearing on bosses, not just the finale.
+    intro: 'Gõ cụm từ thật chuẩn xác!', // "Type phrases accurately!"
+    // 19 waves. Phrases stay the ceiling — accuracy over the same tier is the
+    // point of this stage, not a new tier yet.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -245,19 +248,19 @@ export const STAGES = [
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'elite', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'elite', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'stageboss', pool: 'phrases', skill: 'meteor' },
     ],
   },
   {
@@ -267,28 +270,28 @@ export const STAGES = [
     princess: 'Công Chúa Mây',   // "Princess Cloud"
     princessStyle: 'cloud',
     intro: 'Càng lúc càng giỏi!', // "Getting better and better!"
-    // 20 waves. Hard sentences now outnumber plain ones among the bosses.
+    // 20 waves. Still phrases throughout — the tier only steps up at stage 12.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'elite', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'fireball' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'elite', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'stageboss', pool: 'phrases', skill: 'meteor' },
     ],
   },
   {
@@ -298,29 +301,30 @@ export const STAGES = [
     princess: 'Công Chúa Tình Yêu', // "Princess of Love"
     princessStyle: 'love',
     intro: 'Thử thách gần cuối rồi!', // "The near-final challenge!"
-    // 21 waves. Nearly every boss is a hard sentence now.
+    // 21 waves. The endurance test right before the finale — still phrases,
+    // now almost wall-to-wall, so stage 12 is the one place sentences feel new.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
-      { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
-      { type: 'elite', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'fireball' },
+      { type: 'elite', pool: 'phrases', skill: 'fireball' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'elite', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'lightning' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'elite', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'boss', pool: 'phrases', skill: 'meteor' },
+      { type: 'stageboss', pool: 'phrases', skill: 'meteor' },
     ],
   },
   {
@@ -330,31 +334,33 @@ export const STAGES = [
     princess: 'Công Chúa Ánh Sáng', // "Princess Light"
     princessStyle: 'light',
     intro: 'Trận cuối — cứu tất cả!', // "Final battle — save everyone!"
-    // 22 waves — the longest gauntlet, closing on TWO stagebosses back to back,
-    // both on hard sentences. This is the endurance peak of the whole chapter.
+    // 22 waves — the longest gauntlet, closing on TWO stagebosses back to back.
+    // This is where the `sentences` tier debuts for the first time in the game
+    // (every earlier stage in the chapter held at phrases), so the endurance
+    // peak of chapter 1 doubles as its one true step up in curriculum tier.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
+      { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'sentences', skill: 'fireball' },
       { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'sentences', skill: 'lightning' },
       { type: 'elite', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'sentences', skill: 'lightning' },
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
+      { type: 'stageboss', pool: 'sentences', skill: 'meteor' },
+      { type: 'stageboss', pool: 'sentences', skill: 'meteor' },
     ],
   },
   // =========================================================================
@@ -365,6 +371,10 @@ export const STAGES = [
   // The curriculum steps up to tier 6 `long_sentences`: 7-10 syllables where the
   // tone changes on nearly every one. That is the specific skill this chapter
   // teaches — sustaining a clean run, not surviving one hard syllable.
+  //
+  // Mirroring chapter 1's shape: stages 13-19 hold at `sentences`/`long_sentences`
+  // and tier 5 `hard_sentences` is saved entirely for the chapter finale at stage
+  // 20 — the step up in tier reads as one deliberate jump, not a slow creep.
   //
   // Wave counts hold around 16-20: chapter 1 already built endurance, so the
   // difficulty here comes from the WORDS, not from longer gauntlets.
@@ -381,13 +391,13 @@ export const STAGES = [
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'sentences', skill: 'fireball' },
       { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'sentences', skill: 'lightning' },
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'frostnova' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'frostnova' },
       { type: 'elite', pool: 'sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'frostnova' },
+      { type: 'boss', pool: 'sentences', skill: 'frostnova' },
       { type: 'elite', pool: 'sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'stageboss', pool: 'long_sentences', skill: 'frostnova' },
@@ -406,13 +416,13 @@ export const STAGES = [
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'sentences', skill: 'lightning' },
       { type: 'boss', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'frostnova' },
+      { type: 'boss', pool: 'sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'boss', pool: 'sentences', skill: 'windblade' },
       { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
@@ -431,18 +441,18 @@ export const STAGES = [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'phrases', skill: 'fireball' },
       { type: 'elite', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'boss', pool: 'sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'sentences', skill: 'meteor' },
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'stageboss', pool: 'long_sentences', skill: 'windblade' },
     ],
   },
@@ -450,7 +460,7 @@ export const STAGES = [
     id: 16,
     biome: 'rune_temple',
     name: 'Đền Chữ Cổ',            // "Temple of Ancient Letters"
-    intro: 'Chữ viết đúng là chìa khóa!', // "A correctly typed word is the key!"
+    intro: 'Gõ đúng là chìa khóa!', // "Typing correctly is the key!"
     // 18 waves. Holy Light (stage 15's reward) debuts — the Staff's first gift.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -458,18 +468,18 @@ export const STAGES = [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'sentences', skill: 'fireball' },
       { type: 'elite', pool: 'sentences', skill: 'lightning' },
-      { type: 'boss', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'boss', pool: 'sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'elite', pool: 'sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'stageboss', pool: 'long_sentences', skill: 'holylight' },
     ],
   },
@@ -483,19 +493,19 @@ export const STAGES = [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'sentences', skill: 'fireball' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'elite', pool: 'sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'frostnova' },
+      { type: 'elite', pool: 'sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'stageboss', pool: 'long_sentences', skill: 'holylight' },
     ],
@@ -510,19 +520,19 @@ export const STAGES = [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'sentences', skill: 'fireball' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'elite', pool: 'sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'frostnova' },
+      { type: 'elite', pool: 'sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'stageboss', pool: 'long_sentences', skill: 'holylight' },
     ],
@@ -538,19 +548,19 @@ export const STAGES = [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'elite', pool: 'sentences', skill: 'fireball' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
+      { type: 'elite', pool: 'sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'meteor' },
+      { type: 'elite', pool: 'sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'windblade' },
+      { type: 'elite', pool: 'sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'windblade' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
+      { type: 'elite', pool: 'sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'stageboss', pool: 'long_sentences', skill: 'holylight' },
@@ -561,8 +571,11 @@ export const STAGES = [
     biome: 'wisdom_peak',
     name: 'Đỉnh Trí Tuệ',          // "The Summit of Wisdom"
     intro: 'Thủ Vệ Trượng đang chờ!', // "The Guardian of the Staff awaits!"
-    // CHAPTER 2 FINALE — the Guardian who holds the Staff. Two stagebosses back
-    // to back, both on tier 6, mirroring chapter 1's double-stageboss climax.
+    // CHAPTER 2 FINALE — the Guardian who holds the Staff. This is also where
+    // `hard_sentences` (tier 5) debuts in this chapter — every earlier stage
+    // held at plain `sentences`, so the tier only steps up here, mirroring how
+    // stage 12 was the one place `sentences` stepped up in chapter 1. Two
+    // stagebosses back to back, both on tier 6, close out the endurance test.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -595,15 +608,22 @@ export const STAGES = [
   // learned. Only SIX stages, but every one is dense: this chapter is short and
   // brutal on purpose, because a 6-stage sprint to the villain reads as a final
   // push, while another twelve would read as filler.
+  //
+  // This is deliberately the hardest chapter in the game: `words` (tier 2) never
+  // appears again — even the weakest creep wave types at `sentences` — and every
+  // stage's elites sit at `hard_sentences`/`long_sentences` with bosses at
+  // `wisdom_sayings`. Nothing here eases back down to an earlier tier.
   {
     id: 21,
     biome: 'bonebridge',
     name: 'Cầu Xương Trắng',       // "The Bridge of White Bones"
     intro: 'Không còn đường quay lại!', // "There is no turning back!"
+    // Even the weakest creep types past this point in the game while `sentences`
+    // — nothing in chapter 3 is a `words`-tier fight anymore.
     waves: [
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'elite', pool: 'hard_sentences', skill: 'fireball' },
       { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
@@ -625,9 +645,9 @@ export const STAGES = [
     name: 'Cổng Thành Quỷ',        // "The Demon Gate"
     intro: 'Phá cổng thành bóng tối!', // "Break the dark fortress gate!"
     waves: [
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'elite', pool: 'hard_sentences', skill: 'fireball' },
       { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
@@ -650,9 +670,9 @@ export const STAGES = [
     name: 'Ngục Tối Vô Tận',       // "The Endless Dungeon"
     intro: 'Nơi giam giữ phép màu!', // "Where the magic was imprisoned!"
     waves: [
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'elite', pool: 'hard_sentences', skill: 'fireball' },
       { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
@@ -677,9 +697,9 @@ export const STAGES = [
     intro: 'Đối đầu các tướng quỷ!', // "Face the demon generals!"
     // Dawnbreaker (stage 23's reward) debuts: the Staff at full power.
     waves: [
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'elite', pool: 'sentences', skill: 'fireball' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'elite', pool: 'hard_sentences', skill: 'fireball' },
       { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
       { type: 'boss', pool: 'long_sentences', skill: 'frostnova' },
@@ -700,11 +720,11 @@ export const STAGES = [
   {
     id: 25,
     biome: 'void',
-    name: 'Hư Không Bóng Tối',     // "The Darkness Void"
+    name: 'Bóng Tối Hư Không',     // "The Darkness Void"
     intro: 'Thế giới của Kẻ Nuốt Thế Giới!', // "The World Devourer's own realm!"
     waves: [
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'creep', pool: 'words', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
       { type: 'elite', pool: 'hard_sentences', skill: 'fireball' },
       { type: 'elite', pool: 'hard_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },
@@ -734,8 +754,8 @@ export const STAGES = [
     // than just another stageboss with more hit points: shrouded (shielded),
     // unleashed, then desperate. That is the finale's one new mechanic.
     waves: [
-      { type: 'creep', pool: 'words', skill: 'slash' },
-      { type: 'creep', pool: 'words', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
+      { type: 'creep', pool: 'sentences', skill: 'slash' },
       { type: 'elite', pool: 'hard_sentences', skill: 'fireball' },
       { type: 'elite', pool: 'long_sentences', skill: 'lightning' },
       { type: 'boss', pool: 'long_sentences', skill: 'meteor' },

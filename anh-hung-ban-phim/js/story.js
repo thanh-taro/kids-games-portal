@@ -156,6 +156,18 @@ export const CHAPTER_STORY = {
             'thứ duy nhất làm tổn thương được cái ác lớn nhất.',
           ],
         },
+        // "The ten princesses you saved will not forget it. From the shadows of
+        //  this new road, each of them watches over you still, and will lend
+        //  you her own gift — once — the moment you need it most."
+        {
+          art: 'peace',
+          lines: [
+            'Mười nàng công chúa bạn đã cứu sẽ không quên ơn ấy.',
+            'Trên con đường mới này, mỗi người vẫn dõi theo bạn,',
+            'và sẽ trao bạn món quà của riêng mình —',
+            'chỉ một lần — vào đúng lúc bạn cần nhất.',
+          ],
+        },
         // "But the Staff does not obey strength. It obeys a clear mind. To reach
         //  it you must pass the trials: perseverance, clarity, honesty."
         {

@@ -5,6 +5,7 @@
 
 import { SPRITES, heroSprite } from './sprites.js';
 import { DOT } from './render.js';
+import { attackFor } from './bossattacks.js';
 
 export const MONSTER_KIND = {
   CREEP: 'creep',
@@ -34,15 +35,24 @@ export class Hero {
 
     // --- The Staff of Wisdom (chapter 2's artifact reward) -----------------
     // Set by rewards.applyRewards. `staffCharge` counts CLEANLY typed words
-    // toward STAFF_CHARGE_FULL; at full, the next completed word fires an
-    // empowered hit (bigger effect, extra damage, and the only thing that
-    // pierces the World Devourer's shielded phase).
+    // toward STAFF_CHARGE_FULL; at full, a spell incantation appears (see
+    // main.js's spellTracker) for the kid to type as its own target. Completing
+    // it spends the charge on an empowered crit hit (bigger effect, extra
+    // damage, and the only thing that pierces the World Devourer's shielded
+    // phase); fumbling it (a mistake not corrected on the very next keystroke)
+    // spends the charge for nothing — see abandonSpell in main.js.
     //
     // Charging on CLEAN words specifically is the point: the artifact rewards
     // typing accurately, not fast. A kid who backspaces their way through a word
     // gets no charge from it.
     this.hasStaff = false;
     this.staffCharge = 0;
+
+    // --- Princess support (chapters 2-3, see princesses.js) ----------------
+    // Set true by Princess Ánh Dương's Shield ability; the next hit that would
+    // otherwise call takeDamage() is nullified instead and this clears back to
+    // false — a one-shot ward, not a duration-based buff.
+    this.shielded = false;
   }
 
   // Words of clean typing needed to fill the Staff.
@@ -62,7 +72,8 @@ export class Hero {
     return this.staffCharge >= STAFF_CHARGE_FULL;
   }
 
-  // Spend a full charge on an empowered strike.
+  // Spend a full charge — either on a successfully cast spell (crit) or a
+  // fumbled one (wasted). Either way the meter empties back to 0.
   spendStaff() {
     if (!this.staffReady) return false;
     this.staffCharge = 0;
@@ -117,7 +128,7 @@ export class Monster {
     this.x = x;
     this.groundY = groundY;
     // wider landscape world, nudged up a touch for presence
-    this.scale = opts.scale || (kind === MONSTER_KIND.CREEP ? 1.4 : kind === MONSTER_KIND.BOSS ? 1.75 : 2.1);
+    this.scale = opts.scale || (kind === MONSTER_KIND.CREEP ? 1.4 : kind === MONSTER_KIND.BOSS ? 2.4 : 3.6);
     this.speed = opts.speed || 0.4; // px per frame, marches toward the hero (left)
     this.frame = 0;
     this.animTimer = 0;
@@ -138,12 +149,30 @@ export class Monster {
     this.attackDamage = opts.attackDamage || (kind === MONSTER_KIND.STAGEBOSS ? 18 : 12);
     this.wantsToAttack = false;                  // set true when timer elapses
 
+    // Stageboss-only telegraph: instead of wantsToAttack flipping true the
+    // instant attackTimer elapses, a stageboss first spends `attackWindup`
+    // frames visibly charging (see bossattacks.js's `windup`, and the glow
+    // drawn in main.js's renderPlaying while `telegraphing`) so a kid gets a
+    // beat of warning before the hit. Ordinary `boss` waves keep the old
+    // instant behavior — the elevation stays reserved for the stage's
+    // set-piece fight, same as the slow-mo death focus already is.
+    this.telegraphing = false;
+    this.attackWindup = 0;
+
     this.dying = false;
     this.deathTimer = 0;
 
     // Hit reaction: brief white flash + knockback shove when struck.
     this.hitFlash = 0;     // frames of white-flash remaining
     this.knockback = 0;    // horizontal px offset pushed back (decays to 0)
+
+    // --- Princess support (chapters 2-3, see princesses.js) ----------------
+    // Princess Băng's Freeze: cancels a pending boss attack and holds it off a
+    // beat longer. Princess Cát's Slow: halves march speed / attack-timer
+    // countdown for a few seconds. Both are frame-count timers that count down
+    // in update() and drive a tint overlay in renderPlaying() while active.
+    this.frozenTimer = 0;
+    this.slowTimer = 0;
 
     // --- Multi-phase bosses (the World Devourer, stage 26) ------------------
     // `opts.phases` is a list of { name, hits, shielded?, attackEvery?,
@@ -203,6 +232,12 @@ export class Monster {
     // A phase change shoves him back hard — it should FEEL like a turning point.
     this.knockback = 22;
     this.hitFlash = 10;
+    // Cancel any windup left over from the old phase's attack — the new
+    // phase gets a fresh cadence and its own attack (see bossattacks.js's
+    // DEVOURER_PHASE_ATTACKS), not a stale mid-charge from the one before.
+    this.telegraphing = false;
+    this.attackWindup = 0;
+    this.wantsToAttack = false;
     return p;
   }
 
@@ -242,6 +277,14 @@ export class Monster {
     if (this.knockback > 0.3) this.knockback *= 0.7;
     else this.knockback = 0;
 
+    // Princess support timers (see princesses.js): frozen holds the monster
+    // fully still (no march, no attack-timer progress) until it thaws; slowed
+    // halves both. Frozen implies slowed's rate too, so only one factor is
+    // ever needed — frozen just clamps it to zero.
+    if (this.frozenTimer > 0) this.frozenTimer--;
+    if (this.slowTimer > 0) this.slowTimer--;
+    const rateFactor = this.frozenTimer > 0 ? 0 : this.slowTimer > 0 ? 0.5 : 1;
+
     if (this.dying) {
       this.deathTimer++;
       return;
@@ -250,18 +293,36 @@ export class Monster {
     if (this.stationary) {
       // Walk in to standing range, then hold and attack on a timer.
       if (this.x > heroX + this.standGap) {
-        this.x -= this.speed;
-      } else {
-        this.attackTimer--;
-        if (this.attackTimer <= 0) {
-          this.wantsToAttack = true;
-          this.attackTimer = this.attackEvery;
+        this.x -= this.speed * rateFactor;
+      } else if (rateFactor > 0) {
+        if (this.telegraphing) {
+          // Mid-windup: count it down under the same freeze/slow rate as the
+          // attack timer, so a frozen boss holds its charge instead of
+          // finishing it — a telegraphed hit frozen mid-windup should not land.
+          this.attackWindup -= rateFactor;
+          if (this.attackWindup <= 0) {
+            this.telegraphing = false;
+            this.wantsToAttack = true;
+            this.attackTimer = this.attackEvery;
+          }
+        } else {
+          this.attackTimer -= rateFactor;
+          if (this.attackTimer <= 0) {
+            if (this.kind === MONSTER_KIND.STAGEBOSS) {
+              // Start the visible charge-up instead of attacking instantly.
+              this.telegraphing = true;
+              this.attackWindup = attackFor(this).windup;
+            } else {
+              this.wantsToAttack = true;
+              this.attackTimer = this.attackEvery;
+            }
+          }
         }
       }
       return;
     }
     // Creep: march toward the hero until actual contact.
-    if (this.x > heroX + this.contactGap) this.x -= this.speed;
+    if (this.x > heroX + this.contactGap) this.x -= this.speed * rateFactor;
   }
 
   // Consume a pending boss attack (returns damage or 0). Game calls this.

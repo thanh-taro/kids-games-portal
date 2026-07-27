@@ -28,7 +28,7 @@ python3 -m http.server 8000
 ```
 
 Then click a game card to play. (Each game may also ship its own dev server —
-see the game's own README, e.g. `anh-hung-ban-phim/serve.py`.)
+see the game's own README, e.g. `anh-hung-ban-phim` uses `npm start`.)
 
 ## Deploy to GitHub Pages
 

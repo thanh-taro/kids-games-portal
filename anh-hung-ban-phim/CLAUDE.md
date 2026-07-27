@@ -16,12 +16,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-python3 serve.py 8177          # dev server — ALWAYS use this, not `python3 -m http.server`
+npm start                      # dev server (http-server, no-cache) — ALWAYS use this, not `python3 -m http.server`
 node js/telex.test.js          # Telex engine tests + round-trips EVERY word pool
 node js/verify.js              # data-invariant checks (sprites, stages, chapters, rewards)
 ```
 
-- **`serve.py` is a no-cache dev server.** Plain `http.server` makes Chrome aggressively cache ES modules, so edits to `js/*.js` silently don't reload and you end up testing stale code. Always serve via `serve.py`.
+- **`npm start` runs `http-server -c-1`, a no-cache dev server** (see `package.json`). Plain static servers make Chrome aggressively cache ES modules, so edits to `js/*.js` silently don't reload and you end up testing stale code. Always serve via `npm start`. First run needs `npm install`.
 - There is no lint/build. `node --check js/<file>.js` syntax-checks a module. `/check` runs all three passes.
 - Open `http://localhost:8177/index.html`. ES modules require HTTP (not `file://`).
 

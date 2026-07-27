@@ -5,9 +5,10 @@
 // Clearing the final stage → GAME_COMPLETE.
 
 import { clear, drawSprite, drawScene, drawText, drawRect, DOT } from './render.js';
-import { SPRITES } from './sprites.js';
+import { SPRITES, STAFF_WISDOM, princessSprite, princessThemeColor } from './sprites.js';
 import { getBiome, drawBiomeTerrain, drawBiomeScenery, drawBiomeLights, drawBiomeWeather } from './biomes.js';
 import { Hero, Monster, Projectile, MONSTER_KIND } from './entities.js';
+import { attackFor } from './bossattacks.js';
 import { ParticleSystem, drawAura } from './effects.js';
 import { TypingTracker, attachKeyboard } from './input.js';
 import { RankTracker } from './rank.js';
@@ -21,6 +22,7 @@ import {
 import { openingFor, closingFor, openingTitle, closingTitle } from './story.js';
 import { rewardForStage, loadProgress, saveProgress, resetProgress, applyRewards, equippedLook } from './rewards.js';
 import { Combo } from './combo.js';
+import { PrincessSupport, PRINCESS_SUPPORT } from './princesses.js';
 import { Tutorial } from './tutorial.js';
 import * as Scenes from './scenes.js';
 import * as Audio from './audio.js';
@@ -62,7 +64,9 @@ const STATE = {
   STORY: 'story',              // paged narration (story.js); SPACE turns, ESC skips
   TUTORIAL: 'tutorial',
   STAGE_INTRO: 'stage_intro',
+  BOSS_WARNING: 'boss_warning', // locked ~3s "get ready" beat before a stageboss spawns
   PLAYING: 'playing',
+  PAUSED: 'paused',            // simulation frozen mid-fight; F8 toggles it
   VICTORY: 'victory',
   REWARD: 'reward',
   CHAPTER_END: 'chapter_end',  // a whole chapter cleared → celebrate, then story
@@ -85,13 +89,44 @@ let projectiles = [];
 let waveCursor = 0;
 let shakeTimer = 0;
 let pendingReward = null;
+let pendingBossWave = null;   // the stageboss wave waiting behind BOSS_WARNING
+let bossWarningTimer = 0;
+let slowMoTimer = 0;          // >0 while a stageboss's death is being savored
+let deathFocus = null;        // {x, y} the slow-mo zoom pushes in on
+let pausedFrom = null;        // STATE.PLAYING or STATE.BOSS_WARNING — where F8 resumes to
+
+// --- The Staff of Wisdom's spell (see startSpell/castSpell/abandonSpell) -----
+// A second, independent typing target. While `spellActive` is true, keystrokes
+// route to `spellTracker` instead of the monster's `tracker` (see
+// activeTracker(), wired into attachKeyboard below) — the monster's word stays
+// on screen but frozen, and resumes taking keys once the spell resolves either
+// way (cast or fumbled).
+let spellTracker;
+let spellActive = false;
+let spellMistakePending = false; // true right after an uncorrected wrong key;
+                                  // a 2nd non-Backspace key while this is set
+                                  // abandons the spell (see attachKeyboard call)
 
 tracker = new TypingTracker();
+spellTracker = new TypingTracker();
 particles = new ParticleSystem();
 const combo = new Combo();
 // Lifetime rank, seeded from persisted stats (accuracy + speed across sessions).
 const rank = new RankTracker(progress.rankStats || {});
 const tutorial = new Tutorial();
+
+// The ten rescued princesses' one-time support abilities (chapters 2-3 only —
+// see princesses.js). Seeded from persisted progress so a princess already
+// spent stays spent across sessions.
+const princesses = new PrincessSupport(progress.princessesUsed || []);
+let princessBannerTimer = 0; // frames the cast banner + blurb stay on screen
+let princessBannerWho = null; // the PRINCESS_SUPPORT entry currently being shown
+
+// A stageboss's signature attack name, announced above the hero's head with a
+// zoom in -> hold -> zoom out (see drawBossSkillBanner) the instant the attack
+// lands — see bossattacks.js for the roster.
+let bossSkillBannerTimer = 0;
+let bossSkillBannerText = '';
 
 // Persist lifetime rank stats into the progress object and save.
 function saveRank() {
@@ -234,11 +269,35 @@ function songForState() {
     case STATE.TUTORIAL:
       return 'tutorial';
     case STATE.STAGE_INTRO:
+    case STATE.BOSS_WARNING:
     case STATE.PLAYING: {
-      // The battle theme follows the CHAPTER, not the stage: a kid plays 6-12
-      // stages inside one chapter, and a new loop every stage would make the
-      // soundtrack feel restless. The stage intro shares its chapter's theme so
-      // the music carries unbroken from the intro into the fight.
+      // The World Devourer (stage 26's stageboss, the only wave with `phases`)
+      // REPLACES the chapter theme the moment he appears — BOSS_WARNING is the
+      // "get ready" beat right before the fight, so the swap happens there, not
+      // on the first hit. The theme then escalates with his phaseIndex (see the
+      // phaseChanged branch in onProjectileHit, which re-calls updateMusic()).
+      const finalBossPhases = state === STATE.BOSS_WARNING ? pendingBossWave?.phases : monster?.phases;
+      if (finalBossPhases) {
+        const idx = state === STATE.BOSS_WARNING ? 0 : monster.phaseIndex;
+        return `finalBoss${Math.min(idx + 1, finalBossPhases.length)}`;
+      }
+      // Otherwise the battle theme follows the CHAPTER, not the stage: a kid
+      // plays 6-12 stages inside one chapter, and a new loop every stage would
+      // make the soundtrack feel restless. The stage intro shares its chapter's
+      // theme so the music carries unbroken from the intro into the fight.
+      const chapter = chapterForStage(stageIndex);
+      return `battle${Math.min(chapter.id, 3)}`;
+    }
+    case STATE.PAUSED: {
+      // Keep whatever was playing going rather than cutting it — pausing is a
+      // breather, not a scene change, and this game avoids abrupt audio cuts
+      // elsewhere (see duckMusic in audio.js). Re-derive the fight's theme from
+      // `pausedFrom` exactly as the PLAYING/BOSS_WARNING branch above does.
+      const finalBossPhases = pausedFrom === STATE.BOSS_WARNING ? pendingBossWave?.phases : monster?.phases;
+      if (finalBossPhases) {
+        const idx = pausedFrom === STATE.BOSS_WARNING ? 0 : monster.phaseIndex;
+        return `finalBoss${Math.min(idx + 1, finalBossPhases.length)}`;
+      }
       const chapter = chapterForStage(stageIndex);
       return `battle${Math.min(chapter.id, 3)}`;
     }
@@ -274,7 +333,12 @@ function startStage() {
   waveCursor = 0;
   shakeTimer = 0;
   tracker.clear();
+  endSpell(); // a retry/restart shouldn't leave a stale spell armed
   combo.reset();
+  princessBannerTimer = 0; // a retry/restart shouldn't leave a stale banner up
+  princessBannerWho = null;
+  bossSkillBannerTimer = 0;
+  bossSkillBannerText = '';
   setState(STATE.PLAYING);
 }
 
@@ -297,11 +361,22 @@ function spawnNextWave() {
   if (waveCursor >= stage.waves.length) {
     // All waves cleared → victory.
     tracker.clear();
+    endSpell(); // no penalty — the fight just ended out from under it
     Audio.victory();
     setState(STATE.VICTORY);
     return;
   }
   const wave = stage.waves[waveCursor];
+
+  // A stageboss is the stage's set-piece fight — give it a locked "get ready"
+  // beat instead of spawning silently mid-frame. BOSS_WARNING re-enters here
+  // (via pendingBossWave) once its timer elapses, so the construction logic
+  // below never needs to be duplicated.
+  if (wave.type === 'stageboss' && wave !== pendingBossWave) {
+    startBossWarning(wave);
+    return;
+  }
+  pendingBossWave = null;
   waveCursor++;
 
   // Specials are rewards: resolve the wave's requested skill down to the best
@@ -356,8 +431,28 @@ function spawnNextWave() {
     monster.displayName = roster.stagebossName;
     monster.pool = wave.pool;
     assignBossWord();
+    // songForState() reads monster.phases to pick the final-boss theme, but this
+    // spawn happens mid-frame inside the PLAYING state set by updateBossWarning()
+    // — before this point `monster` was still null, so that setState() call ran
+    // songForState() too early and fell back to the chapter's battle theme. Re-run
+    // it now that the monster (and its phases, if any) actually exists.
+    updateMusic();
   }
   if (monster.word) tracker.setTarget(monster.word.vi, monster.word.telex);
+
+  // Princess support tied to a wave just spawning — see princesses.js.
+  // `bossSpawn` covers Ánh Dương's Shield and Tình Yêu's instant Staff
+  // charge (both boss/stageboss); `creepSpawn` covers Cát's Slow (a hot
+  // streak against a run of weak enemies); `halfway` covers Sao's free hit,
+  // checked once, on the exact wave that crosses the stage's midpoint.
+  if (monster.kind === MONSTER_KIND.BOSS || monster.kind === MONSTER_KIND.STAGEBOSS) {
+    checkPrincessSupport('bossSpawn');
+  } else {
+    checkPrincessSupport('creepSpawn');
+  }
+  if (waveCursor === Math.ceil(stage.waves.length / 2)) {
+    checkPrincessSupport('halfway');
+  }
 }
 
 function assignBossWord() {
@@ -365,6 +460,29 @@ function assignBossWord() {
   const idx = monster.maxHits - monster.hitsLeft + waveCursor + stageIndex;
   monster.word = pickWord(pool, idx);
   tracker.setTarget(monster.word.vi, monster.word.telex);
+}
+
+const BOSS_WARNING_FRAMES = 180; // ~3s at 60fps
+const BOSS_SKILL_BANNER_FRAMES = 70; // ~1.2s at 60fps — zoom in, hold, zoom out
+
+function startBossWarning(wave) {
+  pendingBossWave = wave;
+  bossWarningTimer = BOSS_WARNING_FRAMES;
+  monster = null;
+  tracker.clear();
+  endSpell(); // no penalty — the scene is cutting away, not a typing failure
+  shakeTimer = Math.max(shakeTimer, 10);
+  Audio.bossWarning();
+  setState(STATE.BOSS_WARNING);
+}
+
+function updateBossWarning() {
+  if (shakeTimer > 0) shakeTimer--;
+  bossWarningTimer--;
+  if (bossWarningTimer <= 0) {
+    setState(STATE.PLAYING);
+    spawnNextWave(); // re-enters with pendingBossWave set → falls through to the real spawn
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -419,20 +537,13 @@ tracker.onComplete = (clean = true) => {
     Audio.comboBreak();
   }
 
-  // The Staff of Wisdom: a CLEANLY typed word adds a charge; once full, THIS
-  // strike is the empowered one and the charge is spent on it. Accuracy is what
-  // charges it (not speed), so the artifact rewards exactly the skill the game
-  // is teaching. `empowered` rides on the projectile so the hit that lands
-  // knows it was the charged one.
-  let empowered = false;
-  if (hero.hasStaff) {
-    if (hero.staffReady) {
-      hero.spendStaff();
-      empowered = true;
-      Audio.staffStrike();
-    } else if (clean && hero.chargeStaff()) {
-      Audio.staffCharged(); // just filled — tell the kid it's ready
-    }
+  // The Staff of Wisdom: a CLEANLY typed word adds a charge. Once full, a spell
+  // incantation appears for the kid to type as ITS OWN target (see startSpell)
+  // — this hit stays an ordinary one. Accuracy is what charges the meter (not
+  // speed), so the artifact rewards exactly the skill the game is teaching.
+  if (hero.hasStaff && !hero.staffReady && clean && hero.chargeStaff()) {
+    Audio.staffCharged(); // just filled — tell the kid it's ready
+    startSpell();
   }
 
   const startX = hero.x + hero.sprite.w * DOT * hero.scale;
@@ -443,26 +554,92 @@ tracker.onComplete = (clean = true) => {
   const color = hero.weaponColor && skill.cls === SKILL_CLASS.SIMPLE ? hero.weaponColor : pj.color;
   const speed = pj.speed + (hero.projectileSpeedBonus || 0);
   tracker.clear();
-  // An empowered strike is visibly bigger and gold-white — it should read as
-  // "that was different" without needing to be explained.
-  const sizeMul = empowered ? 1.6 : 1;
   for (let i = 0; i < pj.count; i++) {
     const offset = (i - (pj.count - 1) / 2) * 10;
     const proj = new Projectile(startX, startY + offset, targetX, {
       speed,
-      color: empowered ? '#fff6d0' : color,
-      size: pj.size * sizeMul,
+      color,
+      size: pj.size,
       special: pj.special,
     });
     proj.isLeadHit = i === 0;
-    proj.empowered = empowered;
-    proj.trailCfg = empowered
-      ? { color: '#ffffff', fadeTo: '#ffd24a', size: pj.size * 1.2 }
-      : skill.trail || { color, size: pj.size * 0.8 };
+    proj.trailCfg = skill.trail || { color, size: pj.size * 0.8 };
     projectiles.push(proj);
   }
-  if (skill.shake) shakeTimer = empowered ? skill.shake + 10 : skill.shake;
+  if (skill.shake) shakeTimer = skill.shake;
 };
+
+// ---------------------------------------------------------------------------
+// The Staff of Wisdom's spell
+// ---------------------------------------------------------------------------
+// Once the meter is full, the kid gets a THIRD target — a short incantation —
+// on top of the current monster's word. Typing it correctly fires an immediate
+// gold crit at the monster; one wrong key not corrected on the very next
+// keystroke fumbles it and burns the charge for nothing. Either way the meter
+// empties and the monster's own word resumes taking keys.
+const SPELL_CRIT_BONUS = 6; // flat extra hit-power on top of the combo multiplier
+
+function startSpell() {
+  spellActive = true;
+  spellMistakePending = false;
+  const word = pickWord('spell', Math.floor(Math.random() * 9999));
+  spellTracker.setTarget(word.vi, word.telex);
+}
+
+function endSpell() {
+  spellActive = false;
+  spellMistakePending = false;
+  spellTracker.clear();
+}
+
+// A mistake left uncorrected (the kid's very next key was NOT Backspace) burns
+// the charge for nothing — see the keyboard dispatch below, which calls this.
+function abandonSpell() {
+  if (!spellActive) return;
+  hero.spendStaff();
+  Audio.comboBreak(); // the "that didn't work" cue, reused rather than adding a new sound
+  particles.burst(hero.x + 40, hero.y + 20, '#6a6a8a', 14, 4);
+  endSpell();
+}
+
+spellTracker.onProgress = (matchedLen, mistake) => {
+  if (mistake) {
+    Audio.keyError();
+    spellMistakePending = true;
+  } else {
+    Audio.keyBlip(matchedLen);
+    spellMistakePending = false;
+  }
+};
+
+spellTracker.onComplete = () => {
+  hero.spendStaff();
+  Audio.staffStrike();
+  endSpell();
+
+  if (!monster || monster.dying) return;
+  const skill = monster.skill;
+  const startX = hero.x + hero.sprite.w * DOT * hero.scale;
+  const startY = hero.y + (hero.sprite.h * DOT * hero.scale) / 2;
+  const targetX = monster.x + monster.width / 2;
+  const pj = skill.projectile;
+  const speed = pj.speed + (hero.projectileSpeedBonus || 0);
+  // Visibly bigger and gold-white — a cast crit should read as "that was
+  // different" without needing to be explained.
+  const proj = new Projectile(startX, startY, targetX, {
+    speed,
+    color: '#fff6d0',
+    size: pj.size * 1.6,
+    special: pj.special,
+  });
+  proj.isLeadHit = true;
+  proj.empowered = true;
+  proj.trailCfg = { color: '#ffffff', fadeTo: '#ffd24a', size: pj.size * 1.2 };
+  projectiles.push(proj);
+  shakeTimer = Math.max(shakeTimer, (skill.shake || 0) + 10);
+};
+
+const SLOWMO_FRAMES = 180; // ~3s of real frames spent throttled to a crawl
 
 function onProjectileHit(p) {
   if (!monster) return;
@@ -497,10 +674,10 @@ function onProjectileHit(p) {
 
   // Combo multiplier lets a clean hit chew through extra hit-points, so bosses
   // fall faster the cleaner you type. Always at least 1. (The combo was already
-  // grown at word-completion time in onComplete.) An empowered Staff strike hits
-  // for a lot more — a charged blow should visibly gut a health bar.
+  // grown at word-completion time in onComplete.) A cast spell hits for a lot
+  // more — a successful crit should visibly gut a health bar.
   let hitPower = Math.max(1, Math.round(juice));
-  if (p.empowered) hitPower += 3;
+  if (p.empowered) hitPower += SPELL_CRIT_BONUS;
   let phaseChanged = false;
   for (let h = 0; h < hitPower && !monster.isDefeated; h++) {
     if (monster.registerHit() === 'phase') {
@@ -513,13 +690,24 @@ function onProjectileHit(p) {
     particles.play('phasechange', cx, cy, W, H);
     shakeTimer = Math.max(shakeTimer, 30);
     Audio.phaseChange();
+    updateMusic(); // final boss: theme escalates with monster.phaseIndex
     assignBossWord();
+    // Princess Ánh Sáng's heavy nova rides in right on this dramatic beat.
+    checkPrincessSupport('phaseChange');
     return;
   }
   if (!monster.isDefeated) {
     assignBossWord(); // boss survives → next word
   } else {
-    // Defeated → a big death explosion scaled to the monster tier.
+    // Defeated → a big death explosion scaled to the monster tier. A stageboss
+    // is the stage's set-piece kill (the payoff of an entire gauntlet of
+    // waves), so its death gets a brief slow-mo instead of resolving in one
+    // frame — see slowMoTimer in updatePlaying(). A mid-fight PHASE change
+    // above deliberately does NOT get this; only the true final death does.
+    if (monster.kind === MONSTER_KIND.STAGEBOSS) {
+      slowMoTimer = SLOWMO_FRAMES;
+      deathFocus = { x: cx, y: cy };
+    }
     const deathColor = MONSTER_COLOR[monster.spriteId] || '#5fc23c';
     particles.death(cx, cy, deathColor, monster.kind);
     if (particles.screenShake > shakeTimer) shakeTimer = particles.screenShake;
@@ -531,6 +719,17 @@ function onProjectileHit(p) {
 }
 
 function heroHit(dmg) {
+  // Princess Ánh Dương's Shield: a one-shot ward that nullifies exactly the
+  // next hit, instead of a duration buff — see princesses.js. It must be
+  // checked here, at the single choke point every source of damage already
+  // funnels through, rather than at each call site.
+  if (hero.shielded) {
+    hero.shielded = false;
+    shakeTimer = Math.max(shakeTimer, 8);
+    particles.burst(hero.x + 30, hero.y + 20, '#fff2b0', 20, 5);
+    Audio.princessShieldBreak();
+    return;
+  }
   hero.takeDamage(dmg);
   shakeTimer = Math.max(shakeTimer, 12);
   particles.burst(hero.x + 30, hero.y + 30, '#c0392b', 12, 4);
@@ -538,24 +737,119 @@ function heroHit(dmg) {
   if (combo.break()) Audio.comboBreak(); // taking a hit drops the combo
   if (hero.isDead) {
     tracker.clear();
+    endSpell(); // no penalty — the stage is over, not a typing failure
     Audio.failure();
     setState(STATE.FAILURE);
   }
 }
 
 // ---------------------------------------------------------------------------
+// Princess support (chapters 2-3 — see princesses.js)
+// ---------------------------------------------------------------------------
+// Fires a princess's ability: applies its mechanical effect, plays the cast
+// banner + flourish + audio cue, marks her spent, and persists that. Called
+// from checkPrincessSupport() (the level-triggered conditions, polled once a
+// frame from updatePlaying) and directly from the edge-triggered call sites
+// (wave spawn, phase change, contact-imminent) that can't be read back out of
+// state a frame later.
+function castPrincess(p, ctx) {
+  const result = p.apply(ctx) || {};
+  princesses.markUsed(p.id);
+  progress.princessesUsed = [...princesses.used];
+  saveProgress(progress);
+
+  princessBannerWho = p;
+  princessBannerTimer = 100;
+  Audio.princessCast();
+  if (Audio[p.audioCue]) Audio[p.audioCue]();
+
+  const hx = hero.x + (hero.sprite.w * DOT * hero.scale) / 2;
+  const hy = hero.y + (hero.sprite.h * DOT * hero.scale) / 2;
+  particles.playPrincess(p.effect, hx, hy, W, H);
+
+  // The two nova abilities (Sao, Ánh Sáng) hit the CURRENT monster instead of
+  // just decorating the hero — apply() reports how many registerHit()s to
+  // spend rather than doing it itself, since only main.js knows how to
+  // resolve a phase change/kill the same way onProjectileHit does.
+  if (result.novaHits && monster && !monster.dying) {
+    const mx = monster.x + monster.width / 2;
+    const my = monster.y + (monster.sprite.h * DOT * monster.scale) / 2;
+    particles.playPrincess(p.effect, mx, my, W, H);
+    monster.reactToHit();
+    for (let h = 0; h < result.novaHits && !monster.isDefeated; h++) {
+      const outcome = monster.registerHit();
+      if (outcome === 'phase') {
+        particles.play('phasechange', mx, my, W, H);
+        shakeTimer = Math.max(shakeTimer, 30);
+        Audio.phaseChange();
+        updateMusic();
+        assignBossWord();
+        break;
+      }
+      if (outcome === 'dead') {
+        const deathColor = MONSTER_COLOR[monster.spriteId] || '#5fc23c';
+        particles.death(mx, my, deathColor, monster.kind);
+        rank.awardKill(monster.kind, mx, my - 30, combo.tier.dmg);
+        saveRank();
+        break;
+      }
+    }
+    if (!monster.dying && !monster.isDefeated && monster.word) assignBossWord();
+  }
+}
+
+// Level-triggered support: polled once a frame from updatePlaying() while a
+// stage in chapter 2+ is in progress. Edge-triggered conditions (wave spawn,
+// phase change, contact-imminent) are checked directly at their own call
+// sites instead — see spawnNextWave(), onProjectileHit(), and the
+// reachedHero() branch in updatePlaying().
+function checkPrincessSupport(wave) {
+  if (!hero || princesses.remaining === 0) return;
+  if (chapterForStage(stageIndex).id < 2) return; // chapter 1: princesses are still captive
+  const ctx = { hero, monster, tracker, combo, wave };
+  const p = princesses.find(ctx);
+  if (p) castPrincess(p, ctx);
+}
+
+// ---------------------------------------------------------------------------
 // Update
 // ---------------------------------------------------------------------------
 function updatePlaying() {
-  hero.update();
+  // A stageboss kill sets slowMoTimer (see onProjectileHit) to stretch the
+  // death out over real time instead of resolving in one frame. Rather than
+  // scaling the global `tick` (which combo/rank timers and the music clock key
+  // off — see the plan notes), only the systems that visibly animate the kill
+  // are throttled to run on every 6th real frame (a deliberate crawl, not just
+  // a slight dip); input, combo, and rank stay at full speed so nothing feels
+  // laggy. renderPlaying() pairs this with a zoom-in on deathFocus.
+  const slow = slowMoTimer > 0;
+  if (slow) slowMoTimer--;
+  if (!slow) deathFocus = null;
+  const animate = !slow || tick % 6 === 0;
+
+  if (animate) hero.update();
+
+  // Level-triggered princess support: HP-threshold heals and the mistake-
+  // streak cleanse are true for as long as the underlying state holds, not
+  // just on the frame it first became true, so they're polled here every
+  // frame rather than caught at one call site.
+  checkPrincessSupport('poll');
 
   if (!monster) {
     spawnNextWave();
-    if (state !== STATE.PLAYING) return; // victory triggered
+    if (state !== STATE.PLAYING) return; // victory triggered, or BOSS_WARNING
   }
 
   if (monster) {
-    monster.update(hero.x);
+    if (animate) monster.update(hero.x);
+
+    // Princess Sóng Biển's Knockback: fires the instant a CREEP is about to
+    // make contact, bailing the kid out before the hit actually lands — must
+    // be checked before reachedHero()'s own branch runs, and only for a
+    // marching creep (a stationary boss "reaching" the hero isn't a thing).
+    if (monster.kind === MONSTER_KIND.CREEP && monster.reachedHero(hero.x) && !monster.dying) {
+      checkPrincessSupport('creepContact');
+    }
 
     if (monster.reachedHero(hero.x) && !monster.dying) {
       heroHit(monster.contactDamage);
@@ -563,9 +857,32 @@ function updatePlaying() {
       monster.dying = true;
       monster.deathTimer = 0;
       tracker.clear();
+      endSpell(); // no penalty — its target is gone, not a typing failure
+    }
+    // Princess Băng's Freeze: catches a boss attack the instant its timer
+    // elapses (wantsToAttack just went true), BEFORE takeAttack() below
+    // consumes and clears that flag — checkPrincessSupport's own apply()
+    // clears wantsToAttack again if she fires, cancelling the attack.
+    if (monster.wantsToAttack) {
+      checkPrincessSupport('bossAttack');
     }
     const bossDmg = monster.takeAttack();
     if (bossDmg > 0) {
+      // Stageboss-only flourish: its own themed effect/sound/name banner,
+      // layered on top of heroHit's damage/shield-check/game-over handling
+      // rather than inside it — heroHit stays the single choke point for the
+      // mechanical hit (see its own doc comment), this is cosmetic dressing
+      // around it, same as castPrincess layers its own particles/audio
+      // around a mechanical effect without touching heroHit.
+      if (monster.kind === MONSTER_KIND.STAGEBOSS) {
+        const attack = attackFor(monster);
+        const hx = hero.x + (hero.sprite.w * DOT * hero.scale) / 2;
+        const hy = hero.y + (hero.sprite.h * DOT * hero.scale) / 2;
+        particles.play(attack.effect, hx, hy, W, H);
+        if (Audio[attack.sound]) Audio[attack.sound]();
+        bossSkillBannerText = attack.name;
+        bossSkillBannerTimer = BOSS_SKILL_BANNER_FRAMES;
+      }
       heroHit(bossDmg);
       if (state !== STATE.PLAYING) return;
     }
@@ -573,30 +890,35 @@ function updatePlaying() {
     if (monster.isGone) {
       monster = null;
       tracker.clear();
+      endSpell(); // no penalty — its target is gone, not a typing failure
     }
   }
 
-  for (const p of projectiles) {
-    p.update();
-    // Emit a comet trail puff behind the projectile each frame.
-    const tc = p.trailCfg;
-    if (tc) {
-      particles.trailPuff(p.x, p.y, tc.color, {
-        fadeTo: tc.fadeTo,
-        size: tc.size || DOT * 1.5,
-        gravity: tc.gravity,
-        spread: DOT,
-        life: 12,
-      });
+  if (animate) {
+    for (const p of projectiles) {
+      p.update();
+      // Emit a comet trail puff behind the projectile each frame.
+      const tc = p.trailCfg;
+      if (tc) {
+        particles.trailPuff(p.x, p.y, tc.color, {
+          fadeTo: tc.fadeTo,
+          size: tc.size || DOT * 1.5,
+          gravity: tc.gravity,
+          spread: DOT,
+          life: 12,
+        });
+      }
+      if (p.done) onProjectileHit(p);
     }
-    if (p.done) onProjectileHit(p);
+    projectiles = projectiles.filter((p) => !p.done);
+    particles.update();
   }
-  projectiles = projectiles.filter((p) => !p.done);
-
-  particles.update();
   combo.update();
   rank.update();
-  if (shakeTimer > 0) shakeTimer--;
+  princesses.update();
+  if (princessBannerTimer > 0) princessBannerTimer--;
+  if (bossSkillBannerTimer > 0) bossSkillBannerTimer--;
+  if (animate && shakeTimer > 0) shakeTimer--;
 }
 
 // Award the stage's reward and advance progress.
@@ -640,6 +962,25 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'F10') {
     e.preventDefault();
     Music.toggleMusic();
+    return;
+  }
+
+  // F8 pauses/resumes a fight. Only meaningful mid-PLAYING or during the
+  // boss "get ready" countdown — pausing a menu/story/tutorial screen is a
+  // no-op, since those are already static and player-paced (SPACE/ESC driven).
+  // F8 (not F11) because F11 is the browser/OS's native-fullscreen key and
+  // gets intercepted before it ever reaches the page's keydown listener.
+  if (e.key === 'F8') {
+    e.preventDefault();
+    if (state === STATE.PAUSED) {
+      Audio.confirm();
+      setState(pausedFrom);
+      pausedFrom = null;
+    } else if (state === STATE.PLAYING || state === STATE.BOSS_WARNING) {
+      Audio.confirm();
+      pausedFrom = state;
+      setState(STATE.PAUSED);
+    }
     return;
   }
 
@@ -699,9 +1040,10 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'r' || e.key === 'R') {
     if (state === STATE.TITLE) {
       resetProgress();
-      progress = { stage: 0, rewards: [], seenTutorial: false, seenStory: [], rankStats: {} };
+      progress = { stage: 0, rewards: [], seenTutorial: false, seenStory: [], rankStats: {}, princessesUsed: [] };
       stageIndex = 0;
       rank.reset(); // R on the title is a full wipe → also clear the lifetime rank
+      princesses.used.clear(); // all ten princesses are captive again
       Audio.confirm();
     }
   }
@@ -709,6 +1051,10 @@ window.addEventListener('keydown', (e) => {
   // During PLAYING, SPACE is a normal typing character (phrases have spaces) —
   // let the typing tracker handle it; don't treat it as a menu confirm.
   if (state === STATE.PLAYING) return;
+  // BOSS_WARNING is timer-driven, not SPACE-driven, so it can't be skipped away
+  // accidentally — a kid mashing keys to get through a fight shouldn't cut the
+  // "get ready" beat short.
+  if (state === STATE.BOSS_WARNING) return;
   e.preventDefault();
   Audio.confirm();
 
@@ -751,16 +1097,37 @@ window.addEventListener('keydown', (e) => {
     // Reset stage/reward progress for a replay, but KEEP the lifetime rank —
     // finishing the game is an achievement, not a reason to lose your Mythic
     // badge. Kids who finished already know how to play, so skip the tutorial.
-    // The story is marked unseen again so a replay gets the full tale.
-    progress = { stage: 0, rewards: [], seenTutorial: true, seenStory: [], rankStats: rank.serialize() };
+    // The story is marked unseen again so a replay gets the full tale, and the
+    // princesses are all available again so a replay gets to see their
+    // moments too — they're per-playthrough content like stage/rewards.
+    progress = { stage: 0, rewards: [], seenTutorial: true, seenStory: [], rankStats: rank.serialize(), princessesUsed: [] };
     stageIndex = 0;
+    princesses.used.clear();
     saveProgress(progress);
     setState(STATE.TITLE);
   }
 });
 
-// Gameplay typing keys are handled by the tracker (only active while PLAYING).
-attachKeyboard(tracker);
+// Gameplay typing keys: routed to the spell tracker while a spell is active,
+// otherwise to the monster's tracker. This also implements the spell's abandon
+// rule — a wrong key is forgivable ONLY if the very next key is Backspace; any
+// other key pressed while a mistake sits uncorrected burns the charge. We check
+// BEFORE forwarding so we see the raw key that's about to make a pending
+// mistake worse, rather than inferring it after the fact from tracker state.
+attachKeyboard({
+  handleKey(key) {
+    if (state === STATE.PAUSED) return; // frozen — no keys reach either tracker
+    if (spellActive) {
+      if (spellMistakePending && key !== 'Backspace') {
+        abandonSpell();
+        return;
+      }
+      spellTracker.handleKey(key);
+      return;
+    }
+    tracker.handleKey(key);
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Debug hook (development only)
@@ -808,12 +1175,30 @@ if (['localhost', '127.0.0.1'].includes(location.hostname)) {
       monster = null;
       spawnNextWave();
     },
-    // Fill the Staff so a charged strike can be tested immediately.
+    // Fill the Staff and arm its spell so a cast can be tested immediately.
     chargeStaff() {
       if (hero) {
         hero.hasStaff = true;
         hero.staffCharge = hero.staffChargeFull;
+        startSpell();
       }
+    },
+    // Force one princess's ability to fire right now, bypassing her `when`
+    // condition — for previewing each cast's banner/effect/audio without
+    // engineering the real trigger. `id` matches PRINCESS_SUPPORT entries
+    // ('heal', 'shield', 'freeze', ...).
+    castPrincess(id) {
+      const p = PRINCESS_SUPPORT.find((x) => x.id === id);
+      if (!p || !hero) return;
+      castPrincess(p, { hero, monster, tracker, combo, wave: 'debug' });
+    },
+    // List remaining/used princesses.
+    princesses() {
+      return {
+        remaining: princesses.remaining,
+        total: princesses.total,
+        used: [...princesses.used],
+      };
     },
     // Read out what's on screen right now.
     info() {
@@ -831,6 +1216,7 @@ if (['localhost', '127.0.0.1'].includes(location.hostname)) {
           word: monster.word && monster.word.vi,
         },
         staff: hero && hero.hasStaff ? `${hero.staffCharge}/${hero.staffChargeFull}` : null,
+        spell: spellActive ? { word: spellTracker.target, mistakePending: spellMistakePending } : null,
       };
     },
   };
@@ -841,7 +1227,18 @@ if (['localhost', '127.0.0.1'].includes(location.hostname)) {
 // ---------------------------------------------------------------------------
 function drawTargetWord() {
   if (!monster || monster.dying || !monster.word) return;
-  const topY = monster.y - 58;
+  // The typed word sits ABOVE the name/HP bar (drawBossBar) so the reading
+  // order top-to-bottom is "what to type" then "what it hits" — it should be
+  // unmistakable that the word you're about to complete is what strikes the
+  // monster below it. Creeps have no bar, so their word floats at the same
+  // fixed clearance a boss's word keeps above its bar, plus CREEP_NAME_GAP to
+  // leave room for drawCreepName's plate directly over the creep's head.
+  // Derived from drawBossBar's barY (not an independent clamp) so the two
+  // blocks can never drift apart or overlap as the monster nears the top of
+  // the screen.
+  const topY = monster.kind === MONSTER_KIND.CREEP
+    ? monster.y - 58 - CREEP_NAME_GAP
+    : Math.max(monster.y - 58, 118) - 96;
   const word = monster.word;
   const matched = tracker.matchedLen();
   const mistake = tracker.isMistake();
@@ -922,6 +1319,30 @@ function drawTargetWord() {
   }
 }
 
+// Height reserved above a creep's head for drawCreepName's plate. drawTargetWord
+// pushes its whole word/skill/guide stack up by this much for CREEP monsters so
+// the name plate has clean space right over the sprite instead of overlapping it.
+const CREEP_NAME_GAP = 26;
+
+function drawCreepName() {
+  // Bosses show their name on drawBossBar (which follows the same "clamp near
+  // the monster" logic as its health bar); creeps have no bar to hang a name
+  // off of, so this floats a small plate directly over the creep's own head —
+  // deliberately NOT anchored to the target-word plate, which recenters to the
+  // middle of the screen for long phrases and would drag the name away from
+  // the monster it names.
+  if (!monster || monster.kind !== MONSTER_KIND.CREEP || monster.dying || !monster.displayName) return;
+  const name = monster.displayName;
+  ctx.font = '15px "PixelFont", monospace';
+  const nw = ctx.measureText(name).width;
+  const cx = Math.min(Math.max(monster.x + monster.width / 2, nw / 2 + 6), W - nw / 2 - 6);
+  const ny = monster.y - CREEP_NAME_GAP;
+  drawRect(ctx, cx - nw / 2 - 6, ny, nw + 12, 20, '#1a1423');
+  // Name color signals rank at a glance: white (creep) < yellow (elite).
+  const nameColor = monster.tint === 'elite' ? '#ffd24a' : '#ffffff';
+  drawText(ctx, name, cx, ny + 3, 15, nameColor, 'center');
+}
+
 function drawBossBar() {
   if (!monster || monster.kind === MONSTER_KIND.CREEP) return;
   const barW = 200;
@@ -939,11 +1360,15 @@ function drawBossBar() {
   const half = Math.max(nameW / 2 + 10, barW / 2 + 50);
   const cx = Math.min(Math.max(monster.x + monster.width / 2, half), W - half);
   const barX = cx - barW / 2;
-  const barY = Math.max(monster.y - 118, 118); // never ride up into the cloud strip
+  // Sits just above the monster, BELOW the target word (drawTargetWord) — the
+  // kid reads the word first, then sees the bar it's about to land on.
+  const barY = Math.max(monster.y - 58, 118);
 
   // Dark plate behind the name for legibility on the sky.
   drawRect(ctx, cx - nameW / 2 - 8, barY - 30, nameW + 16, 25, '#1a1423');
-  drawText(ctx, name, cx, barY - 26, 19, '#fff4d6', 'center');
+  // Name color continues the creep/elite rank ladder: orange (boss) < red (stageboss).
+  const nameColor = monster.kind === MONSTER_KIND.STAGEBOSS ? '#ff4a4a' : '#ff9a3a';
+  drawText(ctx, name, cx, barY - 26, 19, nameColor, 'center');
   drawRect(ctx, barX - 3, barY - 3, barW + 6, barH + 6, '#1a1423');
   const frac = monster.hitsLeft / monster.maxHits;
   drawRect(ctx, barX, barY, barW, barH, '#5a5a5a');
@@ -984,13 +1409,105 @@ function drawBossBar() {
 function drawShieldHint() {
   if (!monster || !monster.isShielded || monster.dying) return;
   const hint = hero.staffReady
-    ? '⚡ Trượng đã sẵn sàng — gõ xong từ này để phá khiên!' // "Staff ready — finish this word to break the shield!"
+    ? '⚡ Gõ đúng câu thần chú để phá khiên!' // "Type the spell correctly to break the shield!"
     : '🛡 Khiên bóng tối! Gõ đúng để NẠP Trượng rồi phá khiên!'; // "Dark shield! Type correctly to CHARGE the Staff, then break it!"
   const hy = H - 62;
   ctx.font = '16px "PixelFont", monospace';
   const hw = ctx.measureText(hint).width;
   drawRect(ctx, W / 2 - hw / 2 - 10, hy - 4, hw + 20, 26, '#3a1a4a');
   drawText(ctx, hint, W / 2, hy, 16, hero.staffReady ? '#ffe27a' : '#e0b3ff', 'center');
+}
+
+// The Staff of Wisdom, once earned, doesn't sit in the hero's hand — it flies
+// alongside them as a living companion, orbiting on a slow ellipse with its own
+// spinning aura (via effects.drawAura, the same halo the Master+ rank uses).
+// Three visual states, all driven by hero.staffCharge so the kid reads Staff
+// state without glancing at the HUD meter:
+//   - charging (0..4/5): a calm cyan aura, gentle bob.
+//   - just filled → ready: the SAME full state below, entered the instant it fills.
+//   - ready (5/5): a hot gold aura that pulses in a sharp double-beat, like a
+//     heartbeat, rather than the smooth breathing sine used elsewhere — a ready
+//     Staff should feel urgent/alive, not merely "on".
+function drawStaffCompanion(heroX, heroY) {
+  const hw = hero.sprite.w * DOT * hero.scale;
+  const hh = hero.sprite.h * DOT * hero.scale;
+  // Orbit center sits above/behind the hero's shoulder; the ellipse carries it
+  // out in front and up over the head so it reads as flying "around" the hero
+  // rather than stuck to one side.
+  const cx = heroX + hw * 0.5;
+  const cy = heroY + hh * 0.18;
+  const orbitRX = hw * 0.62;
+  const orbitRY = hh * 0.3;
+  const angle = tick * 0.035;
+  const sx = cx + Math.cos(angle) * orbitRX;
+  const sy = cy + Math.sin(angle) * orbitRY - hh * 0.12;
+
+  const ready = hero.staffReady;
+  const color = ready ? '#ffd24a' : '#8ff0ff';
+
+  // Heartbeat pulse for the ready state: two quick beats then a rest, instead
+  // of a smooth sine — gives it an urgent, alive feel distinct from the calm
+  // charging glow and from the rank aura's breathing.
+  let pulse;
+  if (ready) {
+    const t = (tick % 40) / 40; // one heartbeat cycle
+    const beat = (phase) => Math.max(0, Math.sin(phase * Math.PI));
+    pulse = Math.max(beat((t - 0) * 5), beat((t - 0.16) * 5) * 0.85);
+  } else {
+    pulse = 0.5 + 0.5 * Math.sin(tick * 0.08);
+  }
+
+  const baseR = DOT * 6;
+  const auraR = baseR * (1 + pulse * (ready ? 0.5 : 0.25));
+  drawAura(ctx, sx, sy, auraR, color, ready ? tick * 1.6 : tick);
+
+  // The Staff sprite itself, spinning: alternate its two art frames fast while
+  // scaling it slightly with the same pulse, so it "spins and shines" in place
+  // rather than just sitting inside its own glow.
+  const staffScale = hero.scale * 0.55 * (1 + pulse * 0.08);
+  const frame = Math.floor(tick / (ready ? 4 : 8)) % STAFF_WISDOM.frames.length;
+  const flip = Math.floor(tick / (ready ? 10 : 20)) % 2 === 1;
+  drawSprite(
+    ctx, STAFF_WISDOM, frame,
+    sx - (STAFF_WISDOM.w * DOT * staffScale) / 2,
+    sy - (STAFF_WISDOM.h * DOT * staffScale) / 2,
+    staffScale, flip, null
+  );
+
+  drawStaffStars(sx, sy, staffScale, color, ready);
+}
+
+// A handful of tiny 4-point stars twinkling around the gem — fixed angles
+// (not Math.random, per the effects reproducibility convention) so the same
+// tick always renders the same sky. Each star has its own phase offset so
+// they blink independently rather than flashing in unison; the ready state
+// blinks faster and brighter, matching the aura's own urgency.
+const STAFF_STAR_ANGLES = [0.4, 1.7, 2.6, 3.9, 5.1, 5.9];
+function drawStaffStars(sx, sy, staffScale, color, ready) {
+  const r = DOT * 5 * staffScale;
+  const blinkSpeed = ready ? 0.18 : 0.1;
+  for (let i = 0; i < STAFF_STAR_ANGLES.length; i++) {
+    const a = STAFF_STAR_ANGLES[i] + tick * 0.015 * (i % 2 ? 1 : -1);
+    const px = sx + Math.cos(a) * r;
+    const py = sy + Math.sin(a) * r * 0.85 - DOT * 4 * staffScale;
+    const twinkle = 0.5 + 0.5 * Math.sin(tick * blinkSpeed + i * 1.9);
+    if (twinkle < 0.15) continue; // fully dark between blinks
+    ctx.globalAlpha = twinkle;
+    drawPixelStar(px, py, DOT * (0.6 + twinkle * 0.6) * staffScale, ready ? '#fff6d0' : color);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// A tiny 4-point sparkle: a bright center pixel plus four short rays, drawn
+// with fillRect (not lineTo) to stay consistent with this game's pixel-art
+// rendering everywhere else.
+function drawPixelStar(cx, cy, s, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(cx - s / 2, cy - s / 2, s, s);
+  ctx.fillRect(cx - s * 1.6, cy - s / 4, s * 1.2, s / 2);
+  ctx.fillRect(cx + s * 0.4, cy - s / 4, s * 1.2, s / 2);
+  ctx.fillRect(cx - s / 4, cy - s * 1.6, s / 2, s * 1.2);
+  ctx.fillRect(cx - s / 4, cy + s * 0.4, s / 2, s * 1.2);
 }
 
 // The Staff of Wisdom's charge meter (only once the artifact is earned): five
@@ -1004,7 +1521,7 @@ function drawStaffMeter() {
   const x = 26;
   // Sits below the combo meter block; the combo readout only appears from 2x, so
   // this keeps a fixed slot rather than jumping as the combo comes and goes.
-  const y = 150;
+  const y = 186;
   const full = hero.staffChargeFull;
   const ready = hero.staffReady;
 
@@ -1024,6 +1541,67 @@ function drawStaffMeter() {
     const on = i < hero.staffCharge;
     const col = ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : on ? '#8ff0ff' : '#3a3350';
     drawRect(ctx, x + i * (pipW + gap), y + 22, pipW, 12, col);
+  }
+}
+
+// The Staff's spell incantation: a THIRD typing target that appears under the
+// staff meter once it's full. Gold-themed (vs. the monster word's neutral
+// plate) so it reads as "a different, special thing to type" at a glance.
+// Keystrokes route here instead of the monster's word while spellActive (see
+// the attachKeyboard dispatcher) — the monster's own plate stays visible but
+// frozen underneath it.
+function drawSpellWord() {
+  if (!spellActive) return;
+  const x = 26;
+  const topY = 246; // just under drawStaffMeter's box (y=186, height 46)
+  const word = spellTracker.target;
+  const matched = spellTracker.matchedLen();
+  const mistake = spellTracker.isMistake();
+
+  const size = 20;
+  ctx.font = `${size}px "PixelFont", monospace`;
+  const textW = ctx.measureText(word).width;
+  const boxW = Math.max(textW, 160) + 24;
+  drawRect(ctx, x - 8, topY - 24, boxW, size + 66, '#3a2a08');
+  drawRect(ctx, x - 8, topY - 24, boxW, 3, '#ffd24a');
+
+  const label = '✨ CÂU THẦN CHÚ'; // "THE SPELL"
+  drawText(ctx, label, x, topY - 20, 14, '#ffe27a', 'left');
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  let dx = x;
+  const wordY = topY;
+  for (let i = 0; i < word.length; i++) {
+    let color = '#fff4d6';
+    if (i < matched) color = '#3aa655';
+    else if (mistake && i === matched) color = '#e0503a';
+    ctx.fillStyle = color;
+    ctx.fillText(word[i], dx, wordY);
+    dx += ctx.measureText(word[i]).width;
+  }
+
+  // Same keystroke guide as the monster word, so a kid reads it the same way.
+  const guide = spellTracker.telex.toUpperCase();
+  const pressed = spellTracker.telexMatchedLen();
+  ctx.font = '14px "PixelFont", monospace';
+  const gy = wordY + size + 6;
+  let gx = x;
+  for (let i = 0; i < guide.length; i++) {
+    let color = '#c9a86a';
+    if (i < pressed) color = '#6fe08a';
+    else if (i === pressed && !mistake) color = '#ffe27a';
+    ctx.fillStyle = color;
+    ctx.fillText(guide[i], gx, gy);
+    gx += ctx.measureText(guide[i]).width;
+  }
+
+  // A mistake here is one uncorrected keystroke away from burning the whole
+  // charge — say so plainly, since the stakes are much higher than a normal word.
+  if (mistake) {
+    const hint = 'Bấm Backspace ngay để sửa!'; // "Press Backspace right now to fix it!"
+    ctx.font = '12px "PixelFont", monospace';
+    drawText(ctx, hint, x, gy + 20, 12, '#ff8a6a', 'left');
   }
 }
 
@@ -1051,12 +1629,123 @@ function drawHUD() {
   drawText(ctx, wv, W - 24, 21, 18, '#fff4d6', 'right');
 }
 
+// Princess-support reserve: a row of small pips right under the HP bar, each
+// tinted to its own princess's gown color (via princessThemeColor) so a kid
+// can tell WHICH princesses are left, not just how many. Lit while she's
+// still available, dimmed once spent. Chapter-1-only (no princesses to draw
+// down yet) and hidden once all ten are spent so the HUD doesn't keep a
+// permanently-empty row on screen for the rest of the game.
+function drawPrincessHUD() {
+  if (chapterForStage(stageIndex).id < 2) return;
+  const total = princesses.total;
+  const pip = 14;
+  const gap = 5;
+  const rowW = total * pip + (total - 1) * gap;
+  const boxW = Math.max(rowW, 90) + 20;
+  // Directly below drawHUD's HP bar (x=18..18+barW+4, y=18..46).
+  const x = 26;
+  const y = 60;
+  const label = 'CÔNG CHÚA'; // "PRINCESSES"
+  ctx.font = '13px "PixelFont", monospace';
+  drawRect(ctx, x - 10, y - 4, boxW, 44, '#1a1423');
+  drawText(ctx, label, x, y, 13, '#cfc8dd', 'left');
+  let px = x;
+  const py = y + 22;
+  for (const p of PRINCESS_SUPPORT) {
+    const spent = princesses.used.has(p.id);
+    const color = princessThemeColor(p.style);
+    drawRect(ctx, px, py, pip, pip, spent ? '#3a3350' : color);
+    if (!spent) drawRect(ctx, px + 3, py + 3, pip - 6, pip - 6, '#fff6d0');
+    px += pip + gap;
+  }
+}
+
+// The princess cast banner: a full-width slide-in strip using her real
+// princessSprite() art (the same figure the kid rescued in chapter 1), her
+// name, and a Vietnamese blurb naming what she just did. Timer-driven (set by
+// castPrincess), not click-driven — nothing here should interrupt typing.
+function drawPrincessBanner() {
+  if (princessBannerTimer <= 0 || !princessBannerWho) return;
+  const p = princessBannerWho;
+  const total = 100;
+  const t = princessBannerTimer / total;
+  // Slide in over the first 20%, hold, slide out over the last 20%.
+  const slideIn = Math.min(1, (1 - t) / 0.2);
+  const slideOut = Math.min(1, t / 0.2);
+  const reveal = Math.min(slideIn, slideOut);
+  const barH = 78;
+  const barY = H * 0.16 - barH / 2;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, Math.min(1, reveal * 1.5));
+  drawRect(ctx, 0, barY, W, barH, '#1a1423');
+  drawRect(ctx, 0, barY, W, 3, '#ffd24a');
+  drawRect(ctx, 0, barY + barH - 3, W, 3, '#ffd24a');
+
+  const sprite = princessSprite(p.style);
+  const pscale = 3.2;
+  const px = 24 + (1 - reveal) * -60;
+  const py = barY + barH / 2 - (sprite.h * DOT * pscale) / 2;
+  drawSprite(ctx, sprite, 0, px, py, pscale, false, null);
+
+  const textX = px + sprite.w * DOT * pscale + 20;
+  ctx.font = '20px "PixelFont", monospace';
+  drawText(ctx, p.name, textX, barY + 16, 20, '#ffd24a', 'left');
+  ctx.font = '15px "PixelFont", monospace';
+  drawText(ctx, p.blurb, textX, barY + 44, 15, '#fff4d6', 'left');
+  ctx.restore();
+}
+
+// A stageboss attack's name, announced above the hero's head with a zoom
+// IN -> hold -> zoom OUT, distinct from both existing banners: drawPrincessBanner
+// slides in from the side, and drawComboMeter's milestone banner only shrinks-in
+// and holds/cuts. Here the text starts large (zoomed in), eases down to its rest
+// size while fading in, holds, then grows back up (zoom OUT) while fading out.
+function drawBossSkillBanner() {
+  if (bossSkillBannerTimer <= 0 || !bossSkillBannerText) return;
+  const total = BOSS_SKILL_BANNER_FRAMES;
+  const t = bossSkillBannerTimer / total; // 1 -> 0 over the banner's life
+  const elapsed = 1 - t;
+  const IN_FRAC = 0.15;
+  const OUT_FRAC = 0.2;
+  const REST_SIZE = 26;
+  const ZOOM_SIZE = 52;
+
+  let size, alpha;
+  if (elapsed < IN_FRAC) {
+    // Zoom in: large -> rest, fading in.
+    const p = elapsed / IN_FRAC; // 0 -> 1
+    size = ZOOM_SIZE - (ZOOM_SIZE - REST_SIZE) * p;
+    alpha = p;
+  } else if (t < OUT_FRAC) {
+    // Zoom out: rest -> large, fading out.
+    const p = 1 - t / OUT_FRAC; // 0 -> 1 as the banner closes
+    size = REST_SIZE + (ZOOM_SIZE - REST_SIZE) * p;
+    alpha = 1 - p;
+  } else {
+    // Hold at rest size, full opacity.
+    size = REST_SIZE;
+    alpha = 1;
+  }
+
+  const hw = hero.sprite.w * DOT * hero.scale;
+  const bx = hero.x + hw / 2;
+  const by = hero.y - 26;
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.font = `${Math.round(size)}px "PixelFont", monospace`;
+  const tw = ctx.measureText(bossSkillBannerText).width;
+  drawRect(ctx, bx - tw / 2 - 10, by - size, tw + 20, size + 12, '#1a1423');
+  drawText(ctx, bossSkillBannerText, bx, by - size + 6, Math.round(size), '#ff8a6a', 'center');
+  ctx.restore();
+}
+
 // Combo meter: a pulsing "COMBO xN" readout below the HP bar, tinted by tier,
 // plus a brief center-screen banner when a milestone / tier-up fires.
 function drawComboMeter() {
   const tier = combo.tier;
   const x = 26;
-  const y = 52;
+  const y = 88; // below drawHUD's HP bar (ends y=46) and drawPrincessHUD's row
 
   if (combo.count >= 2) {
     // Pulsing size: pops on each increment, eases back to base.
@@ -1218,10 +1907,87 @@ function drawMuteHint() {
 // the HUD row, high enough to stay out of the boss name / HP bar.
 const PLAY_SKY_LAYOUT = { cloudY: [55, 80, 105] };
 
+// The locked "get ready" beat right before a stageboss spawns: the stage's own
+// biome + a still hero (no monster yet — see startBossWarning), with a pulsing
+// warning banner on top. Reuses the same dark-plate/light-text HUD convention
+// as the rest of the scene text so it stays legible over any biome.
+function renderBossWarning() {
+  const ox = shakeTimer > 0 ? (tick % 2 === 0 ? 4 : -4) : 0;
+  ctx.save();
+  ctx.translate(ox, 0);
+
+  const biome = currentBiome();
+  drawBiomeTerrain(ctx, W, H, GROUND_Y, biome, tick);
+  drawBiomeScenery(ctx, W, H, GROUND_Y, biome, tick, PLAY_SKY_LAYOUT);
+  if (biome.tint) {
+    ctx.fillStyle = biome.tint;
+    ctx.fillRect(0, 0, W, H);
+  }
+  drawSprite(ctx, hero.sprite, hero.frame, hero.x, hero.y, hero.scale, false, null);
+  drawBiomeLights(ctx, W, H, GROUND_Y, biome, tick);
+  drawBiomeWeather(ctx, W, H, GROUND_Y, biome, tick);
+
+  // A red vignette pulse (in step with the banner) reads as danger without a
+  // new effect kind — a plain translucent overlay, brightness eased by a sine.
+  const pulse = 0.5 + 0.5 * Math.sin(stateTick * 0.25);
+  ctx.fillStyle = `rgba(160, 20, 20, ${0.12 + pulse * 0.1})`;
+  ctx.fillRect(0, 0, W, H);
+
+  const scale = 1 + pulse * 0.06;
+  const cy = H * 0.38;
+  ctx.save();
+  ctx.translate(W / 2, cy);
+  ctx.scale(scale, scale);
+  ctx.translate(-W / 2, -cy);
+  const line1 = '⚠ CẢNH BÁO ⚠';
+  const line2 = 'TRÙM XUẤT HIỆN!';
+  plate(line1, W / 2, cy - 20, 26, 'center');
+  drawText(ctx, line1, W / 2, cy - 20, 26, '#ff5a5a', 'center');
+  plate(line2, W / 2, cy + 22, 34, 'center');
+  drawText(ctx, line2, W / 2, cy + 22, 34, '#fff4d6', 'center');
+  ctx.restore();
+
+  ctx.restore();
+}
+
 function renderPlaying() {
   const ox = shakeTimer > 0 ? (tick % 2 === 0 ? 4 : -4) : 0;
   ctx.save();
   ctx.translate(ox, 0);
+
+  // Stageboss death: push the camera in on the kill spot as the world slows,
+  // so the two reinforce each other instead of a plain slow-down that just
+  // feels laggy. Ramps in over the first third of the window, holds at max
+  // punch, then eases back out right before the monster is cleared.
+  if (slowMoTimer > 0 && deathFocus) {
+    const elapsed = SLOWMO_FRAMES - slowMoTimer;
+    const rampIn = Math.min(1, elapsed / (SLOWMO_FRAMES * 0.35));
+    const rampOut = Math.min(1, slowMoTimer / (SLOWMO_FRAMES * 0.2));
+    const t = Math.min(rampIn, rampOut);
+    const MAX_ZOOM = 1.6;
+    const zoom = 1 + (MAX_ZOOM - 1) * t;
+    // Scaling the world up leaves the canvas's own edges outside the drawn
+    // area uncovered (nothing here clears between frames), so paint over the
+    // full frame first — otherwise the previous frame's pixels persist as a
+    // stale border around the zoomed scene.
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-ox, 0, W, H);
+    ctx.translate(W / 2, H / 2);
+    ctx.scale(zoom, zoom);
+    // A boss usually dies near its standGap spot close to the right edge, so
+    // centering the zoom on the raw death spot pushes the opposite side of the
+    // viewport outside the world (nothing is drawn past [0,W]x[0,H]), showing
+    // the black fill-rect as a border. Clamp the focus at the CURRENT zoom —
+    // the visible half-extent is W/(2*zoom), so the allowed range is widest
+    // near dead centre at zoom 1 (a pure pan with no scale can't tolerate any
+    // offset) and only opens up as zoom grows — so the viewport stays fully
+    // inside the world at every point in the ramp, not just at MAX_ZOOM.
+    const marginX = W / (2 * zoom);
+    const marginY = H / (2 * zoom);
+    const fx = Math.min(Math.max(deathFocus.x, marginX), W - marginX);
+    const fy = Math.min(Math.max(deathFocus.y, marginY), H - marginY);
+    ctx.translate(-fx, -fy);
+  }
 
   // Pixel-art world themed to the stage's biome (sky, terrain band, layered
   // ground) + its scenery props; the mood tint washes over both.
@@ -1246,15 +2012,40 @@ function renderPlaying() {
     drawAura(ctx, heroX + hw / 2, hero.y + hh / 2, hw * 0.85, rank.rank.glow, tick);
   }
   drawSprite(ctx, hero.sprite, hero.frame, heroX, hero.y, hero.scale, false, heroFlash);
+  if (hero.hasStaff) drawStaffCompanion(heroX, hero.y);
+  // Princess Ánh Dương's Shield: a golden dome around the hero for as long as
+  // the ward is armed — pops (see heroHit) the instant it blocks a hit, so it
+  // must be visible continuously, not just at the moment of casting.
+  if (hero.shielded) {
+    const hw = hero.sprite.w * DOT * hero.scale;
+    const hh = hero.sprite.h * DOT * hero.scale;
+    drawAura(ctx, heroX + hw / 2, hero.y + hh / 2, hw * 0.95, '#fff2b0', tick * 1.4);
+  }
 
   if (monster) {
     if (!monster.dying || monster.deathTimer % 4 < 2) {
       // Knockback shoves the monster to the right (away from the hero).
       const kx = monster.knockback || 0;
-      const flash = monster.hitFlash > 0 ? '#ffffff' : null;
+      // Princess tints take priority over the hit-flash white (the flash is
+      // only 6 frames; the freeze/slow states last seconds and are what the
+      // kid needs to keep reading throughout).
+      const flash = monster.frozenTimer > 0 ? '#8fe3ff' : monster.slowTimer > 0 ? '#e8c87a' : monster.hitFlash > 0 ? '#ffffff' : null;
       drawSprite(ctx, monster.sprite, monster.frame, monster.x + kx, monster.y, monster.scale, true, flash);
       if (monster.tint === 'elite' && !monster.dying) {
         drawRect(ctx, monster.x + kx + monster.width / 2 - 4, monster.y - 6, 8, 6, '#c0392b');
+      }
+      if (monster.frozenTimer > 0) {
+        drawAura(ctx, monster.x + kx + monster.width / 2, monster.y + (monster.sprite.h * DOT * monster.scale) / 2, monster.width * 0.6, '#bfe8ff', tick);
+      }
+      // Stageboss attack telegraph: a glow that builds as attackWindup counts
+      // down, so a kid sees the boss "charging up" before the hit lands
+      // instead of it landing with zero warning.
+      if (monster.telegraphing) {
+        const total = attackFor(monster).windup || 1;
+        const charge = 1 - Math.max(0, monster.attackWindup) / total;
+        const mcx = monster.x + kx + monster.width / 2;
+        const mcy = monster.y + (monster.sprite.h * DOT * monster.scale) / 2;
+        drawAura(ctx, mcx, mcy, monster.width * (0.3 + charge * 0.5), '#ff6a4a', tick * 1.6);
       }
     }
   }
@@ -1283,19 +2074,49 @@ function renderPlaying() {
   drawBiomeWeather(ctx, W, H, GROUND_Y, biome, tick);
 
   drawBossBar();
+  drawCreepName();
   drawTargetWord();
   drawShieldHint();
   drawHUD();
   drawComboMeter();
   drawStaffMeter();
+  drawSpellWord();
   drawRankHUD();
+  drawPrincessHUD();
+  drawPrincessBanner();
+  drawBossSkillBanner();
   // Bottom hints on dark plates: biome grounds range from dark volcanic rock to
   // near-white snow, so light text alone would vanish on the bright ones.
   const hint = 'Gõ chữ để tấn công! (Telex)';
   plate(hint, W / 2, H - 30, 17, 'center');
   drawText(ctx, hint, W / 2, H - 30, 17, '#fff4d6', 'center');
+  // Pause hint, bottom-left — mirrors the mute/music hints' bottom-right corner
+  // so the two pairs of controls read as two separate, uncluttered groups.
+  const pauseHint = '⏸ F8: tạm dừng';
+  plate(pauseHint, 20, H - 29, 14, 'left');
+  drawText(ctx, pauseHint, 20, H - 29, 14, '#fff4d6', 'left');
 
   ctx.restore();
+}
+
+// The pause screen: draws the frozen fight exactly as it stood (reusing the
+// normal PLAYING/BOSS_WARNING render, whichever we paused from — so nothing
+// visibly jumps when the overlay appears) with a dimming wash and a panel on
+// top, matching the BOSS_WARNING vignette's plate/text convention.
+function renderPaused() {
+  if (pausedFrom === STATE.BOSS_WARNING) renderBossWarning();
+  else renderPlaying();
+
+  ctx.fillStyle = 'rgba(10, 8, 20, 0.55)';
+  ctx.fillRect(0, 0, W, H);
+
+  const cy = H * 0.42;
+  const line1 = '⏸ TẠM DỪNG';       // "PAUSED"
+  const line2 = 'Bấm F8 để chơi tiếp'; // "Press F8 to keep playing"
+  plate(line1, W / 2, cy - 22, 34, 'center');
+  drawText(ctx, line1, W / 2, cy - 22, 34, '#fff4d6', 'center');
+  plate(line2, W / 2, cy + 20, 18, 'center');
+  drawText(ctx, line2, W / 2, cy + 20, 18, '#cfc8dd', 'center');
 }
 
 // ---------------------------------------------------------------------------
@@ -1342,6 +2163,15 @@ function loop() {
       if (state === STATE.PLAYING) renderPlaying();
       else if (state === STATE.VICTORY) Scenes.drawVictory(ctx, W, H, tick, currentStage(), heroWeaponColor());
       else if (state === STATE.FAILURE) Scenes.drawFailure(ctx, W, H, tick, currentStage(), heroWeaponColor());
+      else if (state === STATE.BOSS_WARNING) renderBossWarning();
+      break;
+    case STATE.BOSS_WARNING:
+      updateBossWarning();
+      if (state === STATE.BOSS_WARNING) renderBossWarning();
+      else if (state === STATE.PLAYING) renderPlaying();
+      break;
+    case STATE.PAUSED:
+      renderPaused();
       break;
     case STATE.VICTORY:
       Scenes.drawVictory(ctx, W, H, tick, currentStage(), heroWeaponColor());

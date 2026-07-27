@@ -407,7 +407,7 @@ export const WORD_POOLS = {
     { vi: 'ngôi sao nhỏ vẫn soi sáng cả rừng', telex: 'ngooi sao nhor vaanx soi sangs car ruwngf' },
     { vi: 'em bước lên từng bậc thang của tháp', telex: 'em buwowcs leen tuwngf baacj thang cuar thaps' },
     { vi: 'lời hứa tốt thì phải luôn giữ lấy', telex: 'lowif huwas toots thif phair luoon giuwx laays' },
-    { vi: 'chữ viết đúng là chìa khóa mở cửa', telex: 'chuwx vieets ddungs laf chiaf khoas mowr cuwar' },
+    { vi: 'gõ đúng là chìa khóa mở cửa', telex: 'gox ddungs laf chiaf khoas mowr cuwar' },
     { vi: 'đường lên đỉnh trí tuệ tuy khó mà vui', telex: 'dduwowngf leen ddinhr tris tueej tuy khos maf vui' },
     { vi: 'ai chịu học thì trời chẳng phụ lòng', telex: 'ai chiuj hocj thif trowif chawngr phuj longf' },
     { vi: 'gõ chậm mà đúng hơn gõ nhanh mà sai', telex: 'gox chaamj maf ddungs hown gox nhanh maf sai' },
@@ -438,6 +438,19 @@ export const WORD_POOLS = {
     { vi: 'thế giới này được cứu bởi lòng kiên nhẫn', telex: 'thees giowis nayf dduwowcj cuwus bowir longf kieen nhaanx' },
     { vi: 'mỗi con chữ em gõ là một tia sáng', telex: 'mooix con chuwx em gox laf mootj tia sangs' },
     { vi: 'bóng tối đã tan và bình yên trở lại', telex: 'bongs toois ddax tan vaf binhf yeen trowr laij' },
+  ],
+  // Spell tier — the Staff of Wisdom's crit incantation (see hero.staffReady in
+  // main.js). Short magic-sounding phrases, deliberately word/phrase-tier length
+  // (not proverb-length): the spell is a high-stakes beat under time pressure —
+  // one wrong key not corrected next keystroke burns the whole charge — so it
+  // must stay typeable in a few seconds, whatever chapter the kid is on.
+  spell: [
+    { vi: 'ánh sáng trỗi dậy', telex: 'anhs sangs trooix daayj' },
+    { vi: 'sức mạnh trí tuệ', telex: 'suwcs manhj tris tueej' },
+    { vi: 'phép màu hiện ra', telex: 'pheps mauf hieenj ra' },
+    { vi: 'trượng thần thức tỉnh', telex: 'truwowngj thaanf thuwcs tinhr' },
+    { vi: 'ngôi sao tỏa sáng', telex: 'ngooi sao toar sangs' },
+    { vi: 'ý chí bất diệt', telex: 'ys chis baats dieetj' },
   ],
 };
 

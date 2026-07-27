@@ -16,6 +16,13 @@ export class TypingTracker {
     this.onComplete = null; // callback set by game
     this.onProgress = null; // callback(matchedLen, mistake)
     this.enabled = false;
+    // True from the completing keystroke until the NEXT setTarget() call. The
+    // word a kid just finished typically stays on screen a few frames (its
+    // projectile travelling, the monster resolving the hit) — without this,
+    // clear() (called right away by main.js so no more keys land on the old
+    // word) would blank matchedLen() back to 0 and the just-completed word
+    // would flash back to "not yet typed", reading as "type it again".
+    this.completed = false;
   }
 
   setTarget(word, telex = '') {
@@ -23,10 +30,16 @@ export class TypingTracker {
     this.telex = telex;              // ideal clean keystroke sequence
     this.buffer = newBuffer();
     this.enabled = true;
+    this.completed = false;
     this.keystrokes = 0;            // printable keys pressed for this word
     this.usedBackspace = false;     // any correction this word?
     this.startTime = 0;             // stamped on the FIRST key (see handleKey)
     this.elapsedMs = 0;             // time from first key to completion
+    // How many times THIS word attempt has gone off the rails (isMistake()
+    // true). Distinct from usedBackspace/wasClean, which judge the whole word
+    // after the fact — this counts live, for Princess Dòng Suối's Cleanse
+    // support (main.js), which watches for a kid stuck fumbling repeatedly.
+    this.mistakeCount = 0;
   }
 
   clear() {
@@ -44,7 +57,12 @@ export class TypingTracker {
   // toned/shaped target char, since the tone/shape key is typed AFTER the vowel
   // (b-e-s -> "bé"). So while typing "bé", the intermediate "be" already scores 2
   // matched chars instead of 1 — the "e" isn't treated as wrong.
+  //
+  // Once completed, this stays pinned at the full target length (see
+  // `completed`) so the word stays fully highlighted instead of snapping back
+  // to unmatched the instant clear() empties the buffer.
   matchedLen() {
+    if (this.completed) return this.target.length;
     return telexPrefixLen(this.current, this.target);
   }
 
@@ -60,6 +78,7 @@ export class TypingTracker {
   // While off the rails (isMistake) we surface 0 so the guide never runs ahead
   // of the kid; the caller also drops the "next key" cue in that case.
   telexMatchedLen() {
+    if (this.completed) return this.telex.length;
     if (!this.telex || this.isMistake()) return 0;
     const cur = this.current;
     let best = 0;
@@ -72,6 +91,7 @@ export class TypingTracker {
 
   // True if the current buffer has gone "off the rails" (diverged from target).
   isMistake() {
+    if (this.completed) return false;
     // A mistake = the current string can no longer become the target by typing
     // more Telex keys. Legitimate intermediate states (an untoned vowel on the
     // way to its toned form) are NOT mistakes — see telexPrefixLen.
@@ -106,6 +126,7 @@ export class TypingTracker {
 
     if (r.complete) {
       this.enabled = false;
+      this.completed = true;
       this.elapsedMs = this.startTime ? Date.now() - this.startTime : 0;
       if (this.onProgress) this.onProgress(this.target.length, false);
       if (this.onComplete) this.onComplete(this.wasClean());
@@ -126,12 +147,17 @@ export class TypingTracker {
   }
 
   _emitProgress() {
-    if (this.onProgress) this.onProgress(this.matchedLen(), this.isMistake());
+    const mistake = this.isMistake();
+    if (mistake) this.mistakeCount++;
+    if (this.onProgress) this.onProgress(this.matchedLen(), mistake);
   }
 }
 
-// Install a global keydown listener that forwards keys to a tracker.
-// Returns a teardown function.
+// Install a global keydown listener that forwards keys to a tracker. `tracker`
+// only needs a `handleKey(key)` method — main.js passes a small dispatch
+// object (not a TypingTracker itself) so it can route each keystroke to
+// whichever of its two trackers is currently active (see the Staff of
+// Wisdom's spell in main.js). Returns a teardown function.
 export function attachKeyboard(tracker) {
   const handler = (e) => {
     // Ignore modifier combos so shortcuts still work.

@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Xem Trước Âm Thanh — Sounds Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #12121a;
+    --panel: #1b1c28;
+    --panel2: #22232f;
+    --line: #33344a;
+    --text: #f0f0f6;
+    --muted: #9a9ab0;
+    --accent: #ffd24a;
+    --good: #6be675;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(#181a24, #14151e);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 20px;
+  }
+  header h1 {
+    margin: 0 0 2px;
+    font-size: 20px;
+  }
+  header h1 span {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 14px;
+    margin-left: 8px;
+  }
+  .hint { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
+  .controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #search {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    min-width: 240px;
+  }
+  #search:focus { outline: 2px solid var(--accent); }
+  #quicknav { display: flex; gap: 4px; flex-wrap: wrap; }
+  #quicknav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 12px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel2);
+    white-space: nowrap;
+  }
+  #quicknav a:hover { color: var(--text); border-color: var(--accent); }
+  #unlockBtn {
+    margin-left: auto;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #unlockBtn.on { border-color: var(--good); color: var(--good); }
+
+  main { padding: 6px 20px 60px; max-width: 1400px; margin: 0 auto; }
+  .section { margin-top: 34px; }
+  .section h2 {
+    font-size: 17px;
+    margin: 0 0 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-sub { color: var(--muted); font-size: 12px; margin: 6px 0 14px; max-width: 900px; }
+  .subhead { font-size: 13px; color: var(--accent); margin: 18px 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px;
+  }
+  .grid.wide { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .12s, transform .05s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card:active { transform: scale(0.98); }
+  .card.playing { border-color: var(--good); box-shadow: 0 0 0 1px var(--good) inset; }
+  .card .row { display: flex; align-items: center; gap: 10px; }
+  .card .playbtn {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .card.playing .playbtn { background: var(--good); color: #10321a; border-color: var(--good); }
+  .card .label { font-weight: 600; font-size: 13px; }
+  .card .sub { color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .card .idtag {
+    font-size: 10.5px;
+    color: #7fe3ff;
+    background: #14202a;
+    border: 1px solid #204252;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-top: 8px;
+    display: inline-block;
+    align-self: flex-start;
+  }
+  .card .waveform {
+    margin-top: 10px;
+    width: 100%;
+    height: 40px;
+    display: block;
+    background: #11131c;
+    border-radius: 4px;
+  }
+  .card .badges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 8px; }
+  .card .chip {
+    font-size: 9.5px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 1px 6px;
+  }
+  .card .chip.role-boss { color: #ffb0a0; border-color: #5a2a24; }
+  .card .chip.role-stageboss { color: #e6b3ff; border-color: #4a2a5a; }
+  .card .chip.role-princess { color: #ffd6f0; border-color: #5a2a4a; }
+  .card.hidden-by-search { display: none; }
+
+  .songcard { }
+  .songcard .meta { color: var(--muted); font-size: 11px; margin: 8px 0 0; }
+  .songcard .stat { display: inline-block; background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; margin: 6px 4px 0 0; }
+  .songcard .barsviz { display: flex; gap: 3px; margin-top: 10px; }
+  .songcard .barpip {
+    flex: 1;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+  }
+  .songcard .barpip.active { background: var(--accent); border-color: var(--accent); }
+  .songcard .voices { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 8px; }
+
+  .now-playing-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: #181a24;
+    border-top: 1px solid var(--line);
+    padding: 10px 20px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    z-index: 20;
+    font-size: 12.5px;
+  }
+  .now-playing-bar.show { display: flex; }
+  .now-playing-bar .stopbtn {
+    background: #3a1f1f;
+    border: 1px solid #5a2a24;
+    color: #ffb0a0;
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .now-playing-bar .np-label { color: var(--muted); }
+  .now-playing-bar .np-name { color: var(--accent); font-weight: 600; }
+
+  footer { color: var(--muted); font-size: 11px; text-align: center; padding: 20px 20px 70px; }
+
+  .gate {
+    max-width: 640px;
+    margin: 80px auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 28px;
+    text-align: center;
+  }
+  .gate button {
+    margin-top: 14px;
+    background: var(--accent);
+    color: #23200a;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Xem Trước Âm Thanh <span>Sounds Preview — dev tool, not part of the game</span></h1>
+  <p class="hint">Mọi hiệu ứng âm thanh và nhạc nền trong game, phát trực tiếp từ code (Web Audio, không dùng file). Bấm vào thẻ để nghe. / Every sound effect and background theme, synthesized live from the real source. Click any card to play it.</p>
+  <div class="controls">
+    <input id="search" type="text" placeholder="Lọc theo tên hoặc id... / filter by name or id...">
+    <nav id="quicknav"></nav>
+    <button id="unlockBtn">🔇 Bật âm thanh / Enable audio</button>
+  </div>
+</header>
+<main id="app"></main>
+<div class="now-playing-bar" id="npBar">
+  <span class="np-label">Đang phát / Playing:</span>
+  <span class="np-name" id="npName"></span>
+  <button class="stopbtn" id="npStop">■ Dừng / Stop</button>
+</div>
+<footer>anh-hung-ban-phim/sounds-preview.html — serve via <code>npm start</code>, open <code>/sounds-preview.html</code>. Safe to delete; nothing here is imported by the game.</footer>
+
+<script type="module">
+import * as Audio from './js/audio.js';
+import * as Music from './js/music.js';
+import { BOSS_ATTACKS, DEVOURER_PHASE_ATTACKS } from './js/bossattacks.js';
+import { PRINCESS_SUPPORT } from './js/princesses.js';
+
+const app = document.getElementById('app');
+const quicknav = document.getElementById('quicknav');
+const npBar = document.getElementById('npBar');
+const npName = document.getElementById('npName');
+const unlockBtn = document.getElementById('unlockBtn');
+
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+// ---- audio unlock (browsers block AudioContext until a user gesture) ------
+
+let unlocked = false;
+function unlockAudio() {
+  if (unlocked) return;
+  Audio.resumeAudio();
+  unlocked = true;
+  unlockBtn.textContent = '🔊 Âm thanh đã bật / Audio enabled';
+  unlockBtn.classList.add('on');
+}
+unlockBtn.addEventListener('click', unlockAudio);
+
+// ---- section scaffolding ---------------------------------------------------
+
+function addSection(id, title, subtitle) {
+  const sec = el('section', 'section');
+  sec.id = id;
+  const h = el('h2');
+  h.textContent = title;
+  sec.appendChild(h);
+  if (subtitle) {
+    const p = el('p', 'section-sub');
+    p.textContent = subtitle;
+    sec.appendChild(p);
+  }
+  app.appendChild(sec);
+  const a = document.createElement('a');
+  a.href = '#' + id;
+  a.textContent = title;
+  quicknav.appendChild(a);
+  return sec;
+}
+
+function addGrid(sec, wide) {
+  const grid = el('div', wide ? 'grid wide' : 'grid');
+  sec.appendChild(grid);
+  return grid;
+}
+
+function addSubhead(sec, text) {
+  const h = el('div', 'subhead');
+  h.textContent = text;
+  sec.appendChild(h);
+}
+
+// ---- a tiny stylized waveform glyph ----------------------------------------
+// audio.js/music.js hold one shared (lazily-created) AudioContext as module
+// state, so there's no clean way to re-route them into an OfflineAudioContext
+// for a static render without duplicating their synthesis code. Instead each
+// card draws a small procedural glyph (seeded by function name) purely for
+// visual identity — clicking the card always plays the REAL sound from the
+// REAL module, which is the part that actually matters.
+function drawGlyph(canvas, seedStr, kind) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height, mid = h / 2;
+  ctx.clearRect(0, 0, w, h);
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff; };
+  ctx.strokeStyle = '#ffd24a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  const bars = kind === 'song' ? 48 : 28;
+  const decay = kind === 'blip' ? 6 : kind === 'noise' ? 1.5 : 2.5;
+  for (let i = 0; i < bars; i++) {
+    const x = (i / (bars - 1)) * w;
+    const envelope = Math.exp(-decay * (i / bars));
+    const amp = (0.25 + rnd() * 0.75) * envelope * (h * 0.42);
+    ctx.moveTo(x, mid - amp);
+    ctx.lineTo(x, mid + amp);
+  }
+  ctx.stroke();
+}
+
+// ---- SFX cards --------------------------------------------------------------
+
+let activeCard = null;
+
+function humanizeCue(name) {
+  return name
+    .replace(/^(boss|princess)/, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim();
+}
+
+function sfxCard(grid, { fnName, label, sub, badges = [], argExample }) {
+  const fn = Audio[fnName];
+  if (typeof fn !== 'function') return;
+
+  const card = el('div', 'card');
+  card.dataset.search = [fnName, label, sub, ...badges.map((b) => b.text)].join(' ').toLowerCase();
+
+  const row = el('div', 'row');
+  const btn = el('div', 'playbtn');
+  btn.textContent = '▶';
+  row.appendChild(btn);
+  const textWrap = el('div');
+  const lbl = el('div', 'label');
+  lbl.textContent = label;
+  textWrap.appendChild(lbl);
+  if (sub) {
+    const s = el('div', 'sub');
+    s.textContent = sub;
+    textWrap.appendChild(s);
+  }
+  row.appendChild(textWrap);
+  card.appendChild(row);
+
+  const tag = el('div', 'idtag mono');
+  tag.textContent = argExample ? `${fnName}(${argExample})` : `${fnName}()`;
+  card.appendChild(tag);
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'waveform';
+  canvas.width = 400;
+  canvas.height = 40;
+  card.appendChild(canvas);
+  drawGlyph(canvas, fnName, fnName.includes('key') || fnName === 'confirm' ? 'blip' : fnName.includes('noise') ? 'noise' : 'tone');
+
+  if (badges.length) {
+    const b = el('div', 'badges');
+    for (const bd of badges) {
+      const chip = el('span', 'chip' + (bd.role ? ' role-' + bd.role : ''));
+      chip.textContent = bd.text;
+      b.appendChild(chip);
+    }
+    card.appendChild(b);
+  }
+
+  card.addEventListener('click', () => {
+    unlockAudio();
+    if (activeCard) activeCard.classList.remove('playing');
+    card.classList.add('playing');
+    activeCard = card;
+    Music.stopMusic();
+    npBar.classList.remove('show');
+    try {
+      if (argExample !== undefined) fn(eval(argExample));
+      else fn();
+    } catch (e) {
+      console.error(e);
+    }
+    setTimeout(() => card.classList.remove('playing'), 700);
+  });
+
+  grid.appendChild(card);
+}
+
+// =========================================================================
+// CORE GAMEPLAY FEEDBACK — typing, attacks, hits, outcomes
+// =========================================================================
+{
+  const sec = addSection('core', 'Phản Hồi Gõ Phím & Chiến Đấu — Core Gameplay Feedback', 'The moment-to-moment sounds a kid hears constantly while typing and fighting.');
+
+  addSubhead(sec, 'Gõ Phím — Typing');
+  const g1 = addGrid(sec);
+  sfxCard(g1, { fnName: 'keyBlip', label: 'Key Blip', sub: 'correct keystroke, pitch rises with progress' });
+  sfxCard(g1, { fnName: 'keyError', label: 'Key Error', sub: 'wrong key — low buzz' });
+
+  addSubhead(sec, 'Tấn Công — Attacks');
+  const g2 = addGrid(sec);
+  sfxCard(g2, { fnName: 'simpleAttack', label: 'Simple Attack', sub: 'basic skill — quick zap' });
+  sfxCard(g2, { fnName: 'specialAttack', label: 'Special Attack', sub: 'special skill — rising arpeggio + whoosh' });
+  sfxCard(g2, { fnName: 'hit', label: 'Monster Hit', sub: 'hit lands / explosion' });
+  sfxCard(g2, { fnName: 'hurt', label: 'Hero Hurt', sub: 'hero takes damage — distinct from keyError so mistakes never feel like getting hit' });
+
+  addSubhead(sec, 'Kết Quả Trận Đấu — Outcomes');
+  const g3 = addGrid(sec);
+  sfxCard(g3, { fnName: 'victory', label: 'Victory', sub: 'stage cleared — major arpeggio flourish' });
+  sfxCard(g3, { fnName: 'failure', label: 'Failure', sub: 'descending minor sting' });
+  sfxCard(g3, { fnName: 'reward', label: 'Reward', sub: 'new gear fanfare' });
+  sfxCard(g3, { fnName: 'confirm', label: 'Confirm', sub: 'menu move / confirm' });
+
+  addSubhead(sec, 'Combo & Rank');
+  const g4 = addGrid(sec);
+  sfxCard(g4, { fnName: 'comboMilestone', label: 'Combo Milestone', sub: 'base pitch climbs with combo size', argExample: '15' });
+  sfxCard(g4, { fnName: 'comboTierUp', label: 'Combo Tier Up', sub: 'crossed into a stronger tier' });
+  sfxCard(g4, { fnName: 'comboBreak', label: 'Combo Break', sub: 'soft descending "aww"' });
+  sfxCard(g4, { fnName: 'rankUp', label: 'Rank Up', sub: 'higher rank climbs higher', argExample: '3' });
+}
+
+// =========================================================================
+// THE STAFF OF WISDOM + MULTI-PHASE BOSSES (chapters 2-3 mechanics)
+// =========================================================================
+{
+  const sec = addSection('mechanics', 'Trượng Trí Tuệ & Trùm Nhiều Giai Đoạn — Staff & Multi-Phase Bosses', 'Cues for the chapter 2-3 mechanics: the charge-and-release Staff, and shielded/phased boss fights.');
+  const g = addGrid(sec);
+  sfxCard(g, { fnName: 'staffCharged', label: 'Staff Charged', sub: 'reached full charge — bright "ready!" chime' });
+  sfxCard(g, { fnName: 'staffStrike', label: 'Staff Strike', sub: 'empowered hit — deep swell under a bright strike' });
+  sfxCard(g, { fnName: 'shieldBlock', label: 'Shield Block', sub: 'ordinary hit turned away — dull clank, "that did nothing"' });
+  sfxCard(g, { fnName: 'phaseChange', label: 'Phase Change', sub: 'boss phase falls — descending growl into a rising sting' });
+  sfxCard(g, { fnName: 'storyPage', label: 'Story Page', sub: 'very soft — a page of narration turning' });
+  sfxCard(g, { fnName: 'bossWarning', label: 'Boss Warning', sub: 'stageboss about to spawn — low held horn-stab' });
+}
+
+// =========================================================================
+// STAGEBOSS SIGNATURE ATTACKS (bossattacks.js)
+// =========================================================================
+{
+  const sec = addSection('bossattacks', 'Đòn Đánh Của Trùm Cuối Màn — Stageboss Signature Attacks', 'One cue per stageboss, played the instant its telegraphed attack lands. Badges show which sprite/phase uses it (see bossattacks.js).');
+  const g = addGrid(sec);
+  for (const [spriteId, atk] of Object.entries(BOSS_ATTACKS)) {
+    sfxCard(g, {
+      fnName: atk.sound,
+      label: atk.name,
+      sub: `${spriteId} · windup ${atk.windup}f · fx: ${atk.effect}`,
+      badges: [{ text: spriteId, role: spriteId.startsWith('stageboss') ? 'stageboss' : 'boss' }],
+    });
+  }
+  addSubhead(sec, 'Thế Giới Nuốt Chửng — World Devourer phase attacks (stage 26)');
+  const g2 = addGrid(sec);
+  DEVOURER_PHASE_ATTACKS.forEach((atk, i) => {
+    sfxCard(g2, {
+      fnName: atk.sound,
+      label: atk.name,
+      sub: `phase ${i + 1} · windup ${atk.windup}f · fx: ${atk.effect}`,
+      badges: [{ text: `Devourer phase ${i + 1}`, role: 'stageboss' }],
+    });
+  });
+  addSubhead(sec, 'Dự Phòng — Fallback');
+  const g3 = addGrid(sec);
+  sfxCard(g3, { fnName: 'bossGenericSlash', label: 'Generic Slash', sub: 'fallback for a stageboss sprite with no roster entry' });
+}
+
+// =========================================================================
+// PRINCESS SUPPORT ABILITIES (princesses.js)
+// =========================================================================
+{
+  const sec = addSection('princesses', 'Trợ Giúp Từ Công Chúa — Princess Support Abilities', 'Each princess casts her support cue FIRST (a shared warm chime, princessCast), then her own ability cue layers on top. Ordered by priority, same as PRINCESS_SUPPORT.');
+  const g = addGrid(sec);
+  sfxCard(g, { fnName: 'princessCast', label: 'Princess Cast (shared)', sub: 'plays first for every princess — gentle bell, not a fanfare' });
+  for (const p of PRINCESS_SUPPORT) {
+    sfxCard(g, {
+      fnName: p.audioCue,
+      label: `${p.name} — ${humanizeCue(p.audioCue)}`,
+      sub: p.blurb,
+      badges: [{ text: p.style, role: 'princess' }],
+    });
+  }
+}
+
+// =========================================================================
+// MUSIC — background themes (music.js)
+// =========================================================================
+
+function songCard(grid, id, song, label, sub) {
+  const card = el('div', 'card songcard');
+  card.dataset.search = [id, label, sub].join(' ').toLowerCase();
+
+  const row = el('div', 'row');
+  const btn = el('div', 'playbtn');
+  btn.textContent = '▶';
+  row.appendChild(btn);
+  const textWrap = el('div');
+  const lbl = el('div', 'label');
+  lbl.textContent = label;
+  textWrap.appendChild(lbl);
+  const s = el('div', 'sub');
+  s.textContent = sub;
+  textWrap.appendChild(s);
+  row.appendChild(textWrap);
+  card.appendChild(row);
+
+  const tag = el('div', 'idtag mono');
+  tag.textContent = `playMusic('${id}')`;
+  card.appendChild(tag);
+
+  const meta = el('div', 'meta');
+  meta.textContent = `${song.bpm} BPM · ${song.beatsPerBar}/4 · ${song.bars.length}-bar loop`;
+  card.appendChild(meta);
+
+  const bars = el('div', 'barsviz');
+  for (let i = 0; i < song.bars.length; i++) bars.appendChild(el('div', 'barpip'));
+  card.appendChild(bars);
+
+  const voices = el('div', 'voices');
+  for (const vname of Object.keys(song.voices)) {
+    const chip = el('span', 'chip');
+    chip.textContent = vname;
+    voices.appendChild(chip);
+  }
+  card.appendChild(voices);
+
+  grid.appendChild(card);
+
+  card.addEventListener('click', () => {
+    unlockAudio();
+    document.querySelectorAll('.songcard').forEach((c) => c.classList.remove('playing'));
+    card.classList.add('playing');
+    if (activeCard) activeCard.classList.remove('playing');
+    activeCard = null;
+    Music.playMusic(id);
+    npName.textContent = `${label} (${id})`;
+    npBar.classList.add('show');
+  });
+}
+
+{
+  const sec = addSection('music', 'Nhạc Nền — Background Music', 'Each theme loops live via the real look-ahead scheduler in music.js. Only one plays at a time (clicking a card stops whatever was playing). The highlighted bar pip tracks which bar of the chord progression is currently looping.');
+
+  addSubhead(sec, 'Menu & Cốt Truyện — Menus & Story');
+  const g1 = addGrid(sec, true);
+  songCard(g1, 'title', Music.SONGS.title, 'Title Theme', 'the one heroic tune — title screen only');
+  songCard(g1, 'story', Music.SONGS.story, 'Story / Narration', 'minor-flavoured bed under the King’s words');
+  songCard(g1, 'tutorial', Music.SONGS.tutorial, 'Tutorial', 'patient and encouraging, never resolves to urgency');
+
+  addSubhead(sec, 'Chiến Đấu Theo Chương — Battle Themes by Chapter');
+  const g2 = addGrid(sec, true);
+  songCard(g2, 'battle1', Music.SONGS.battle1, 'Chapter 1 — bright & adventurous', 'major, gentle two-beat bass, airy arpeggio');
+  songCard(g2, 'battle2', Music.SONGS.battle2, 'Chapter 2 — suspended & thoughtful', 'wide unresolved pad, slow single-note bass');
+  songCard(g2, 'battle3', Music.SONGS.battle3, 'Chapter 3 — dark & heavy', 'minor-flavoured low pad, weight without speed');
+
+  addSubhead(sec, 'Trùm Cuối — World Devourer Phases');
+  const g3 = addGrid(sec, true);
+  songCard(g3, 'finalBoss1', Music.SONGS.finalBoss1, 'Devourer Phase 1 — shrouded', 'lowest, most spread pad — held-breath tension, no arp');
+  songCard(g3, 'finalBoss2', Music.SONGS.finalBoss2, 'Devourer Phase 2 — unleashed', 'shield down, low arp enters, bass doubles up');
+  songCard(g3, 'finalBoss3', Music.SONGS.finalBoss3, 'Devourer Phase 3 — desperate', 'widest, densest pad and busiest arp, tempo still holds');
+
+  addSubhead(sec, 'Kết Quả — Outcome Scenes');
+  const g4 = addGrid(sec, true);
+  songCard(g4, 'victory', Music.SONGS.victory, 'Victory / Reward', 'warm, congratulatory, has a lead melody');
+  songCard(g4, 'failure', Music.SONGS.failure, 'Failure', 'gentle, not punishing — resolves upward each loop');
+  songCard(g4, 'triumph', Music.SONGS.triumph, 'Chapter End / Game Complete / Credits', 'the grandest theme — full lead over a full-octave pad');
+}
+
+// stop-music bar
+document.getElementById('npStop').addEventListener('click', () => {
+  Music.stopMusic();
+  npBar.classList.remove('show');
+  document.querySelectorAll('.songcard').forEach((c) => c.classList.remove('playing'));
+});
+
+// live filter across every card, in every section
+document.getElementById('search').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.card').forEach((c) => {
+    const match = !q || (c.dataset.search || '').includes(q);
+    c.classList.toggle('hidden-by-search', !match);
+  });
+});
+
+// first click anywhere also unlocks audio (autoplay policies)
+document.body.addEventListener('click', unlockAudio, { once: true });
+</script>
+</body>
+</html>

@@ -25,7 +25,7 @@ The portal and games are **decoupled**: the portal only references each game by 
 relative link to its `index.html`. It does not import game code or share state.
 When working *inside* a game, read that game's own `CLAUDE.md` — e.g.
 `anh-hung-ban-phim/CLAUDE.md` documents that game's architecture and its
-`serve.py` dev server + `node js/telex.test.js` test suite.
+`npm start` dev server + `node js/telex.test.js` test suite.
 
 ## Serving / previewing the portal
 
@@ -37,8 +37,9 @@ python3 -m http.server 8000    # then open http://localhost:8000/index.html
 
 Serving from the **root** (not a game subfolder) is what makes the relative game
 links resolve — the same reason they work on GitHub Pages. Individual games may
-ship a stricter no-cache dev server (`anh-hung-ban-phim/serve.py`); use that when
-editing that game's JS modules to avoid Chrome caching stale modules.
+ship a stricter no-cache dev server (`anh-hung-ban-phim` uses `npm start`, an
+`http-server -c-1` script); use that when editing that game's JS modules to
+avoid Chrome caching stale modules.
 
 ## Adding a game (the portal's growth model)
 

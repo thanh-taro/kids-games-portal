@@ -65,10 +65,12 @@ function drawSceneBackdrop(ctx, W, H, tick, tint = null, biomeName = null) {
 }
 
 // A small dark plate behind text so it stays legible over the bright sky.
-function plate(ctx, cx, y, text, size) {
+// `align` matches the `drawText` call it backs — 'center' (default) or 'left'.
+function plate(ctx, cx, y, text, size, align = 'center') {
   ctx.font = `${size}px "PixelFont", monospace`;
   const w = ctx.measureText(text).width;
-  drawRect(ctx, cx - w / 2 - 10, y - 4, w + 20, size + 10, 'rgba(20,18,32,0.72)');
+  const left = align === 'left' ? cx - 10 : cx - w / 2 - 10;
+  drawRect(ctx, left, y - 4, w + 20, size + 10, 'rgba(20,18,32,0.72)');
 }
 
 // The fullscreen shortcut is NOT the same everywhere, so the title screen names
@@ -519,9 +521,13 @@ export function drawStory(ctx, W, H, tick, title, page, pageNum, pageCount, biom
     plate(ctx, W / 2, H - 62, next, 18);
     drawText(ctx, next, W / 2, H - 58, 18, '#ffe08a', 'center');
   }
-  const skip = 'ESC: bỏ qua chuyện'; // "ESC: skip the story"
-  plate(ctx, 20 + ctx.measureText(skip).width / 2, H - 29, skip, 14);
-  drawText(ctx, skip, 20, H - 29, 14, '#bfe8ff', 'left');
+  // Blinks in the same slow rhythm as the SPACE prompt so the two read as one
+  // pair of controls, not one polished hint and one static leftover.
+  if (tick % 60 < 42) {
+    const skip = 'Nhấn ESC để bỏ qua câu chuyện'; // "Press ESC to skip the story"
+    plate(ctx, 20, H - 29, skip, 14, 'left');
+    drawText(ctx, skip, 20, H - 29, 14, '#bfe8ff', 'left');
+  }
 }
 
 // The chapter-victory scene: shown after clearing a chapter's final stage,

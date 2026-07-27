@@ -327,6 +327,60 @@ export const SONGS = {
     },
   },
 
+  // --- The final boss --------------------------------------------------------
+  //
+  // The World Devourer fight (stage 26) REPLACES battle3 the moment he appears
+  // (from BOSS_WARNING onward) with a dedicated theme, and escalates by PHASE —
+  // shrouded → unleashed → desperate — mirroring the fight's own three health
+  // bars. Still melody-free (the kid is typing a proverb the entire time) and
+  // still no faster than the rest of the soundtrack: the escalation is in
+  // register and texture, not tempo, so a kid mid-fight can still think.
+
+  // Phase 1 — shrouded/shielded. The lowest, most spread pad in the game: a
+  // shield only a charged Staff hit can crack. Held-breath tension, no arp.
+  finalBoss1: {
+    bpm: 76,
+    beatsPerBar: 4,
+    root: ROOT.E,
+    bars: [0, 0, 3, 5],
+    voices: {
+      pad: padVoice(9, 0.14),
+      bass: bassVoice(0.24),
+      air: airVoice(0.055, 380),
+    },
+  },
+
+  // Phase 2 — unleashed. The shield is down; a low arp enters (the fight is
+  // moving now) and the bass doubles up, but still slow, still no lead.
+  finalBoss2: {
+    bpm: 78,
+    beatsPerBar: 4,
+    root: ROOT.E,
+    bars: [0, 3, 0, 6],
+    voices: {
+      pad: padVoice(8, 0.15),
+      bass: bassVoice(0.26, true),
+      arp: arpVoice([0, null, null, 4, null, null, 2, null], 0.07, 6),
+      air: airVoice(0.06, 460),
+    },
+  },
+
+  // Phase 3 — desperate. He tries to devour the sky: the widest, densest pad
+  // in the soundtrack and the busiest arp allowed under gameplay, but the
+  // tempo holds — dread stays a function of harmony, never of speed.
+  finalBoss3: {
+    bpm: 78,
+    beatsPerBar: 4,
+    root: ROOT.E,
+    bars: [0, 6, 3, 6],
+    voices: {
+      pad: padVoice(10, 0.16, true),
+      bass: bassVoice(0.28, true),
+      arp: arpVoice([0, null, 4, null, 2, null, 4, null], 0.08, 6),
+      air: airVoice(0.07, 520),
+    },
+  },
+
   // --- Outcome scenes -------------------------------------------------------
 
   // VICTORY / REWARD — warm and congratulatory. A short, bright loop that plays

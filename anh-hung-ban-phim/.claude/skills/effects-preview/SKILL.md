@@ -10,7 +10,7 @@ Skill/death/trail effects in `js/effects.js` last only ~10-26 frames, so catchin
 ## Steps
 
 1. Write `effects-preview.html` at the repo root (see template below).
-2. Ensure `python3 serve.py 8177` is running.
+2. Ensure `npm start` is running.
 3. Navigate to `http://localhost:8177/effects-preview.html?v=N#<effect>` (bump `?v=N` each iteration to defeat the ES-module cache; the `#hash` picks one effect). Click the canvas isn't needed — it auto-loops.
 4. Burst 3-5 screenshots to catch the effect across its lifespan.
 5. Tune values in `js/effects.js`, bump `?v=`, re-check.

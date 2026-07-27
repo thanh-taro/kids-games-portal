@@ -143,13 +143,13 @@ export const BIOME_MONSTERS = {
   // The whole chapter fields a different KIND of enemy from chapter 1's animals
   // and ogres, so a new chapter looks new the moment the first wave walks in.
   library: {
-    creep: 'creep_book',
+    creep: 'creep_inkslime',
     boss: 'boss_scribe',
     stageboss: 'boss_guardian_statue',
-    creepName: 'Sách Bay',          // "Flying Book"
-    bossName: 'Thư Lại Mực',        // "Ink Scribe"
+    creepName: 'Slime Mực',         // "Ink Slime"
+    bossName: 'Thủ Thư Bóng Tối',        // "Dark Scribe"
     stagebossName: 'Thủ Thư Cổ',    // "Ancient Librarian"
-    deathColor: '#d9d9e0',
+    deathColor: '#b06cf0',
   },
   windpeak: {
     creep: 'creep_gust',
@@ -188,7 +188,7 @@ export const BIOME_MONSTERS = {
     deathColor: '#b8d8f0',
   },
   starwood: {
-    creep: 'creep_book',
+    creep: 'creep_inkslime',
     boss: 'boss_scribe',
     stageboss: 'boss_windserpent',
     creepName: 'Trang Sao',         // "Star Page"

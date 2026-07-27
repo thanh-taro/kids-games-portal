@@ -267,12 +267,16 @@ export function loadProgress() {
       // the kid gets the story they never had.
       if (!Array.isArray(saved.seenStory)) saved.seenStory = [];
       if (!Array.isArray(saved.rewards)) saved.rewards = [];
+      // `princessesUsed` (which of the ten princess-support abilities have
+      // already been spent — see princesses.js) was added after the first
+      // release, same as seenStory above.
+      if (!Array.isArray(saved.princessesUsed)) saved.princessesUsed = [];
       return saved;
     }
   } catch (e) {
     // ignore corrupt storage
   }
-  return { stage: 0, rewards: [], seenTutorial: false, seenStory: [] };
+  return { stage: 0, rewards: [], seenTutorial: false, seenStory: [], princessesUsed: [] };
 }
 
 export function saveProgress(progress) {

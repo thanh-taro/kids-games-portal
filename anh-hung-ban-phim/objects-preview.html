@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Xem Trước Đối Tượng — Objects Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #12121a;
+    --panel: #1b1c28;
+    --panel2: #22232f;
+    --line: #33344a;
+    --text: #f0f0f6;
+    --muted: #9a9ab0;
+    --accent: #ffd24a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(#181a24, #14151e);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 20px;
+  }
+  header h1 {
+    margin: 0 0 2px;
+    font-size: 20px;
+  }
+  header h1 span {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 14px;
+    margin-left: 8px;
+  }
+  .hint { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
+  .controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #search {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    min-width: 240px;
+  }
+  #search:focus { outline: 2px solid var(--accent); }
+  #quicknav { display: flex; gap: 4px; flex-wrap: wrap; }
+  #quicknav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 12px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel2);
+    white-space: nowrap;
+  }
+  #quicknav a:hover { color: var(--text); border-color: var(--accent); }
+
+  main { padding: 6px 20px 60px; max-width: 1400px; margin: 0 auto; }
+  .section { margin-top: 34px; }
+  .section h2 {
+    font-size: 17px;
+    margin: 0 0 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-sub { color: var(--muted); font-size: 12px; margin: 6px 0 14px; max-width: 900px; }
+  .subhead { font-size: 13px; color: var(--accent); margin: 18px 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 10px;
+  }
+  .grid.wide { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .card .stage {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      linear-gradient(45deg, #26273a 25%, transparent 25%) -8px 0/16px 16px,
+      linear-gradient(-45deg, #26273a 25%, transparent 25%) -8px 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #26273a 75%) -8px 0/16px 16px,
+      linear-gradient(-45deg, transparent 75%, #26273a 75%) -8px 0/16px 16px,
+      #1e1f2b;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .card canvas { image-rendering: pixelated; display: block; }
+  .card .label { font-weight: 600; font-size: 12.5px; }
+  .card .sub { color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .card .idtag {
+    font-size: 10.5px;
+    color: #7fe3ff;
+    background: #14202a;
+    border: 1px solid #204252;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-top: 4px;
+  }
+  .card .dim { color: var(--muted); font-size: 10px; margin-top: 4px; }
+  .card .badges { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin-top: 5px; }
+  .card .chip {
+    font-size: 9.5px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 1px 6px;
+  }
+  .card .chip.role-boss { color: #ffb0a0; border-color: #5a2a24; }
+  .card .chip.role-stageboss { color: #e6b3ff; border-color: #4a2a5a; }
+  .card.hidden-by-search { display: none; }
+
+  .skillcard { align-items: stretch; text-align: left; }
+  .skillcard .stage { background: #11131c; height: 130px; }
+  .skillcard h3 { margin: 0; font-size: 13.5px; }
+  .skillcard .meta { color: var(--muted); font-size: 11px; margin: 3px 0 6px; }
+  .skillcard .swatches { display: flex; gap: 4px; margin-top: 6px; }
+  .skillcard .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #0006; }
+  .skillcard .stat { display: inline-block; background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 10.5px; margin-right: 4px; }
+
+  footer { color: var(--muted); font-size: 11px; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Xem Trước Đối Tượng <span>Objects Preview — dev tool, not part of the game</span></h1>
+  <p class="hint">Mọi nhân vật, quái vật, kỹ năng và cảnh vật trong game, xem trực tiếp từ code (tự động cập nhật). / Every character, monster, skill and scenery prop, rendered straight from the live source.</p>
+  <div class="controls">
+    <input id="search" type="text" placeholder="Lọc theo tên hoặc id... / filter by name or id...">
+    <nav id="quicknav"></nav>
+  </div>
+</header>
+<main id="app"></main>
+<footer>anh-hung-ban-phim/objects-preview.html — serve via <code>npm start</code>, open <code>/objects-preview.html</code>. Safe to delete; nothing here is imported by the game.</footer>
+
+<script type="module">
+import { drawSprite, DOT } from './js/render.js';
+import * as S from './js/sprites.js';
+import { SKILLS, SPECIAL_ORDER } from './js/skills.js';
+import { BIOME_MONSTERS, DEFAULT_MONSTERS } from './js/monsters.js';
+import { ParticleSystem } from './js/effects.js';
+import { REWARDS } from './js/rewards.js';
+
+const app = document.getElementById('app');
+const quicknav = document.getElementById('quicknav');
+
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+function humanize(key) {
+  return key
+    .toLowerCase()
+    .split('_')
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function stripPrefix(key, prefixes) {
+  for (const p of prefixes) if (key.startsWith(p)) return key.slice(p.length);
+  return key;
+}
+
+// ---- section / card scaffolding -------------------------------------------
+
+function addSection(id, title, subtitle) {
+  const sec = el('section', 'section');
+  sec.id = id;
+  const h = el('h2');
+  h.textContent = title;
+  sec.appendChild(h);
+  if (subtitle) {
+    const p = el('p', 'section-sub');
+    p.textContent = subtitle;
+    sec.appendChild(p);
+  }
+  app.appendChild(sec);
+  const a = document.createElement('a');
+  a.href = '#' + id;
+  a.textContent = title;
+  a.dataset.navFor = id;
+  quicknav.appendChild(a);
+  return sec;
+}
+
+function addGrid(sec, wide) {
+  const grid = el('div', wide ? 'grid wide' : 'grid');
+  sec.appendChild(grid);
+  return grid;
+}
+
+function addSubhead(sec, text) {
+  const h = el('div', 'subhead');
+  h.textContent = text;
+  sec.appendChild(h);
+}
+
+// ---- sprite (idle-animated) cards ------------------------------------------
+
+const spriteAnimators = [];
+
+function scaleFor(sprite, target = 124) {
+  const maxDim = Math.max(sprite.w, sprite.h);
+  return Math.max(1, Math.min(9, Math.round(target / (maxDim * DOT))));
+}
+
+function spriteCard(grid, { name, idtag, sub, badges = [], sprite }) {
+  const scale = scaleFor(sprite);
+  const px = DOT * scale;
+  const w = sprite.w * px;
+  const h = sprite.h * px;
+
+  const card = el('div', 'card');
+  card.dataset.search = [name, idtag, sub, ...badges].join(' ').toLowerCase();
+
+  const stage = el('div', 'stage');
+  stage.style.minHeight = Math.max(h, 56) + 'px';
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  stage.appendChild(canvas);
+  card.appendChild(stage);
+
+  const label = el('div', 'label');
+  label.textContent = name;
+  card.appendChild(label);
+
+  if (sub) {
+    const s = el('div', 'sub');
+    s.textContent = sub;
+    card.appendChild(s);
+  }
+  if (idtag) {
+    const t = el('div', 'idtag mono');
+    t.textContent = idtag;
+    card.appendChild(t);
+  }
+  if (badges.length) {
+    const b = el('div', 'badges');
+    for (const bd of badges) {
+      const chip = el('span', 'chip' + (bd.role ? ' role-' + bd.role : ''));
+      chip.textContent = bd.text;
+      b.appendChild(chip);
+    }
+    card.appendChild(b);
+  }
+  const dim = el('div', 'dim');
+  dim.textContent = `${sprite.w}×${sprite.h}px · ${sprite.frames.length} frame${sprite.frames.length > 1 ? 's' : ''}`;
+  card.appendChild(dim);
+
+  grid.appendChild(card);
+
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const anim = { canvas, ctx, sprite, scale, frame: 0, elapsed: 0 };
+  drawSprite(ctx, sprite, 0, 0, 0, scale);
+  spriteAnimators.push(anim);
+}
+
+// ---- monster "purpose" lookup: which biome fields this sprite, and as what --
+
+function badgesForMonster(id) {
+  const out = [];
+  const add = (biome, role, obj) => {
+    let name;
+    if (role === 'creep' || role === 'elite') name = obj.creepName || DEFAULT_MONSTERS.creepName;
+    else if (role === 'boss') name = obj.bossName || DEFAULT_MONSTERS.bossName;
+    else name = obj.stagebossName || obj.bossName || DEFAULT_MONSTERS.stagebossName;
+    out.push({ role, text: `${biome} · ${role}: ${name}` });
+  };
+  if (DEFAULT_MONSTERS.creep === id) add('(default)', 'creep', DEFAULT_MONSTERS);
+  if (DEFAULT_MONSTERS.boss === id) add('(default)', 'boss', DEFAULT_MONSTERS);
+  if (DEFAULT_MONSTERS.stageboss === id) add('(default)', 'stageboss', DEFAULT_MONSTERS);
+  for (const [biome, obj] of Object.entries(BIOME_MONSTERS)) {
+    for (const role of ['creep', 'elite', 'boss', 'stageboss']) {
+      if (obj[role] === id) add(biome, role, obj);
+    }
+  }
+  return out;
+}
+
+// ---- gather every sprite export shaped like {w,h,frames:[...]} ------------
+// This is intentionally generic (not a hand-maintained list) so a new sprite
+// added to sprites.js shows up here automatically, matching this project's
+// "growth is data, not code" philosophy.
+
+const spriteEntries = Object.entries(S).filter(
+  ([, v]) => v && typeof v === 'object' && Array.isArray(v.frames) && typeof v.w === 'number' && typeof v.h === 'number',
+);
+
+const buckets = { creep: [], boss: [], stageboss: [], scenery: [] };
+const HANDLED_SEPARATELY = new Set(['HERO_KNIGHT', 'PRINCESS', 'KING']);
+for (const [key, sprite] of spriteEntries) {
+  if (HANDLED_SEPARATELY.has(key)) continue;
+  if (key.startsWith('STAGEBOSS_')) buckets.stageboss.push([key, sprite]);
+  else if (key.startsWith('BOSS_')) buckets.boss.push([key, sprite]);
+  else if (key.startsWith('CREEP_')) buckets.creep.push([key, sprite]);
+  else buckets.scenery.push([key, sprite]);
+}
+for (const b of Object.values(buckets)) b.sort((a, b2) => a[0].localeCompare(b2[0]));
+
+// =========================================================================
+// CHARACTERS — hero (+ weapon tints), the 10 princesses, the king
+// =========================================================================
+{
+  const sec = addSection('characters', 'Nhân Vật — Characters', 'Hero, his rewarded weapon tints, all rescuable princesses, and the King — all drawn from one shared body template per rules documented in sprites.js.');
+
+  addSubhead(sec, 'Hero Knight — anh hùng');
+  const heroGrid = addGrid(sec);
+  spriteCard(heroGrid, { name: 'Hero Knight (mặc định)', idtag: 'HERO_KNIGHT', sub: 'default glowing energy blade', sprite: S.HERO_KNIGHT });
+  const seenColors = new Map();
+  for (const r of REWARDS) {
+    if (r.projectileColor && !seenColors.has(r.projectileColor)) {
+      seenColors.set(r.projectileColor, r);
+      spriteCard(heroGrid, {
+        name: `Hero — ${r.name}`,
+        idtag: `heroSprite('${r.projectileColor}')`,
+        sub: r.type === 'artifact' ? 'artifact blade tint' : 'weapon reward blade tint',
+        sprite: S.heroSprite(r.projectileColor),
+      });
+    }
+  }
+
+  addSubhead(sec, 'Công Chúa — the 10 princesses (one body template, per-theme remap)');
+  const princessGrid = addGrid(sec);
+  const PRINCESS_LABELS = {
+    flower: 'Công Chúa Hoa (Flower)',
+    stream: 'Công Chúa Dòng Suối (Stream)',
+    star: 'Công Chúa Sao (Star)',
+    sunlight: 'Công Chúa Ánh Dương (Sunlight)',
+    wave: 'Công Chúa Sóng Biển (Wave)',
+    sand: 'Công Chúa Cát (Sand)',
+    ice: 'Công Chúa Băng (Ice)',
+    cloud: 'Công Chúa Mây (Cloud)',
+    love: 'Công Chúa Tình Yêu (Love)',
+    light: 'Công Chúa Ánh Sáng (Light) — finale',
+  };
+  spriteCard(princessGrid, { name: 'Mặc định (no theme)', idtag: "princessSprite(null)", sprite: S.princessSprite(null) });
+  for (const themeKey of Object.keys(S.PRINCESS_STYLES)) {
+    spriteCard(princessGrid, {
+      name: PRINCESS_LABELS[themeKey] || themeKey,
+      idtag: `princessSprite('${themeKey}')`,
+      sprite: S.princessSprite(themeKey),
+    });
+  }
+
+  addSubhead(sec, 'Đức Vua — the King');
+  const kingGrid = addGrid(sec);
+  spriteCard(kingGrid, { name: 'Đức Vua (The King)', idtag: 'KING', sprite: S.KING });
+}
+
+// =========================================================================
+// CREEPS / BOSSES / STAGE BOSSES
+// =========================================================================
+function monsterSection(id, title, subtitle, list) {
+  const sec = addSection(id, title, subtitle);
+  const grid = addGrid(sec);
+  for (const [key, sprite] of list) {
+    const spriteId = key.toLowerCase();
+    spriteCard(grid, {
+      name: humanize(stripPrefix(key, ['CREEP_', 'STAGEBOSS_', 'BOSS_'])),
+      idtag: spriteId,
+      badges: badgesForMonster(spriteId),
+      sprite,
+    });
+  }
+}
+
+monsterSection(
+  'creeps',
+  'Quái Nhỏ — Creeps',
+  'The rank-and-file monster per biome/chapter. Badges show every biome that fields this sprite and under which role.',
+  buckets.creep,
+);
+monsterSection(
+  'bosses',
+  'Trùm — Bosses',
+  'Stronger mid-stage monster, fought with SPECIAL skills only.',
+  buckets.boss,
+);
+monsterSection(
+  'stagebosses',
+  'Trùm Cuối Màn — Stage Bosses',
+  'The one big fight that closes a stage — the biggest sprite budget in the roster.',
+  buckets.stageboss,
+);
+
+// =========================================================================
+// SKILLS & EFFECTS — live particle-system playback, not just a color swatch
+// =========================================================================
+const fxAnimators = [];
+
+function skillCard(grid, skill) {
+  const card = el('div', 'card skillcard');
+  card.dataset.search = [skill.id, skill.name, skill.cls, skill.effect].join(' ').toLowerCase();
+
+  const stage = el('div', 'stage');
+  const canvas = document.createElement('canvas');
+  canvas.width = 260;
+  canvas.height = 130;
+  stage.appendChild(canvas);
+  card.appendChild(stage);
+
+  const h3 = el('h3');
+  h3.textContent = `${skill.name} · ${skill.id}`;
+  card.appendChild(h3);
+
+  const rank = SPECIAL_ORDER.indexOf(skill.id);
+  const meta = el('div', 'meta');
+  meta.textContent = skill.cls === 'special' && rank !== -1 ? `special · unlock #${rank + 1} of ${SPECIAL_ORDER.length}` : skill.cls;
+  card.appendChild(meta);
+
+  const stats = el('div');
+  const statDmg = el('span', 'stat');
+  statDmg.textContent = `dmg ${skill.damage}`;
+  const statSpeed = el('span', 'stat');
+  statSpeed.textContent = `spd ${skill.projectile.speed}`;
+  const statCount = el('span', 'stat');
+  statCount.textContent = `×${skill.projectile.count}`;
+  const statFx = el('span', 'stat');
+  statFx.textContent = `fx: ${skill.effect}`;
+  stats.append(statDmg, statSpeed, statCount, statFx);
+  card.appendChild(stats);
+
+  const swatches = el('div', 'swatches');
+  for (const c of [skill.projectile.color, skill.burst.color, skill.trail.color]) {
+    const sw = el('span', 'swatch');
+    sw.style.background = c;
+    sw.title = c;
+    swatches.appendChild(sw);
+  }
+  card.appendChild(swatches);
+
+  grid.appendChild(card);
+
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const W = canvas.width, H = canvas.height, cy = H / 2;
+  const startX = 16, endX = W - 34;
+  const impactAt = 55, cycle = 110;
+  const ps = new ParticleSystem();
+  let t = 0;
+
+  fxAnimators.push({
+    tick() {
+      t = (t + 1) % cycle;
+      ctx.fillStyle = '#11131c';
+      ctx.fillRect(0, 0, W, H);
+
+      if (t < impactAt) {
+        const p = t / impactAt;
+        const x = startX + (endX - startX) * p;
+        const cfg = skill.projectile;
+        for (let i = 0; i < cfg.count; i++) {
+          ctx.fillStyle = cfg.color;
+          ctx.beginPath();
+          ctx.arc(x - i * (cfg.size * 0.6), cy + (i - (cfg.count - 1) / 2) * (cfg.size * 0.45), cfg.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      if (t === impactAt) ps.play(skill.effect, endX, cy, W, H);
+
+      const shakeOx = ps.screenShake > 0 ? (t % 2 ? 2 : -2) : 0;
+      ctx.save();
+      ctx.translate(shakeOx, 0);
+      ps.update();
+      ps.draw(ctx);
+      ctx.restore();
+    },
+  });
+}
+
+function deathCard(grid, tier, color, label) {
+  const card = el('div', 'card skillcard');
+  card.dataset.search = ['death', tier, label].join(' ').toLowerCase();
+  const stage = el('div', 'stage');
+  const canvas = document.createElement('canvas');
+  canvas.width = 180;
+  canvas.height = 120;
+  stage.appendChild(canvas);
+  card.appendChild(stage);
+  const h3 = el('h3');
+  h3.textContent = label;
+  card.appendChild(h3);
+  const meta = el('div', 'meta');
+  meta.textContent = `ps.death(x, y, color, '${tier}') · demo color ${color}`;
+  card.appendChild(meta);
+  grid.appendChild(card);
+
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2;
+  const period = tier === 'stageboss' ? 150 : tier === 'boss' ? 110 : 70;
+  const ps = new ParticleSystem();
+  let t = 0;
+  fxAnimators.push({
+    tick() {
+      t++;
+      ctx.fillStyle = '#11131c';
+      ctx.fillRect(0, 0, W, H);
+      if (t % period === 1) ps.death(cx, cy, color, tier);
+      const shakeOx = ps.screenShake > 0 ? (t % 2 ? 3 : -3) : 0;
+      ctx.save();
+      ctx.translate(shakeOx, 0);
+      ps.update();
+      ps.draw(ctx);
+      ctx.restore();
+    },
+  });
+}
+
+{
+  const sec = addSection('skills', 'Kỹ Năng & Hiệu Ứng — Skills & Effects', 'Each card plays the REAL particle effect from effects.js on a loop (not a static icon), plus its damage/speed stats and the three colors that define its look.');
+
+  addSubhead(sec, 'Đòn Cơ Bản — Simple attack');
+  const simpleGrid = addGrid(sec, true);
+  for (const skill of Object.values(SKILLS)) if (skill.cls === 'simple') skillCard(simpleGrid, skill);
+
+  addSubhead(sec, 'Kỹ Năng Đặc Biệt — Special skills (unlock order)');
+  const specialGrid = addGrid(sec, true);
+  for (const skill of Object.values(SKILLS)) if (skill.cls === 'special') skillCard(specialGrid, skill);
+
+  addSubhead(sec, 'Hiệu Ứng Hạ Gục — Death VFX by tier');
+  const deathGrid = addGrid(sec, true);
+  deathCard(deathGrid, 'creep', '#5fc23c', 'Creep kill');
+  deathCard(deathGrid, 'boss', '#e0503a', 'Boss kill');
+  deathCard(deathGrid, 'stageboss', '#b06cf0', 'Stage boss kill');
+}
+
+// =========================================================================
+// SCENERY & PROPS — everything else sprites.js exports
+// =========================================================================
+{
+  const sec = addSection('scenery', 'Cảnh Vật & Đạo Cụ — Scenery & Props', 'Backdrop props referenced by biomes.js (sky layer, far mountains, biome-specific flora/rocks, story landmarks, and story-scene set pieces). Auto-listed from every remaining sprite export, so a newly added prop appears here with no changes to this page.');
+  const grid = addGrid(sec);
+  for (const [key, sprite] of buckets.scenery) {
+    spriteCard(grid, { name: humanize(key), idtag: key, sprite });
+  }
+}
+
+// ---- shared animation loop --------------------------------------------
+
+let lastTs = 0;
+function loop(ts) {
+  const dt = lastTs ? Math.min(64, ts - lastTs) : 16;
+  lastTs = ts;
+  for (const a of spriteAnimators) {
+    a.elapsed += dt;
+    if (a.elapsed >= 320) {
+      a.elapsed = 0;
+      a.frame = (a.frame + 1) % a.sprite.frames.length;
+      a.ctx.clearRect(0, 0, a.canvas.width, a.canvas.height);
+      drawSprite(a.ctx, a.sprite, a.frame, 0, 0, a.scale);
+    }
+  }
+  for (const f of fxAnimators) f.tick();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// live filter across every card, in every section
+document.getElementById('search').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.card').forEach((c) => {
+    const match = !q || (c.dataset.search || '').includes(q);
+    c.classList.toggle('hidden-by-search', !match);
+  });
+});
+</script>
+</body>
+</html>

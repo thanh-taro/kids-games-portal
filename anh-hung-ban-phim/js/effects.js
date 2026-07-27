@@ -238,8 +238,288 @@ export class ParticleSystem {
       case 'phasechange':
         this._phaseChange(x, y, W, H);
         break;
+      // ---- stageboss signature attacks (see bossattacks.js) — these land
+      // ON the hero, so main.js calls play() with the hero's own x/y rather
+      // than the monster's, and each is built to read as coming AT the
+      // viewer rather than launching away from it. ----
+      case 'groundslam':
+        this._groundslam(x, y);
+        break;
+      case 'firebreath':
+        this._firebreath(x, y);
+        break;
+      case 'shadowbolt':
+        this._shadowbolt(x, y, W, H);
+        break;
+      case 'inksplatter':
+        this._inksplatter(x, y);
+        break;
+      case 'galeslash':
+        this._galeslash(x, y);
+        break;
+      case 'stonefist':
+        this._stonefist(x, y);
+        break;
+      case 'shadowgrasp':
+        this._shadowgrasp(x, y, W, H);
+        break;
+      case 'arcanepulse':
+        this._arcanepulse(x, y);
+        break;
+      case 'ironslam':
+        this._ironslam(x, y, W, H);
+        break;
+      case 'lanterncurse':
+        this._lanterncurse(x, y, W, H);
+        break;
+      case 'warcryslash':
+        this._warcryslash(x, y);
+        break;
+      case 'voidmaw':
+        this._voidmaw(x, y);
+        break;
+      case 'devoursky':
+        this._devoursky(x, y, W, H);
+        break;
       default:
         this.burst(x, y, '#e8c33a', 20, 5);
+    }
+  }
+
+  // --- Princess support flourishes (chapters 2-3 — see princesses.js) ---
+  // A separate entry point from play() (skill.effect ids) because these are
+  // keyed by ability id, not skill id, and are deliberately gentler/warmer
+  // than the combat skill effects — this is a princess helping, not a strike.
+  playPrincess(ability, x, y, W, H) {
+    switch (ability) {
+      case 'heal':
+        this._princessHeal(x, y);
+        break;
+      case 'fullheal':
+        this._princessFullHeal(x, y, W, H);
+        break;
+      case 'shield':
+        this._princessShield(x, y);
+        break;
+      case 'freeze':
+        this._princessFreeze(x, y);
+        break;
+      case 'slow':
+        this._princessSlow(x, y);
+        break;
+      case 'knockback':
+        this._princessKnockback(x, y);
+        break;
+      case 'starnova':
+        this._princessStarNova(x, y);
+        break;
+      case 'lightnova':
+        this._princessLightNova(x, y, W, H);
+        break;
+      case 'staffcharge':
+        this._princessStaffCharge(x, y);
+        break;
+      case 'cleanse':
+        this._princessCleanse(x, y);
+        break;
+      default:
+        this.burst(x, y, '#fff6d0', 20, 4);
+    }
+  }
+
+  // Hoa's Heal: soft green motes rising and gathering INTO the target (the
+  // opposite pull of an explosion), a gentle ring, no screen shake — this is
+  // comfort, not combat.
+  _princessHeal(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#8ff09c', radius: 70, life: 42 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#e6ffe6', radius: 30, life: 26 }));
+    for (let i = 0; i < 26; i++) {
+      const a = (Math.PI * 2 * i) / 26;
+      const r = 50 + rand(i) * 20;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.6, -Math.cos(a) * 1.5, -Math.sin(a) * 1.5 - 1, i % 2 ? '#8ff09c' : '#e6ffe6', 54 + (i % 16), {
+          gravity: -0.02,
+          drag: 0.98,
+          size: DOT * 1.5,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Mây's Full Heal: heal's bigger sibling — a soft white flash + a wider,
+  // slower rise of motes, since this fires only at a real crisis (<15% HP).
+  _princessFullHeal(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#eaffea', w: W, h: H, life: 10 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#a8ffb0', radius: 110, life: 46 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffffff', radius: 76, life: 38 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 40, life: 28 }));
+    for (let i = 0; i < 44; i++) {
+      const a = (Math.PI * 2 * i) / 44;
+      const r = 70 + rand(i) * 30;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.6, -Math.cos(a) * 1.2, -Math.sin(a) * 1.2 - 1.4, i % 2 ? '#a8ffb0' : '#ffffff', 68 + (i % 20), {
+          gravity: -0.03,
+          drag: 0.98,
+          size: DOT * 1.8,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Ánh Dương's Shield: a golden dome ring expanding outward once, then the
+  // standing aura in renderPlaying() (main.js) takes over until it pops.
+  _princessShield(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffd24a', radius: 90, life: 34 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#fff6d0', radius: 46, life: 26 }));
+    for (let i = 0; i < 24; i++) {
+      const a = (Math.PI * 2 * i) / 24;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * 50, y + Math.sin(a) * 30, Math.cos(a) * 0.6, Math.sin(a) * 0.6, '#ffe27a', 42 + (i % 14), {
+          gravity: 0,
+          drag: 0.97,
+          size: DOT * 1.4,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Băng's Freeze: an ice-shard implosion onto the target — shards rush IN
+  // (unlike frostnova's outward hang) since this is locking something down,
+  // not striking it.
+  _princessFreeze(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#bfe8ff', radius: 80, life: 32 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 30, life: 20 }));
+    for (let i = 0; i < 28; i++) {
+      const a = (Math.PI * 2 * i) / 28;
+      const r = 60 + rand(i) * 20;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r, -Math.cos(a) * 3, -Math.sin(a) * 3, i % 2 ? '#ffffff' : '#8fe3ff', 36 + (i % 14), {
+          gravity: 0,
+          drag: 0.94,
+          size: DOT * 1.6,
+          fadeTo: '#3fb8b0',
+        })
+      );
+    }
+  }
+
+  // Cát's Slow: a low sandy haze drifting sideways, no burst — this is a
+  // creeping effect, not an impact.
+  _princessSlow(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#e8c87a', radius: 70, life: 36 }));
+    for (let i = 0; i < 22; i++) {
+      this.particles.push(
+        new Particle(x + (rand(i) - 0.5) * 60, y + (rand(i + 5) - 0.5) * 30, 1.5 + rand(i) * 1.5, -0.2, '#e8c87a', 66 + (i % 20), {
+          gravity: 0,
+          drag: 0.99,
+          size: DOT * 1.4,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Sóng Biển's Knockback: a horizontal tidal push — particles fan out
+  // sideways rather than radially, reading as a shove rather than an
+  // explosion.
+  _princessKnockback(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#4ad4d4', radius: 90, life: 32 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#eaffff', radius: 40, life: 22 }));
+    for (let i = 0; i < 26; i++) {
+      const spd = 4 + (i % 6);
+      this.particles.push(
+        new Particle(x, y + (rand(i) - 0.5) * 40, spd, (rand(i + 3) - 0.5) * 1.5, i % 2 ? '#4ad4d4' : '#ffffff', 36 + (i % 16), {
+          gravity: 0.04,
+          drag: 0.95,
+          size: DOT * 1.6,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Sao's Star Nova: a tight starburst of white-gold motes — a quick,
+  // bright pick-me-up rather than a heavy strike.
+  _princessStarNova(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffe27a', radius: 100, life: 34 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 44, life: 22 }));
+    this.screenShake = Math.max(this.screenShake, 8);
+    for (let i = 0; i < 36; i++) {
+      const a = (Math.PI * 2 * i) / 36;
+      const spd = 5 + (i % 8);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#ffffff' : '#ffe27a', 40 + (i % 16), {
+          gravity: 0.04,
+          drag: 0.97,
+          size: DOT * 1.8,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Ánh Sáng's Light Nova: star nova's bigger, radiant sibling — fires only
+  // on a phase-change beat, so it should feel like the biggest "assist" in
+  // the roster, close to holylight in scale.
+  _princessLightNova(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#fff8e0', w: W, h: H, life: 12 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffffff', radius: 140, life: 42 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffd24a', radius: 100, life: 34 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 60, life: 28 }));
+    this.screenShake = Math.max(this.screenShake, 18);
+    for (let i = 0; i < 54; i++) {
+      const a = (Math.PI * 2 * i) / 54;
+      const spd = 6 + (i % 10);
+      const col = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fff6d0' : '#ffd24a';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, col, 52 + (i % 20), {
+          gravity: 0.07,
+          drag: 0.97,
+          size: DOT * 2.2,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Tình Yêu's Staff Charge: pink-gold motes flowing UP into the Staff
+  // companion, matching its own aura color so it reads as "feeding" it.
+  _princessStaffCharge(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffb3d9', radius: 80, life: 34 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#fff6d0', radius: 36, life: 22 }));
+    for (let i = 0; i < 30; i++) {
+      const a = -Math.PI / 2 + (rand(i) - 0.5) * 1.4;
+      const spd = 3 + (i % 6);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#ffb3d9' : '#ffd24a', 46 + (i % 18), {
+          gravity: -0.04,
+          drag: 0.98,
+          size: DOT * 1.6,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Dòng Suối's Cleanse: a calm ripple radiating out, like water settling —
+  // deliberately the quietest effect in the roster, matching a rescue from a
+  // stuck moment rather than a triumphant flourish.
+  _princessCleanse(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#8fe3ff', radius: 60, life: 32 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#d8f0ff', radius: 90, life: 40 }));
+    for (let i = 0; i < 18; i++) {
+      const a = (Math.PI * 2 * i) / 18;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * 20, y + Math.sin(a) * 20, Math.cos(a) * 1.2, Math.sin(a) * 1.2, '#d8f0ff', 44 + (i % 14), {
+          gravity: 0,
+          drag: 0.98,
+          size: DOT * 1.3,
+          shrink: true,
+        })
+      );
     }
   }
 
@@ -409,6 +689,310 @@ export class ParticleSystem {
         new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, col, 34 + (i % 16), {
           gravity: 0.1,
           drag: 0.97,
+          size: DOT * 2.5,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // ---- Stageboss signature attacks (see bossattacks.js) -------------------
+  // All of these land ON the hero (main.js passes hero x/y), so they are
+  // built to read as impact/incoming rather than a launch — the opposite
+  // reading of the hero's own skills above.
+
+  // Ground Slam (stageboss_ogre): debris kicked straight up along the ground
+  // line, not thrown outward — a wide, low, heavy burst.
+  _groundslam(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#a87c4a', radius: 120, life: 24 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#e0c090', radius: 40, life: 12 }));
+    this.screenShake = Math.max(this.screenShake, 18);
+    for (let i = 0; i < 34; i++) {
+      const a = Math.PI + (rand(i) - 0.5) * Math.PI * 0.9; // spread along the ground, not up
+      const spd = 3 + (i % 6);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, -1 - (i % 3) * 0.3, i % 2 ? '#a87c4a' : '#6b5334', 26 + (i % 10), {
+          gravity: 0.3,
+          drag: 0.9,
+          size: DOT * 2,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Fire Breath (boss_dragon): a directional cone of flame from monster
+  // toward the hero, not a radial burst — reuses the explosion's flame
+  // particle recipe but aimed.
+  _firebreath(x, y) {
+    this.visuals.push(new Visual('beam', x, y, { color: '#ff8a2b', w: DOT * 20, life: 18 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#fff2b0', radius: 44, life: 12 }));
+    this.screenShake = Math.max(this.screenShake, 12);
+    for (let i = 0; i < 36; i++) {
+      const a = -Math.PI / 2 + (rand(i) - 0.5) * 0.8; // narrow cone, not a starburst
+      const spd = 3 + (i % 6);
+      const flame = i % 3 === 0 ? '#fff2b0' : i % 3 === 1 ? '#ff8a2b' : '#e0431f';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd - 2, flame, 24 + (i % 10), {
+          gravity: -0.05,
+          drag: 0.93,
+          size: DOT * 2.5,
+          fadeTo: '#4a3a3a',
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Shadow Bolt (stageboss_darklord): the smallest/cheapest effect in the set
+  // to match its short windup — one fast dark bolt plus a thin trail.
+  _shadowbolt(x, y, W, H) {
+    this.visuals.push(new Visual('bolt', x, y, { color: '#5a2a7a', color2: '#e6b3ff', life: 14 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#b06cf0', radius: 30, life: 10 }));
+    this.screenShake = Math.max(this.screenShake, 10);
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16;
+      const spd = 3 + (i % 4);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#b06cf0' : '#5a2a7a', 18 + (i % 8), {
+          gravity: 0.08,
+          drag: 0.94,
+          size: DOT * 1.5,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Ink Splatter (boss_scribe): asymmetric spread — motes fall then splatter
+  // sideways on arrival, instead of an even radial burst.
+  _inksplatter(x, y) {
+    this.visuals.push(new Visual('burst', x, y, { color: '#3a1a4a', radius: 46, life: 14 }));
+    this.screenShake = Math.max(this.screenShake, 10);
+    for (let i = 0; i < 30; i++) {
+      const a = Math.PI / 2 + (rand(i) - 0.5) * 2.2; // biased downward, splatters wide
+      const spd = 2 + (i % 7);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd * 0.6, i % 2 ? '#4a1a5a' : '#1a0a24', 22 + (i % 12), {
+          gravity: 0.22,
+          drag: 0.92,
+          size: DOT * 1.8,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Gale Slash (boss_windserpent): the hero's own `slash` recipe, but tinted
+  // cyan/white and faster/thinner so a kid never mistakes it for their own hit.
+  _galeslash(x, y) {
+    this.visuals.push(new Visual('slash', x, y, { color: '#eaffff', radius: 56, life: 12, angle: 0.5 }));
+    this.visuals.push(new Visual('slash', x, y, { color: '#8fe3ff', radius: 44, life: 14, angle: 0.4 }));
+    this.screenShake = Math.max(this.screenShake, 8);
+    for (let i = 0; i < 18; i++) {
+      const a = 0.2 + (i / 18) * 1.4;
+      const spd = 6 + (i % 5);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#ffffff' : '#8fe3ff', 16 + (i % 6), {
+          gravity: -0.02,
+          drag: 0.93,
+          size: DOT * 1.3,
+        })
+      );
+    }
+  }
+
+  // Stone Fist (boss_guardian_statue): heavy, slow-falling debris + one big
+  // low shockwave — the longest life in the set, matching its 40-frame windup.
+  _stonefist(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#8a8a94', radius: 150, life: 34 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#c8c8d0', radius: 50, life: 18 }));
+    this.screenShake = Math.max(this.screenShake, 22);
+    for (let i = 0; i < 26; i++) {
+      const a = (Math.PI * 2 * i) / 26;
+      const spd = 2 + (i % 4);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd - 1, i % 2 ? '#8a8a94' : '#5a5a64', 40 + (i % 16), {
+          gravity: 0.22,
+          drag: 0.96,
+          size: DOT * 2.2,
+        })
+      );
+    }
+  }
+
+  // Shadow Grasp (boss_formless / Devourer phase 1): thin tendril streams
+  // curving in toward the hero from the screen edges — sustained pull, not a
+  // single burst like voidrend's opening ring.
+  _shadowgrasp(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#1a0a24', w: W, h: H, life: 10 }));
+    this.screenShake = Math.max(this.screenShake, 10);
+    for (let s = 0; s < 6; s++) {
+      const edgeA = (Math.PI * 2 * s) / 6 + rand(s) * 0.4;
+      const ex = x + Math.cos(edgeA) * 220;
+      const ey = y + Math.sin(edgeA) * 140;
+      for (let i = 0; i < 8; i++) {
+        const t = i / 8;
+        const px = ex + (x - ex) * t;
+        const py = ey + (y - ey) * t;
+        this.particles.push(
+          new Particle(px, py, (x - ex) * 0.02, (y - ey) * 0.02, i % 2 ? '#4a1a5a' : '#1a0a24', 26 + (i % 8), {
+            gravity: 0,
+            drag: 0.98,
+            size: DOT * 1.6,
+            shrink: true,
+          })
+        );
+      }
+    }
+  }
+
+  // Arcane Pulse (stageboss_staffguardian): an expanding ring of discrete,
+  // evenly-spaced rune motes — a static glyph feel rather than a smooth burst.
+  _arcanepulse(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#8ff0ff', radius: 110, life: 26 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffd24a', radius: 80, life: 22 }));
+    this.screenShake = Math.max(this.screenShake, 12);
+    for (let i = 0; i < 20; i++) {
+      const a = (Math.PI * 2 * i) / 20; // evenly spaced, not randomized — reads as glyphs
+      const r = 70;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r, Math.cos(a) * 1.5, Math.sin(a) * 1.5, i % 2 ? '#8ff0ff' : '#ffd24a', 28, {
+          gravity: 0,
+          drag: 0.96,
+          size: DOT * 1.6,
+        })
+      );
+    }
+  }
+
+  // Iron Slam (boss_warden): a fast horizontal streak (the chain lashing out)
+  // plus sparse heavy iron-gray debris.
+  _ironslam(x, y, W, H) {
+    this.visuals.push(new Visual('beam', x, y, { color: '#9098a0', w: DOT * 8, life: 16 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#c0c8d0', radius: 36, life: 12 }));
+    this.screenShake = Math.max(this.screenShake, 16);
+    for (let i = 0; i < 14; i++) {
+      const a = (Math.PI * 2 * i) / 14;
+      const spd = 3 + (i % 3);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, '#707880', 24 + (i % 8), {
+          gravity: 0.2,
+          drag: 0.94,
+          size: DOT * 1.8,
+        })
+      );
+    }
+  }
+
+  // Lantern Curse (boss_jailer): a slow radial sickly-green wash, low particle
+  // count, long fade — the gentlest-LOOKING attack but the eeriest, matching
+  // its deliberately dull/unsettling sound cue.
+  _lanterncurse(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#3a5a2a', w: W, h: H, life: 24 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#9adf6a', radius: 90, life: 30 }));
+    for (let i = 0; i < 14; i++) {
+      const a = (Math.PI * 2 * i) / 14;
+      const spd = 1.5 + (i % 3);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd - 0.5, '#9adf6a', 40 + (i % 14), {
+          gravity: -0.02,
+          drag: 0.97,
+          size: DOT * 1.5,
+          fadeTo: '#2a3a1a',
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // War Cry Slash (boss_general): the slash recipe in red/orange with a wider
+  // shockwave than Gale Slash — reads as a heavier, angrier hit.
+  _warcryslash(x, y) {
+    this.visuals.push(new Visual('slash', x, y, { color: '#ffffff', radius: 64, life: 16, angle: -0.3 }));
+    this.visuals.push(new Visual('slash', x, y, { color: '#e0503a', radius: 52, life: 18, angle: -0.4 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ff7a4a', radius: 100, life: 20 }));
+    this.screenShake = Math.max(this.screenShake, 16);
+    for (let i = 0; i < 22; i++) {
+      const a = -0.7 + (i / 22) * 1.6;
+      const spd = 7 + (i % 5);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#ffffff' : '#e0503a', 20 + (i % 8), {
+          gravity: 0.12,
+          drag: 0.93,
+          size: DOT * 1.6,
+        })
+      );
+    }
+  }
+
+  // Void Maw (Devourer phase 2): motes pulled inward first — like voidrend's
+  // opening — then a burst outward, matching his torso-mouth design.
+  _voidmaw(x, y) {
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#b06cf0', radius: 130, life: 26 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#e6b3ff', radius: 50, life: 14 }));
+    this.screenShake = Math.max(this.screenShake, 20);
+    for (let i = 0; i < 26; i++) {
+      const a = (Math.PI * 2 * i) / 26;
+      const r = 80 + rand(i) * 30;
+      const spd = 5 + (i % 4);
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r, -Math.cos(a) * spd, -Math.sin(a) * spd, '#e6b3ff', 16 + (i % 6), {
+          drag: 0.98,
+          size: DOT * 1.5,
+          fadeTo: '#3a1050',
+        })
+      );
+    }
+    for (let i = 0; i < 34; i++) {
+      const a = (Math.PI * 2 * i) / 34;
+      const spd = 6 + (i % 8);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 2 ? '#b06cf0' : '#4a1070', 26 + (i % 12), {
+          gravity: 0.08,
+          drag: 0.95,
+          size: DOT * 2,
+          fadeTo: '#1a0a24',
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // Devour Sky (Devourer phase 3): the biggest attack in the set — a
+  // full-screen dark flash, multiple shockwaves, and debris pulled from the
+  // screen edges toward the hero before a final burst. The finale's biggest
+  // ATTACK, the counterpart to Dawnbreaker being its biggest HERO effect.
+  _devoursky(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#0a0512', w: W, h: H, life: 20 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#b06cf0', radius: 180, life: 34 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#4a1070', radius: 130, life: 28 }));
+    this.visuals.push(new Visual('beam', x, y, { color: '#2a1040', w: DOT * 14, life: 26 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#e6b3ff', radius: 60, life: 18 }));
+    this.screenShake = Math.max(this.screenShake, 34);
+    // Debris pulled in from the far edges of the screen.
+    for (let s = 0; s < 24; s++) {
+      const edgeA = (Math.PI * 2 * s) / 24;
+      const ex = x + Math.cos(edgeA) * 260;
+      const ey = y + Math.sin(edgeA) * 180;
+      this.particles.push(
+        new Particle(ex, ey, (x - ex) * 0.03, (y - ey) * 0.03, s % 2 ? '#b06cf0' : '#e6b3ff', 30 + (s % 10), {
+          gravity: 0,
+          drag: 0.97,
+          size: DOT * 2,
+          fadeTo: '#1a0a24',
+          shrink: true,
+        })
+      );
+    }
+    // The final outward burst.
+    for (let i = 0; i < 50; i++) {
+      const a = (Math.PI * 2 * i) / 50;
+      const spd = 7 + (i % 10);
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#b06cf0' : '#4a1070', 32 + (i % 14), {
+          gravity: 0.12,
+          drag: 0.95,
           size: DOT * 2.5,
           shrink: true,
         })

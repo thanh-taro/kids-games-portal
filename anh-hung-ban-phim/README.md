@@ -12,10 +12,11 @@ game.
 ## Play
 
 ES modules need to be served over HTTP (not `file://`). A no-cache dev server
-is included:
+is included via npm:
 
 ```bash
-python3 serve.py 8177
+npm install
+npm start
 # then open http://localhost:8177/index.html
 ```
 
@@ -66,7 +67,7 @@ sentences → hard sentences → long sentences → Vietnamese proverbs**.
 ## Project layout
 ```
 index.html            boot + canvas
-serve.py              no-cache dev server
+package.json          npm start → no-cache dev server (http-server)
 css/style.css         layout + pixel look
 js/
   telex.js            Telex → Vietnamese engine (the educational core)

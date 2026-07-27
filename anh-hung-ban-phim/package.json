@@ -1,0 +1,13 @@
+{
+  "name": "anh-hung-ban-phim",
+  "private": true,
+  "type": "module",
+  "description": "Cứu Công Chúa — Vietnamese Telex typing game",
+  "scripts": {
+    "start": "http-server -p 8177 -c-1",
+    "test": "node js/telex.test.js && node js/verify.js"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

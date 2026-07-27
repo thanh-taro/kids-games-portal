@@ -6,7 +6,7 @@ argument-hint: "[title|stage|boss|victory] (optional starting point)"
 Launch and visually verify the game. Target: **$ARGUMENTS** (if empty, just show the title screen).
 
 Steps:
-1. Ensure the no-cache dev server is running: `python3 serve.py 8177` (run in background). If port 8177 already serves, reuse it.
+1. Ensure the no-cache dev server is running: `npm start` (run in background; installs `http-server` via `npm install` first if needed). If port 8177 already serves, reuse it.
 2. Using the claude-in-chrome tools: create/reuse a tab, navigate to `http://localhost:8177/index.html`, wait ~1s.
 3. **Click the canvas once** (e.g. coordinate [770,400]) to give it keyboard focus — required before any typing.
 4. If a starting point was requested, drive there with SPACE (Title→Intro→Playing) and typing the shown words; press `R` on the title first if you need a clean reset.

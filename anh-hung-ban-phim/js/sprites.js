@@ -368,6 +368,13 @@ export const PRINCESS_STYLES = {
 const DEFAULT_STYLE = { gown: 'P', gownShade: 'p', hair: 'H', hairShade: 't', crown: 'Y', motif: 'star' };
 const princessCache = new Map();
 
+// A style's gown color, for UI that needs to tell princesses apart at a glance
+// (e.g. the princess-support HUD pips) without drawing a full sprite.
+export function princessThemeColor(style) {
+  const s = PRINCESS_STYLES[style] || DEFAULT_STYLE;
+  return PALETTE[s.gown];
+}
+
 export function princessSprite(styleName) {
   const key = styleName || '_default';
   const cached = princessCache.get(key);
@@ -486,20 +493,20 @@ export const BOSS_DRAGON = {
   ],
 };
 
-// --- Stage Boss: "Giant Ogre" (green, tusked, outlined). 20 x 20 ---
+// --- Stage Boss: "Giant Ogre" (green, tusked, outlined). 20 x 18 ---
 // Two frames: a heavy breathing/looming idle. Frame 1 sinks the whole body one
 // row (shoulders hunch, head drops into them) and shifts the weight between the
 // legs, so the ogre visibly breathes instead of standing frozen — it was
 // single-frame originally, which read as a bug next to every animated creep.
 //
-// FOOTING: a monster's y comes from sprite.h, so every all-blank row at the
+// FOOTING: a monster's y comes from sprite.h, so any all-blank row at the
 // BOTTOM of a frame becomes an invisible gap that floats the sprite above the
-// ground. This frame originally had two (~13px of hover at stageboss scale).
-// One trailing row is the house standard (hero_knight and creep_slime both use
-// it) — match that, don't go to zero, or a sprite sinks relative to the hero.
+// ground. This frame previously carried a trailing blank row (on the mistaken
+// belief that hero_knight had one too — it doesn't, its last row is feet), and
+// at stageboss scale that read as the ogre hovering. No trailing blank row.
 export const STAGEBOSS_OGRE = {
   w: 20,
-  h: 19,
+  h: 18,
   frames: [
     [
       '      kkkkkk        ',
@@ -520,7 +527,6 @@ export const STAGEBOSS_OGRE = {
       '   kGGGk  kGGGk     ',
       '   kGgGk  kGgGk     ',
       '  kkkkk    kkkkk    ',
-      '                    ',
     ],
     [
       '      kkkkkk        ',
@@ -541,7 +547,6 @@ export const STAGEBOSS_OGRE = {
       '   kGgGk  kGgGk     ',
       '   kGgGk  kGgGk     ',
       '  kkkkk    kkkkk    ',
-      '                    ',
     ],
   ],
 };
@@ -2298,24 +2303,35 @@ export const CRYSTAL = {
 
 // The princess's broken cage, bars bent outward — she was held here
 // and moved on. 14 x 13
+// A broken cage a princess was held in — heightened from an earlier version
+// that read as a small crate. Taller bars (some snapped mid-height, leaving a
+// gap) sell "a person stood in here", and the domed top is now a real arch
+// rather than two stray blocks. 18 x 20
 export const BROKEN_CAGE = {
-  w: 15,
-  h: 13,
+  w: 18,
+  h: 20,
   frames: [
     [
-      ' kk  kkkk  k   ',
-      'kMk kMMMMk kMk ',
-      'kMkkMk  kMkkMk ',
-      'kMMMk    kMMMk ',
-      'kM.k      k.Mk ',
-      'kMMk      kMMk ',
-      'kM.k      k.Mk ',
-      'kMMk      kMMk ',
-      'kM.k      k.Mk ',
-      'kMMk      kMMk ',
-      'kMMMk    kMMMk ',
-      'kMMMMMMMMMMMMk ',
-      'kkkkkkkkkkkkkk ',
+      '   kk    kkkk   k  ',
+      '  kMk   kMMMMk  kMk',
+      '  kMk  kMk  kMk kMk',
+      ' kMMMk kMk  kMk kMk',
+      ' kM.Mk        kkMk ',
+      ' kMMMk         kMk ',
+      ' kM.Mk         kMk ',
+      ' kMMMk         kMk ',
+      ' kM.Mk        kkMk ',
+      ' kMMMk       kMMk  ',
+      ' kM.Mk       kM.k  ',
+      ' kMMMk       kMMk  ',
+      ' kM.Mk       kM.k  ',
+      ' kMMMk       kMMk  ',
+      ' kM.Mk       kM.k  ',
+      ' kMMMk       kMMk  ',
+      ' kMMMMk     kMMMk  ',
+      '  kMMMk    kMMMk   ',
+      '  kMMMMMMMMMMMMk   ',
+      '   kkkkkkkkkkkk    ',
     ],
   ],
 };
@@ -2351,25 +2367,34 @@ export const BONE_ARCH = {
 
 // The ribs of a wrecked ship in the surf — she escaped by sea and
 // failed. 22 x 14
+// A wrecked ship's hull, widened and given a broken mast leaning out of the
+// deck for height — an earlier version was only ribs over a low deck and
+// read as driftwood rather than a wrecked ship. The mast tilts (it snapped,
+// it doesn't stand) and stays off-centre so the hull's ribs remain the main
+// silhouette. 28 x 18
 export const SHIPWRECK = {
-  w: 22,
-  h: 14,
+  w: 28,
+  h: 18,
   frames: [
     [
-      '        kk            ',
-      '       kTtk           ',
-      '      kTTtk           ',
-      '     kTTtk  kk        ',
-      '    kTTtk  kTtk       ',
-      'kk kTTtk  kTTtk   kk  ',
-      'kTkTTtk  kTTtk   kTtk ',
-      'kTTTtk  kTTtk   kTTtk ',
-      'kTTtk  kTTtk   kTTtk  ',
-      'kTTtkkkTTtkkkkkTTtk   ',
-      'kTTTTTTTTTTTTTTTTTk   ',
-      'kTtTTtTTtTTtTTtTTtk   ',
-      'kTTTTTTTTTTTTTTTTTk   ',
-      ' kkkkkkkkkkkkkkkkk    ',
+      '                    kk      ',
+      '                   kTtk     ',
+      '                  kTtk      ',
+      '        kk       kTtk       ',
+      '       kTtk     kTtk        ',
+      '      kTTtk   kkTtkk        ',
+      '     kTTtk  kk kk           ',
+      '    kTTtk  kTtk             ',
+      '  kk TTtk kTTtk   kk        ',
+      ' kTk TTtk kTTtk  kTtk   kk  ',
+      'kTTk TTtk kTTtk kTTtk  kTtk ',
+      'kTTtkTTtk kTTtkkTTTtk kTTtk ',
+      'kTTtkTTtkkTTTtkkTTTtkkTTTtk ',
+      'kTTtkkkkTTTTtkkkTTTtkkTTTtk ',
+      'kTTTTTTTTTTTTTTTTTTTTTTTTTk ',
+      'kTtTTtTTtTTtTTtTTtTTtTTtTTk ',
+      'kTTTTTTTTTTTTTTTTTTTTTTTTTk ',
+      ' kkkkkkkkkkkkkkkkkkkkkkkkk  ',
     ],
   ],
 };
@@ -2495,37 +2520,51 @@ export const OBELISK = {
 // (narrow lip at the top, spreading as it falls) with vertical ice flutes and a
 // ragged icicle fringe, so it reads as pouring water stopped in place rather
 // than a framed panel. 24 x 26
+// A tall frozen cascade: a narrow lip at the top (the frozen brink), a widening
+// body of vertical drape lines (the cascade itself, frozen mid-fall), and a
+// wide flared splash base (the pool it once fed, now iced over). Widened and
+// heightened from an earlier version that tapered to a point with no base —
+// that read as a single icicle, not a waterfall. The lip must stay narrower
+// than the body or the cascade doesn't visibly widen as it falls.
 export const FROZEN_FALL = {
   w: 24,
-  h: 26,
+  h: 34,
   frames: [
     [
       '        kmmmmk          ',
       '       kmmxmmk          ',
-      '      kmmxmmmmk         ',
-      '     kmmxmmxmmk         ',
-      '     kmxmmmxmmmk        ',
-      '    kmmxmmmxmmmk        ',
-      '    kmxmmmxmmxmmk       ',
-      '   kmmxmmxmmmxmmk       ',
-      '   kmxmmxmmmxmmmk       ',
-      '  kmmxmmxmmmxmmxmk      ',
-      '  kmxmmxmmmxmmxmmk      ',
-      ' kmmxmmxmmmxmmxmmmk     ',
-      ' kmxmmxmmmxmmxmmmxmk    ',
-      'kmmxmmxmmmxmmxmmmxmmk   ',
-      'kmxmmxmmmxmmxmmmxmmmk   ',
-      'kmxmmxmmmxmmxmmmxmmxmk  ',
-      'kmxmmxmmmxmmxmmmxmmxmk  ',
-      'kmxmmxmmmxmmxmmmxmmxmmk ',
-      'kmxmmxmmmxmmxmmmxmmxmmk ',
-      'kmxmmxmmmxmmxmmmxmmxmmk ',
-      'kmxmmxmmmxmmxmmmxmmxmmk ',
-      'kkmkkmkkkmkkmkkkmkkmkkk ',
-      ' kmk kmk kmk kmk kmk k  ',
-      ' kmk  kk  kk  kk  kmk   ',
-      ' kk                kk   ',
-      '  k                 k   ',
+      '       kmxmxmk          ',
+      '      kmmxmxmmk         ',
+      '      kmxmmxmmk         ',
+      '     kmmxmmxmmmk        ',
+      '     kmxmmxmmxmk        ',
+      '    kmmxmmxmmxmmk       ',
+      '    kmxmmxmmxmmmk       ',
+      '   kmmxmmxmmxmmxmk      ',
+      '   kmxmmxmmxmmxmmk      ',
+      '  kmmxmmxmmxmmxmmmk     ',
+      '  kmxmmxmmxmmxmmmxk     ',
+      ' kmmxmmxmmxmmxmmmxmk    ',
+      ' kmxmmxmmxmmxmmmxmmk    ',
+      'kmmxmmxmmxmmxmmmxmmxk   ',
+      'kmxmmxmmxmmxmmmxmmxmk   ',
+      'kmxmmxmmxmmxmmmxmmxmmk  ',
+      'kmxmmxmmxmmxmmmxmmxmmk  ',
+      'kmxmmxmmxmmxmmmxmmxmmxk ',
+      'kmxmmxmmxmmxmmmxmmxmmxk ',
+      'kmxmmxmmxmmxmmmxmmxmmxk ',
+      'kmxmmxmmxmmxmmmxmmxmmxk ',
+      'kmxmmxmmxmmxmmmxmmxmmxk ',
+      'kmxmmxmmxmmxmmmxmmxmmxk ',
+      'mmxmmxmmxmmxmmmxmmxmmxmm',
+      'mmxmmxmmxmmxmmmxmmxmmxmm',
+      'xxxmmxmmxmmxmmmxmmxmmxxx',
+      'kxxxxxxxxxxxxxxxxxxxxxxk',
+      'kmxxxxxxxxxxxxxxxxxxxxmk',
+      ' kmmxxxxxxxxxxxxxxxxmmk ',
+      '  kkmmxxxxxxxxxxxxmmkk  ',
+      '   kkkmmmmmmmmmmmmkkk   ',
+      '    kkkkkkkkkkkkkkkk    ',
     ],
   ],
 };
@@ -2551,31 +2590,32 @@ export const FROZEN_TEAR = {
 
 // A sunken temple pillar leaning in the murk — the drowned path.
 // 10 x 20
+// Widened from 10px (read as narrow next to its own biomes' other props).
 export const TEMPLE_PILLAR = {
-  w: 10,
+  w: 13,
   h: 20,
   frames: [
     [
-      ' kkkkkkkk ',
-      'kLLLLLLLLk',
-      'kLlLLLLlLk',
-      'kkkkkkkkkk',
-      ' kLLLLLLk ',
-      ' kLlLLlLk ',
-      ' kLLLLLLk ',
-      ' kLFLLFLk ',
-      ' kLLLLLLk ',
-      ' kLlLLlLk ',
-      ' kLLLLLLk ',
-      ' kLLFFLLk ',
-      ' kLlLLlLk ',
-      ' kLLLLLLk ',
-      ' kLFLLLLk ',
-      ' kLLLLLFk ',
-      'kLLLLLLLLk',
-      'kLlLLLLlLk',
-      'kLLLLLLLLk',
-      'kkkkkkkkkk',
+      ' kkkkkkkkkkk ',
+      'kLLLLLLLLLLLk',
+      'kLlLLLLLLLlLk',
+      'kkkkkkkkkkkkk',
+      ' kLLLLLLLLLk ',
+      ' kLlLLLLLlLk ',
+      ' kLLLLLLLLLk ',
+      ' kLFLLLLLFLk ',
+      ' kLLLLLLLLLk ',
+      ' kLlLLLLLlLk ',
+      ' kLLLLLLLLLk ',
+      ' kLLFFLLFFLk ',
+      ' kLlLLLLLlLk ',
+      ' kLLLLLLLLLk ',
+      ' kLFLLLLLLLk ',
+      ' kLLLLLLLLFk ',
+      'kLLLLLLLLLLLk',
+      'kLlLLLLLLLlLk',
+      'kLLLLLLLLLLLk',
+      'kkkkkkkkkkkkk',
     ],
   ],
 };
@@ -2614,34 +2654,48 @@ export const LANTERN = {
 };
 
 // Molten rock pouring down a cliff face — the forge where the
-// villain's power is made. 12 x 22
+// villain's power is made. 16 x 30
+// A lava cascade: a narrow stone lip at the top (the vent it pours from), a
+// widening molten body with CONTINUOUS vertical flow-lines (deep-red 'v'
+// columns running the full drop, echoing FROZEN_FALL's 'x' columns), and a
+// wide pooling base. An earlier pass gave the flow-lines only every third row,
+// which at this scale read as scattered rivets on a barrel rather than moving
+// lava — the streaks must run unbroken top-to-bottom to read as a cascade.
 export const LAVA_FALL = {
-  w: 12,
-  h: 22,
+  w: 16,
+  h: 30,
   frames: [
     [
-      'kkkkkkkkkkkk',
-      'kMMMMMMMMMMk',
-      'kMVVVVVVVVMk',
-      'kMVvVVVvVVMk',
-      'kMVVVVVVVVMk',
-      ' kVvVVVvVVk ',
-      ' kVVVVVVVVk ',
-      ' kVvVVVvVVk ',
-      ' kVVVVVVVVk ',
-      ' kVvVVVvVVk ',
-      ' kVVVVVVVVk ',
-      ' kVvVVVvVVk ',
-      ' kVVVVVVVVk ',
-      ' kVvVVVvVVk ',
-      ' kVVVVVVVVk ',
-      ' kVvVVVvVVk ',
-      ' kVVVVVVVVk ',
-      'kVVVVVVVVVVk',
-      'kVvVVVvVVvVk',
-      'kVVVVVVVVVVk',
-      'kMVVVVVVVVMk',
-      'kkkkkkkkkkkk',
+      '     kkkkkk     ',
+      '    kMMMMMMk    ',
+      '    kMVvVVMk    ',
+      '   kMVVvVVVMk   ',
+      '   kMVvVVvVVMk  ',
+      '  kMVVvVVvVVVMk ',
+      '  kVVvVVVvVVVVk ',
+      '  kVvVVVvVVVvVk ',
+      ' kVVvVVVvVVVvVVk',
+      ' kVvVVVvVVVvVVVk',
+      ' kVVvVVVvVVVvVVk',
+      ' kVvVVVvVVVvVVVk',
+      ' kVVvVVVvVVVvVVk',
+      ' kVvVVVvVVVvVVVk',
+      ' kVVvVVVvVVVvVVk',
+      ' kVvVVVvVVVvVVVk',
+      ' kVVvVVVvVVVvVVk',
+      ' kVvVVVvVVVvVVVk',
+      ' kVVvVVVvVVVvVVk',
+      'kVvVVVvVVVvVVVVk',
+      'kVVvVVVvVVVvVVVk',
+      'kVvVVVvVVVvVVVVk',
+      'kVVvVVVvVVVvVVVk',
+      'kMVvVVVvVVVvVVMk',
+      'kMVVvVVVvVVVvVMk',
+      'kMVvVVVvVVVvVVMk',
+      ' kMVVvVVVvVVVMk ',
+      '  kMVvVVVvVVMk  ',
+      '   kMMMMMMMMk   ',
+      '    kkkkkkkk    ',
     ],
   ],
 };
@@ -2872,51 +2926,40 @@ export const STAFF_WISDOM = {
 // base + shade tone, white 'W' eyes (monsters are big enough for them, unlike
 // the humanoids), and frame 2 differing only in the parts that should move.
 
-// --- Library creep: "Sách Bay" (Flying Book). 14 x 12 ---
-// Shape: an OPEN book seen head-on — two wing-like covers spread from a dark
-// spine, with white page blocks inside them. Eyes sit on the SPINE so it reads
-// as alive without the covers turning into a face.
-//
-// Two things were learned the hard way here. The first pass was 12x10 with a
-// brown ('H') cover and mostly-white body, and in the dim library biome it was
-// both too small and too pale — it disappeared against the scenery. So:
-//   - the cover is saturated CRIMSON ('&' / '*'), the one hue nothing else in
-//     this biome uses, and the palest pixels are confined to the inner pages;
-//   - the body is SOLID (no hollow middle), because a small sprite with a gap
-//     down the centre breaks into two shapes at gameplay scale.
-// In a typing game the kid's eye has to find the monster instantly to read the
-// word above it, so creep legibility beats scenery detail every time.
-export const CREEP_BOOK = {
-  w: 14,
-  h: 12,
+// --- Library creep: "Slime Mực" (Ink Slime). 12 x 10 ---
+// Shape: reuses CREEP_SLIME's proven blob body (round-topped, flat-bottomed,
+// two eyes, two shade dots) verbatim — three redesigns of a book/scroll shape
+// all read badly at gameplay scale, and a slime is already a solid, tested
+// silhouette everywhere else in chapter 1. The ONLY change is the palette:
+// green ('G'/'g') becomes purple-black ink ('P'/'p'), so the same shape now
+// reads as a puddle of living ink rather than the swamp/meadow slime.
+export const CREEP_INKSLIME = {
+  w: 12,
+  h: 10,
   frames: [
     [
-      '              ',
-      '   kk    kk   ',
-      '  k&&k  k&&k  ',   // crimson covers spread like wings
-      ' k&&wwkk&&ww k',
-      ' k&&wwk&&&wwk ',
-      ' k&*wwkWkWwwk ',   // eyes on the dark spine
-      ' k&&wwk&&&wwk ',
-      ' k&&wwkk&&wwk ',
-      '  k&*wwwww*k  ',
-      '   k&&&&&&k   ',
-      '    kkkkkk    ',
-      '              ',
+      '    kkkk     ',
+      '   kPPPPk    ',
+      '  kPPPPPPk   ',
+      ' kPPWkPPWk   ',
+      ' kPPkPPPkk   ',
+      'kPPPPPPPPPk  ',
+      'kPpPPPPpPPk  ',
+      'kPPPPPPPPPk  ',
+      ' kkkkkkkkk   ',
+      '             ',
     ],
     [
-      '              ',
-      '  kk      kk  ',   // covers FLAP wider — the only change
-      ' k&&k    k&&k ',
-      ' k&&wwkk&&ww k',
-      ' k&&wwk&&&wwk ',
-      ' k&*wwkWkWwwk ',
-      ' k&&wwk&&&wwk ',
-      ' k&&wwkk&&wwk ',
-      '  k&*wwwww*k  ',
-      '   k&&&&&&k   ',
-      '    kkkkkk    ',
-      '              ',
+      '             ',
+      '    kkkk     ',
+      '   kPPPPk    ',
+      '  kPWkPWPk   ',
+      ' kPPkPPPkk   ',
+      'kPPPPPPPPPk  ',
+      'kPpPPPPpPPk  ',
+      'kPPPPPPPPPk  ',
+      ' kkkkkkkkk   ',
+      '             ',
     ],
   ],
 };
@@ -2960,7 +3003,7 @@ export const CREEP_GUST = {
 // Shape: a tall diamond shard of glass. All straight lines and sharp angles — a
 // rounded shard reads as a gem or a sweet.
 //
-// Legibility note (learned from the first pass, same lesson as CREEP_BOOK): the
+// Legibility note (learned from the first pass, same lesson as CREEP_INKSLIME): the
 // shard was pale ice-blue 'e' on a black outline, and the mirrorlake biome is a
 // PALE dawn scene — it vanished into the ground. It now carries a band of dark
 // teal 'c' down one whole face, so the silhouette has internal contrast of its
@@ -3049,49 +3092,73 @@ export const BOSS_SCRIBE = {
   ],
 };
 
-// --- Windpeak boss: "Xà Phong" (the Wind Serpent). 20 x 16 ---
-// A sky serpent coiling through the air. It reads as a serpent because the body
-// is ONE continuous tapering S-curve with a distinct wedge head and no limbs —
-// the moment you add feet it becomes a dragon. Frame 2 shifts the coil.
+// --- Windpeak boss: "Xà Phong" (the Wind Serpent). 22 x 20 ---
+// A serpent reared up cobra-style, facing LEFT toward the hero (monsters are
+// drawn unflipped, hero stands on the left — see render.js). Head and neck
+// lean toward the left edge; body settles onto the ground; the tail is
+// anchored on the RIGHT, trailing away behind the snake, curling up at its
+// tip. Getting the tail on the correct side of the head matters: an earlier
+// pass put the tail root under-and-left of the head, so it read as dangling
+// in front of the snake instead of trailing behind it — the fix here is to
+// keep the whole body's leftward lean consistent from head to tail-root, so
+// the tail is unambiguously the hindmost part.
+// No limbs, so it reads as a snake rather than a dragon. (Two earlier passes
+// dropped: a hollow coiled ring read as a hoop, not an animal, and a tail
+// root on the wrong side read as it dangling in front.)
+// The open mouth (white fangs, small dark-teal eye) plus a red forked tongue
+// is the "unmistakable prop"; the tongue is the only warm color on an
+// all-teal sprite so it stays legible against the sky biome.
+// The two frames sway the upper body left/right AND curl the tail the
+// opposite way, like a cobra weaving with its tail flicking for balance —
+// not just a tongue flick — which is what reads as the snake actively
+// moving rather than standing frozen.
 export const BOSS_WINDSERPENT = {
-  w: 20,
-  h: 16,
+  w: 22,
+  h: 20,
   frames: [
     [
-      '   kkkk             ',
-      '  kAAAAk            ',
-      ' kAWAAAAk           ',   // wedge head, white eye
-      ' kAAAAAAkk          ',
-      ' kkaaAAAAAkk        ',
-      '   kkaaAAAAAkk      ',
-      '     kkaaAAAAAkk    ',
-      '       kkaaAAAAAk   ',   // body tapers as it recedes
-      '         kkaaAAAAk  ',
-      '           kkaaAAAk ',
-      '         kkaaAAAAk  ',   // and coils back
-      '       kkaaAAAAk    ',
-      '     kkaaAAAk       ',
-      '      kkaak         ',
-      '       kk           ',   // tail tip
-      '                    ',
+      '  kkkkkkk             ',
+      ' kAAAAAAAk            ',
+      'kAAAAAAAAAk           ',
+      'kAAcAAAAAAk           ',   // dark-teal eye, reads against teal head
+      'kAAAAAAAAkk           ',
+      'kWkkkkkkkWk           ',   // open mouth, white fangs top+bottom
+      'kkkkRkkkkk            ',   // forked red tongue, centered
+      ' kaaAAAAk             ',
+      '  kaaAAAk             ',
+      '   kaaAAk             ',
+      '   kAAAAk             ',   // neck straightens toward the body
+      '    kAAAk             ',
+      '    kAAAAk            ',
+      '   kAAAAAAk           ',
+      '  kAAAAAAAAk          ',   // body settles onto the ground
+      ' kAAAAAAAAAAkkAAk     ',   // tail root anchored on the RIGHT, trailing back
+      'kAAAAAAAAAAAAAkkAAAk  ',
+      'kAAAAAAAAAAAAAk kAAk  ',   // tail tapers, curls up at the tip
+      'kkAAAAAAAAAAAkk  kAk  ',
+      ' kkkkkkkkkkkkk   kk   ',
     ],
     [
-      '                    ',
-      '   kkkk             ',
-      '  kAAAAk            ',
-      ' kAWAAAAk           ',
-      ' kAAAAAAkk          ',
-      ' kkaaAAAAAkk        ',
-      '   kkaaAAAAAkk      ',
-      '     kkaaAAAAAkk    ',
-      '       kkaaAAAAAk   ',
-      '         kkaaAAAAk  ',
-      '        kkaaAAAAk   ',
-      '      kkaaAAAAk     ',
-      '     kkaaAAAk       ',
-      '      kkaak         ',
-      '       kk           ',
-      '                    ',
+      '   kkkkkkk            ',
+      '  kAAAAAAAk           ',
+      ' kAAAAAAAAAk          ',
+      ' kAAcAAAAAAk          ',
+      ' kAAAAAAAAkk          ',
+      ' kWkkkkkkkWk          ',
+      ' kkkkkkkkkk           ',   // tongue drawn back in
+      '  kaaAAAAk            ',
+      '  kaaAAAk             ',
+      '  kaaAAk              ',
+      '  kAAAAk              ',   // neck leans the other way — the sway
+      '   kAAAk              ',
+      '   kAAAAk             ',
+      '  kAAAAAAk            ',
+      ' kAAAAAAAAk           ',
+      'kAAAAAAAAAAkAAk       ',   // tail root, drawn in slightly
+      'kAAAAAAAAAAAAAkAAAk   ',
+      'kAAAAAAAAAAAAAk kAAk  ',   // tail curls the OTHER way — the flick
+      'kkAAAAAAAAAAAkk  kAAk ',
+      ' kkkkkkkkkkkkk    kk  ',
     ],
   ],
 };
@@ -3246,36 +3313,37 @@ export const BOOKSHELF = {
   ],
 };
 
-// --- A wind-carved stone pillar. 8 x 22. Windpeak. --------------------------
-// Narrow, tapering, with the wind-bitten notches all on ONE side — an evenly
-// notched pillar reads as a decorative column; asymmetric erosion reads as wind.
+// --- A wind-carved stone pillar. 11 x 22. Windpeak. -------------------------
+// Widened from 8px (which read as a thin stick) while keeping the wind-bitten
+// notches all on ONE side — an evenly notched pillar reads as a decorative
+// column; asymmetric erosion reads as wind.
 export const WIND_PILLAR = {
-  w: 8,
+  w: 11,
   h: 22,
   frames: [
     [
-      '  kkkk  ',
-      ' kLLLLk ',
-      ' kLLLLk ',
-      'kLLLLLk ',
-      'kLLLLLk ',
-      ' kLLLLk ',
-      '  kLLLk ',   // bitten in
-      ' kLLLLk ',
-      'kLLLLLk ',
-      'kLLLLLk ',
-      ' kLLLLk ',
-      '  kLLLk ',   // and again
-      ' kLLLLk ',
-      'kLLLLLk ',
-      'kLLLLLk ',
-      'kLLLLLk ',
-      ' kLLLLk ',
-      ' kLLLLk ',
-      'kLLLLLk ',
-      'kLLLLLk ',
-      'kllllllk',
-      'kkkkkkkk',
+      '   kkkkk   ',
+      '  kLLLLLk  ',
+      '  kLLLLLk  ',
+      ' kLLLLLLk  ',
+      ' kLLLLLLk  ',
+      '  kLLLLLk  ',
+      '   kLLLLk  ',   // bitten in
+      '  kLLLLLk  ',
+      ' kLLLLLLk  ',
+      ' kLLLLLLk  ',
+      '  kLLLLLk  ',
+      '   kLLLLk  ',   // and again
+      '  kLLLLLk  ',
+      ' kLLLLLLk  ',
+      ' kLLLLLLk  ',
+      ' kLLLLLLk  ',
+      '  kLLLLLk  ',
+      '  kLLLLLk  ',
+      ' kLLLLLLk  ',
+      ' kLLLLLLk  ',
+      'kllllllllk ',
+      'kkkkkkkkkk ',
     ],
   ],
 };
@@ -3858,7 +3926,7 @@ export const STAGEBOSS_DEVOURER = {
 // that every roster sprite id resolves in SPRITES).
 Object.assign(SPRITES, {
   // chapter 2 — the quest for the Staff
-  creep_book: CREEP_BOOK,
+  creep_inkslime: CREEP_INKSLIME,
   creep_gust: CREEP_GUST,
   creep_mirror: CREEP_MIRROR,
   boss_scribe: BOSS_SCRIBE,
