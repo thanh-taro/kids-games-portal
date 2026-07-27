@@ -11,8 +11,9 @@ import {
 import { chapterForStage, stageNumberInChapter } from './chapters.js';
 import { getStage, STAGES } from './stages.js';
 import { CREDITS } from './story.js';
-import { getBiome, drawBiomeTerrain, drawBiomeScenery, drawBiomeLights, drawBiomeWeather } from './biomes.js';
-import { drawAura } from './effects.js';
+import { getBiome, drawBiomeTerrain, drawBiomeScenery, drawBiomeLights, drawBiomeWeather, GROUND_FEET_SINK } from './biomes.js';
+import { drawAura, ParticleSystem } from './effects.js';
+import { SKILLS } from './skills.js';
 
 // Animated sparkles (used as celebratory dots over the backdrop on some scenes).
 function drawSparkles(ctx, W, H, tick, color = '#c77dff') {
@@ -41,7 +42,7 @@ function drawSparkles(ctx, W, H, tick, color = '#c77dff') {
 const MENU_SKY_LAYOUT = { cloudY: [60, 110, 84] };
 
 function drawSceneBackdrop(ctx, W, H, tick, tint = null, biomeName = null) {
-  const groundY = H - 90;
+  const groundY = H - 110;
   const biome = getBiome(biomeName);
 
   drawBiomeTerrain(ctx, W, H, groundY, biome, tick);
@@ -107,14 +108,16 @@ export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}, biome = nu
   // Hero + princess standing on the ground line. The hero glows with their
   // earned rank aura and gets a small weapon glint in their current weapon
   // color — so the home screen reflects who they've become.
-  const groundY = H - 90;
+  const groundY = H - 110;
   // The hero's own sword is tinted to their equipped weapon, so the separate
   // bobbing "glint" square that used to hint at the weapon color is gone — the
   // blade itself now carries it.
   const hSprite = heroSprite(hero.weaponColor);
   const heroScale = 2;
   const heroX = W / 2 - 120;
-  const heroY = groundY - hSprite.h * DOT * heroScale;
+  // GROUND_FEET_SINK is a fixed depth into the ground box (see biomes.js) —
+  // it does NOT scale with the sprite's draw scale.
+  const heroY = groundY + GROUND_FEET_SINK - hSprite.h * DOT * heroScale;
   const hw = hSprite.w * DOT * heroScale;
   const hh = hSprite.h * DOT * heroScale;
   if (hero.rankGlow) {
@@ -132,7 +135,7 @@ export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}, biome = nu
   // is up to, so the home screen previews who they're about to rescue. Warm-up
   // stages have no princess of their own — fall back to the default look.
   const titlePrincess = princessSprite(getStage(stageIndex).princessStyle);
-  drawSprite(ctx, titlePrincess, Math.floor(tick / 16) % 2, W / 2 + 70, groundY - titlePrincess.h * DOT * 2, 2);
+  drawSprite(ctx, titlePrincess, Math.floor(tick / 16) % 2, W / 2 + 70, groundY + GROUND_FEET_SINK - titlePrincess.h * DOT * 2, 2);
 
   // Menu column: the blinking SPACE prompt as the primary item, with the
   // secondary H/R options stacked right beneath it so the three read as one
@@ -189,10 +192,10 @@ export function drawStageIntro(ctx, W, H, tick, stage, stageIndex = 0, weaponCol
   drawText(ctx, goal, W / 2, 202, 16, '#f0c6ff', 'center');
 
   // Hero jogging in place toward the stage, on the ground line.
-  const groundY = H - 90;
+  const groundY = H - 110;
   const hx = W / 2 - 24 + Math.sin(tick / 30) * 10;
   const introHero = heroSprite(weaponColor);
-  drawSprite(ctx, introHero, Math.floor(tick / 8) % 2, hx, groundY - introHero.h * DOT * 2, 2);
+  drawSprite(ctx, introHero, Math.floor(tick / 8) % 2, hx, groundY + GROUND_FEET_SINK - introHero.h * DOT * 2, 2);
 
   // SPACE prompt raised toward center for easy visibility (below the intro
   // text block above, above the jogging hero on the ground line).
@@ -214,15 +217,15 @@ export function drawVictory(ctx, W, H, tick, stage, weaponColor = null) {
   drawText(ctx, winText, W / 2, 130, 20, '#ffffff', 'center');
 
   // Hero (and the rescued princess, if this stage had one) celebrating on the ground line.
-  const groundY = H - 90;
+  const groundY = H - 110;
   const bob = Math.floor(tick / 8) % 2 === 0 ? 0 : -6;
   const heroX = stage.princess ? W / 2 - 100 : W / 2 - 24;
   const vicHero = heroSprite(weaponColor);
-  drawSprite(ctx, vicHero, Math.floor(tick / 10) % 2, heroX, groundY - vicHero.h * DOT * 3, 3);
+  drawSprite(ctx, vicHero, Math.floor(tick / 10) % 2, heroX, groundY + GROUND_FEET_SINK - vicHero.h * DOT * 3, 3);
   if (stage.princess) {
     // The rescued princess wears her own stage's look (see PRINCESS_STYLES).
     const p = princessSprite(stage.princessStyle);
-    drawSprite(ctx, p, Math.floor(tick / 16) % 2, W / 2 + 20, groundY - p.h * DOT * 3 + bob, 3);
+    drawSprite(ctx, p, Math.floor(tick / 16) % 2, W / 2 + 20, groundY + GROUND_FEET_SINK - p.h * DOT * 3 + bob, 3);
   }
 
   // Rising heart-dots between the hero and princess (rescue stages only).
@@ -243,40 +246,135 @@ export function drawVictory(ctx, W, H, tick, stage, weaponColor = null) {
   }
 }
 
+// A small standalone particle system just for the reward card's skill preview
+// (main.js's `particles` lives in the gameplay loop; the reward screen needs
+// its own so a skill reward can show its REAL effect, not a placeholder dot).
+const rewardParticles = new ParticleSystem();
+
 export function drawReward(ctx, W, H, tick, reward, biome = null) {
   drawSceneBackdrop(ctx, W, H, tick, 'rgba(242,197,61,0.10)', biome);
   drawSparkles(ctx, W, H, tick, '#ffffff');
 
-  const typeLabel = reward.type === 'weapon' ? 'VŨ KHÍ MỚI' : 'KỸ NĂNG MỚI';
+  const typeLabel = reward.type === 'weapon' ? 'VŨ KHÍ MỚI'
+    : reward.type === 'artifact' ? 'BẢO VẬT MỚI' : 'KỸ NĂNG MỚI';
   plate(ctx, W / 2, 74, '★ PHẦN THƯỞNG ★', 24);
   drawText(ctx, '★ PHẦN THƯỞNG ★', W / 2, 80, 24, '#ffe08a', 'center');
   plate(ctx, W / 2, 118, typeLabel, 18);
   drawText(ctx, typeLabel, W / 2, 120, 18, '#f0c6ff', 'center');
 
-  // A pulsing "card" showing the reward name.
+  // A pulsing "card" showing the reward name. Tall enough to hold a full
+  // hero-scale showcase ABOVE the name/desc text, so nothing overlaps. Width
+  // grows to fit the desc text (some are long, e.g. the Staff's) rather than
+  // clipping it, matching drawTargetWord's own measured-width clamp.
+  ctx.font = '15px "PixelFont", monospace';
+  const descW = ctx.measureText(reward.desc).width;
   const pulse = 1 + Math.sin(tick / 10) * 0.03;
-  const cardW = 360 * pulse;
-  const cardH = 120;
+  // Skill cards are widened well past their text's own minimum — the extra
+  // width is legroom for the cast->fly->impact preview below, so the
+  // projectile actually travels a distance instead of a jump.
+  const minW = reward.type === 'skill' ? Math.min(W - 80, 640) : 360;
+  const cardW = Math.max(minW, descW + 48) * pulse;
+  const showcaseH = 140;
+  const textH = 76;
+  const cardH = showcaseH + textH;
   const cx = W / 2;
-  const cy = H / 2 + 10;
-  drawRect(ctx, cx - cardW / 2 - 3, cy - cardH / 2 - 3, cardW + 6, cardH + 6, '#1a1423');
-  drawRect(ctx, cx - cardW / 2, cy - cardH / 2, cardW, cardH, '#2b2740');
-  drawRect(ctx, cx - cardW / 2, cy - cardH / 2, cardW, 4, '#f2c53d');
+  const cy = H / 2 + 30;
+  const cardTop = cy - cardH / 2;
+  drawRect(ctx, cx - cardW / 2 - 3, cardTop - 3, cardW + 6, cardH + 6, '#1a1423');
+  drawRect(ctx, cx - cardW / 2, cardTop, cardW, cardH, '#2b2740');
+  drawRect(ctx, cx - cardW / 2, cardTop, cardW, 4, '#f2c53d');
 
-  // Reward icon: a big dot in its theme color (weapon color, or the skill's
-  // signature color for skill rewards).
-  const iconColor = reward.projectileColor || reward.color || '#f2c53d';
-  drawRect(ctx, cx - 14, cy - 46, 28, 28, '#1a1423');
-  drawRect(ctx, cx - 12, cy - 44, 24, 24, iconColor);
+  // Reward showcase: weapons/artifacts show the ACTUAL hero holding the
+  // tinted gear (the same sprite equipped in-game); skills show the hero with
+  // that skill's real particle effect firing, so the preview is never a
+  // placeholder swatch. The showcase is centered in its own band, feet resting
+  // near the top of the text band, so it never collides with the name/desc.
+  const scale = 2;
+  const heroFeetY = cardTop + showcaseH - 6;
+  if (reward.type === 'weapon' || reward.type === 'artifact') {
+    const heroS = heroSprite(reward.projectileColor);
+    const bob = Math.floor(tick / 10) % 2 === 0 ? 0 : -3;
+    const hx = cx - (heroS.w * DOT * scale) / 2;
+    const hy = heroFeetY - heroS.h * DOT * scale + bob;
+    drawSprite(ctx, heroS, Math.floor(tick / 12) % 2, hx, hy, scale);
+    if (reward.artifact === 'staff') {
+      // The Staff itself, floating beside him — it's the whole point of the
+      // reward, not just a recolor of his sword.
+      const staffScale = 1.8;
+      const sx = cx + (heroS.w * DOT * scale) / 2 + 10;
+      const sy = heroFeetY - STAFF_WISDOM.h * DOT * staffScale + bob;
+      drawSprite(ctx, STAFF_WISDOM, Math.floor(tick / 8) % STAFF_WISDOM.frames.length, sx, sy, staffScale);
+    }
+  } else if (reward.type === 'skill') {
+    // Show the skill the way it actually plays in battle — the hero casts
+    // (a lunge, same as triggerAttack's in-game pose), a real projectile with
+    // its own trail flies across the card, and it lands as the skill's own
+    // impact effect. A static hero-plus-effect preview (the original version
+    // of this scene) didn't read as "this is what I just unlocked" because a
+    // kid never sees the skill fire that way in gameplay.
+    const skillDef = SKILLS[reward.skill];
+    const CYCLE = 90; // one full cast->fly->impact loop, in frames
+    const phase = tick % CYCLE;
+    const CAST_LEN = 14;   // lunge duration, matches hero.attackMax
+    const FLY_START = 8;   // projectile launches partway into the lunge
+    // Hero stands toward the LEFT of the card (rather than dead-center) so a
+    // wide card gives the projectile a long, clean flight across it instead
+    // of just using the right half.
+    const heroCx = cx - cardW * 0.28;
+    const targetX = cx + cardW / 2 - 46;
+    const targetY = heroFeetY - showcaseH * 0.55;
+    const flyDist = targetX - heroCx;
+    const pj = skillDef ? skillDef.projectile : null;
+    const flyFrames = pj ? Math.max(10, Math.round(flyDist / pj.speed)) : 20;
+    const impactAt = FLY_START + flyFrames;
 
-  drawText(ctx, reward.name, cx, cy - 4, 26, '#ffffff', 'center');
-  drawText(ctx, reward.desc, cx, cy + 30, 15, '#cfc8dd', 'center');
+    // Hero lunges toward the target during the cast window (same easing as
+    // Hero.lungeAmount: 0 at start/end, 1 at midpoint).
+    const casting = phase < CAST_LEN;
+    const lungeAmt = casting ? Math.sin((phase / CAST_LEN) * Math.PI) : 0;
+    const heroS = heroSprite(null);
+    const hx = heroCx - (heroS.w * DOT * scale) / 2 + lungeAmt * 14;
+    const hy = heroFeetY - heroS.h * DOT * scale;
+    drawSprite(ctx, heroS, Math.floor(tick / 12) % 2, hx, hy, scale);
+
+    if (skillDef) {
+      const startX = hx + heroS.w * DOT * scale * 0.8;
+      const startY = hy + (heroS.h * DOT * scale) / 3;
+      if (phase >= FLY_START && phase < impactAt) {
+        // Flying: interpolate along the path and drop trail puffs, exactly
+        // like the real Projectile does during PLAYING.
+        const f = (phase - FLY_START) / flyFrames;
+        const px = startX + (targetX - startX) * f;
+        const py = startY + (targetY - startY) * f;
+        const trailCfg = skillDef.trail || { color: pj.color, size: pj.size * 0.8 };
+        rewardParticles.trailPuff(px, py, trailCfg.color, {
+          fadeTo: trailCfg.fadeTo,
+          size: trailCfg.size || DOT * 1.5,
+          gravity: trailCfg.gravity,
+          spread: DOT,
+          life: 12,
+        });
+        const s = pj.size;
+        drawRect(ctx, px - s / 2, py - s / 2, s, s, pj.color);
+        drawRect(ctx, px - s / 4, py - s / 4, s / 2, s / 2, '#ffffff');
+      } else if (phase === impactAt) {
+        // Landed: play the skill's real impact effect once per cycle.
+        rewardParticles.play(skillDef.effect, targetX, targetY, W, H);
+      }
+    }
+    rewardParticles.update();
+    rewardParticles.draw(ctx);
+  }
+
+  drawText(ctx, reward.name, cx, cardTop + showcaseH + 26, 26, '#ffffff', 'center');
+  drawText(ctx, reward.desc, cx, cardTop + showcaseH + 58, 15, '#cfc8dd', 'center');
 
   // SPACE prompt raised just below the reward card so it's easy for a kid to
-  // spot (the card spans H/2-50 .. H/2+70).
+  // spot.
   if (tick % 60 < 40) {
-    plate(ctx, W / 2, H / 2 + 95, '▶ Nhấn SPACE để tiếp tục', 18);
-    drawText(ctx, '▶ Nhấn SPACE để tiếp tục', W / 2, H / 2 + 99, 18, '#ffe08a', 'center');
+    const promptY = cardTop + cardH + 30;
+    plate(ctx, W / 2, promptY, '▶ Nhấn SPACE để tiếp tục', 18);
+    drawText(ctx, '▶ Nhấn SPACE để tiếp tục', W / 2, promptY + 4, 18, '#ffe08a', 'center');
   }
 }
 
@@ -292,9 +390,9 @@ export function drawFailure(ctx, W, H, tick, stage, weaponColor = null) {
   drawText(ctx, 'Đừng bỏ cuộc — hãy thử lại!', W / 2, H / 2 + 14, 16, '#e0d0d0', 'center');
 
   // Fallen hero lying on the ground line.
-  const groundY = H - 90;
+  const groundY = H - 110;
   const failHero = heroSprite(weaponColor);
-  drawSprite(ctx, failHero, 0, W / 2 - 18, groundY - failHero.h * DOT * 2, 2);
+  drawSprite(ctx, failHero, 0, W / 2 - 18, groundY + GROUND_FEET_SINK - failHero.h * DOT * 2, 2);
 
   // SPACE prompt raised toward center for easy visibility (below the
   // encouragement text, above the fallen hero on the ground line).
@@ -349,7 +447,15 @@ function drawPrincessRow(ctx, cx, baseY, spanW, tick, scale, lit = true) {
 // The tableaux. Each draws into the lower part of the screen; the text panel is
 // drawn on top of it by drawStory.
 function drawStoryArt(ctx, W, H, tick, art) {
-  const baseY = H - 70;
+  // Same ground seam as the rest of scenes.js (drawSceneBackdrop draws the
+  // biome terrain at groundY = H - 110). Structures (throne, gate, mountains,
+  // spire) rest exactly on that seam, same as landmark props elsewhere.
+  const baseY = H - 110;
+  // Standing humanoids (hero/king/princesses) sink further, like every other
+  // scene's entities (GROUND_FEET_SINK) — a fixed depth into the ground box,
+  // independent of how large these portraits are drawn (~2x-2.6x vs ~1x
+  // gameplay scale).
+  const standY = baseY + GROUND_FEET_SINK;
 
   switch (art) {
     case 'throne': {
@@ -362,11 +468,11 @@ function drawStoryArt(ctx, W, H, tick, art) {
       drawSprite(ctx, THRONE, 0, thX, baseY - THRONE.h * DOT * tScale, tScale);
       const kScale = 2.2;
       const kingX = thX + ((THRONE.w - KING.w) / 2) * DOT * tScale;
-      drawSprite(ctx, KING, Math.floor(tick / 22) % 2, kingX, baseY - KING.h * DOT * kScale - 8, kScale);
+      drawSprite(ctx, KING, Math.floor(tick / 22) % 2, kingX, standY - KING.h * DOT * kScale - 8, kScale);
       const hSprite = heroSprite(null);
       const hScale = 2;
       // Hero stands to the left, facing the throne (flipped to face right→left).
-      drawSprite(ctx, hSprite, Math.floor(tick / 14) % 2, W / 2 - 190, baseY - hSprite.h * DOT * hScale, hScale, true);
+      drawSprite(ctx, hSprite, Math.floor(tick / 14) % 2, W / 2 - 190, standY - hSprite.h * DOT * hScale, hScale, true);
       break;
     }
     case 'kidnap': {
@@ -378,7 +484,7 @@ function drawStoryArt(ctx, W, H, tick, art) {
         drawSprite(ctx, dl, Math.floor(tick / 20) % dl.frames.length, W / 2 - (dl.w * DOT * s) / 2, baseY - dl.h * DOT * s - 40, s, false, '#1a1423');
         ctx.globalAlpha = 1;
       }
-      drawPrincessRow(ctx, W / 2, baseY, Math.min(W - 80, 760), tick, 1.3, false);
+      drawPrincessRow(ctx, W / 2, standY, Math.min(W - 80, 760), tick, 1.3, false);
       break;
     }
     case 'road': {
@@ -391,14 +497,14 @@ function drawStoryArt(ctx, W, H, tick, art) {
       const hScale = 2.2;
       // Walks slowly rightward across the lower third, looping.
       const walkX = (tick * 0.35) % (W * 0.5) + W * 0.1;
-      drawSprite(ctx, hSprite, Math.floor(tick / 8) % 2, walkX, baseY - hSprite.h * DOT * hScale, hScale);
+      drawSprite(ctx, hSprite, Math.floor(tick / 8) % 2, walkX, standY - hSprite.h * DOT * hScale, hScale);
       break;
     }
     case 'library': {
       // Floating runes/books above the hero — the ancient library.
       const hSprite = heroSprite(null);
       const hScale = 2.2;
-      drawSprite(ctx, hSprite, Math.floor(tick / 12) % 2, W / 2 - 130, baseY - hSprite.h * DOT * hScale, hScale);
+      drawSprite(ctx, hSprite, Math.floor(tick / 12) % 2, W / 2 - 130, standY - hSprite.h * DOT * hScale, hScale);
       for (let i = 0; i < 6; i++) {
         const s = 1.2 + (i % 3) * 0.35;
         const x = W / 2 - 40 + i * 62;
@@ -422,7 +528,7 @@ function drawStoryArt(ctx, W, H, tick, art) {
       drawSprite(ctx, STAFF_WISDOM, Math.floor(tick / 12) % 2, sx, sy, sScale);
       const hSprite = heroSprite(null);
       const hScale = 2.2;
-      drawSprite(ctx, hSprite, Math.floor(tick / 14) % 2, W / 2 - 190, baseY - hSprite.h * DOT * hScale, hScale);
+      drawSprite(ctx, hSprite, Math.floor(tick / 14) % 2, W / 2 - 190, standY - hSprite.h * DOT * hScale, hScale);
       break;
     }
     case 'fortress': {
@@ -431,7 +537,7 @@ function drawStoryArt(ctx, W, H, tick, art) {
       drawSprite(ctx, CASTLE_GATE, 0, W / 2 - (CASTLE_GATE.w * DOT * gScale) / 2 + 60, baseY - CASTLE_GATE.h * DOT * gScale, gScale);
       const hSprite = heroSprite(null);
       const hScale = 1.8; // deliberately SMALL — the gate should tower over him
-      drawSprite(ctx, hSprite, Math.floor(tick / 12) % 2, W / 2 - 230, baseY - hSprite.h * DOT * hScale, hScale);
+      drawSprite(ctx, hSprite, Math.floor(tick / 12) % 2, W / 2 - 230, standY - hSprite.h * DOT * hScale, hScale);
       break;
     }
     case 'duel': {
@@ -439,7 +545,7 @@ function drawStoryArt(ctx, W, H, tick, art) {
       const hSprite = heroSprite('#fff2b0'); // staff-lit blade
       const hScale = 2.4;
       const lunge = Math.sin(tick / 18) * 10;
-      drawSprite(ctx, hSprite, Math.floor(tick / 8) % 2, W / 2 - 210 + lunge, baseY - hSprite.h * DOT * hScale, hScale);
+      drawSprite(ctx, hSprite, Math.floor(tick / 8) % 2, W / 2 - 210 + lunge, standY - hSprite.h * DOT * hScale, hScale);
       const dl = SPRITES.stageboss_devourer || SPRITES.stageboss_darklord;
       if (dl) {
         const s = 2.8;
@@ -449,17 +555,17 @@ function drawStoryArt(ctx, W, H, tick, art) {
     }
     case 'peace': {
       // The ten princesses free, in the light.
-      drawPrincessRow(ctx, W / 2, baseY, Math.min(W - 60, 820), tick, 1.4, true);
+      drawPrincessRow(ctx, W / 2, standY, Math.min(W - 60, 820), tick, 1.4, true);
       break;
     }
     case 'crown': {
       // The King honoring the hero, princesses behind them.
-      drawPrincessRow(ctx, W / 2, baseY - 4, Math.min(W - 120, 700), tick, 0.9, true);
+      drawPrincessRow(ctx, W / 2, standY - 4, Math.min(W - 120, 700), tick, 0.9, true);
       const kScale = 2.2;
-      drawSprite(ctx, KING, Math.floor(tick / 22) % 2, W / 2 + 40, baseY - KING.h * DOT * kScale, kScale);
+      drawSprite(ctx, KING, Math.floor(tick / 22) % 2, W / 2 + 40, standY - KING.h * DOT * kScale, kScale);
       const hSprite = heroSprite('#ffb347');
       const hScale = 2.2;
-      drawSprite(ctx, hSprite, Math.floor(tick / 14) % 2, W / 2 - 150, baseY - hSprite.h * DOT * hScale, hScale);
+      drawSprite(ctx, hSprite, Math.floor(tick / 14) % 2, W / 2 - 150, standY - hSprite.h * DOT * hScale, hScale);
       break;
     }
     default:
@@ -554,20 +660,20 @@ export function drawChapterEnd(ctx, W, H, tick, chapter, stageIndex, biome = nul
 
   // Hero celebrating with the chapter's last princess (chapter 1) or alone with
   // the staff (chapters 2-3, which have no princess stages).
-  const groundY = H - 90;
+  const groundY = H - 110;
   const endHero = heroSprite(weaponColor);
   const lastStage = getStage(chapter.stageStart + chapter.stageCount - 1);
   const hasPrincess = !!(lastStage && lastStage.princessStyle);
   const heroX = hasPrincess ? W / 2 - 110 : W / 2 - 40;
-  drawSprite(ctx, endHero, Math.floor(tick / 10) % 2, heroX, groundY - endHero.h * DOT * 2.6, 2.6);
+  drawSprite(ctx, endHero, Math.floor(tick / 10) % 2, heroX, groundY + GROUND_FEET_SINK - endHero.h * DOT * 2.6, 2.6);
   if (hasPrincess) {
     const p = princessSprite(lastStage.princessStyle);
     const bob = Math.floor(tick / 8) % 2 === 0 ? 0 : -6;
-    drawSprite(ctx, p, Math.floor(tick / 16) % 2, W / 2 + 40, groundY - p.h * DOT * 2.6 + bob, 2.6);
+    drawSprite(ctx, p, Math.floor(tick / 16) % 2, W / 2 + 40, groundY + GROUND_FEET_SINK - p.h * DOT * 2.6 + bob, 2.6);
   } else {
     // The Staff, held high beside him.
     const s = 2.2;
-    drawSprite(ctx, STAFF_WISDOM, Math.floor(tick / 12) % 2, W / 2 + 70, groundY - STAFF_WISDOM.h * DOT * s, s);
+    drawSprite(ctx, STAFF_WISDOM, Math.floor(tick / 12) % 2, W / 2 + 70, groundY + GROUND_FEET_SINK - STAFF_WISDOM.h * DOT * s, s);
   }
 
   if (tick % 60 < 42) {
@@ -676,17 +782,17 @@ export function drawGameComplete(ctx, W, H, tick, stageIndex = 0, biome = null, 
 
   // Curtain call: the King, the hero with his final weapon, and all ten
   // princesses lined up in the sunrise.
-  const groundY = H - 86;
-  drawPrincessRow(ctx, W / 2, groundY - 2, Math.min(W - 80, 840), tick, 1.15, true);
+  const groundY = H - 110;
+  drawPrincessRow(ctx, W / 2, groundY + GROUND_FEET_SINK - 2, Math.min(W - 80, 840), tick, 1.15, true);
 
   const endHero = heroSprite(weaponColor);
   const hScale = 2.4;
-  drawSprite(ctx, endHero, Math.floor(tick / 10) % 2, W / 2 - 150, groundY - endHero.h * DOT * hScale, hScale);
+  drawSprite(ctx, endHero, Math.floor(tick / 10) % 2, W / 2 - 150, groundY + GROUND_FEET_SINK - endHero.h * DOT * hScale, hScale);
   const kScale = 2.0;
-  drawSprite(ctx, KING, Math.floor(tick / 22) % 2, W / 2 + 90, groundY - KING.h * DOT * kScale, kScale);
+  drawSprite(ctx, KING, Math.floor(tick / 22) % 2, W / 2 + 90, groundY + GROUND_FEET_SINK - KING.h * DOT * kScale, kScale);
   // The Staff, planted between them.
   const sScale = 1.8;
-  drawSprite(ctx, STAFF_WISDOM, Math.floor(tick / 12) % 2, W / 2 - 20, groundY - STAFF_WISDOM.h * DOT * sScale, sScale);
+  drawSprite(ctx, STAFF_WISDOM, Math.floor(tick / 12) % 2, W / 2 - 20, groundY + GROUND_FEET_SINK - STAFF_WISDOM.h * DOT * sScale, sScale);
 
   if (tick % 60 < 42) {
     plate(ctx, W / 2, H / 2 + 56, '▶ Nhấn SPACE để xem đoàn làm game', 18); // "...to see the credits"

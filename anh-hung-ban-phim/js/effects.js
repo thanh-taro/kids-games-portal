@@ -13,6 +13,14 @@ function rand(seed) {
   return x - Math.floor(x); // 0..1
 }
 
+// Total lifespan (in frames) of the empowered Staff-cast effect (_staffcast
+// below) — exported so main.js can hold the struck monster frozen for exactly
+// as long as the effect is on screen, rather than guessing a number that
+// could drift out of sync as the effect is tuned. ~3s at 60fps: deliberately
+// the longest-held moment in the game, since a full-charge cast is meant to
+// stop the fight and be watched, not blend into ordinary combat pacing.
+export const STAFFCAST_FRAMES = 180;
+
 export class Particle {
   constructor(x, y, vx, vy, color, life, opts = {}) {
     this.x = x;
@@ -58,6 +66,7 @@ class Visual {
     this.h = opts.h || 0;
     this.angle = opts.angle || 0;
     this.seed = opts.seed || 1;
+    this.hold = opts.hold || 0; // 'beam' only — see draw()
   }
   get dead() {
     return this.t >= this.life;
@@ -142,11 +151,51 @@ class Visual {
       }
       ctx.globalAlpha = 1;
     } else if (this.kind === 'beam') {
-      // Vertical light pillar (used for meteor impact / holy strike).
-      ctx.globalAlpha = (1 - p) * 0.8;
+      // Vertical light pillar (used for meteor impact / holy strike). `hold`
+      // (0..1, default 0) is the fraction of life spent at full alpha before
+      // fading starts, so a beam can STAND rather than fade from frame one.
+      const fadeStart = this.hold || 0;
+      const fadeP = p < fadeStart ? 0 : (p - fadeStart) / (1 - fadeStart);
+      ctx.globalAlpha = (1 - fadeP) * 0.8;
       ctx.fillStyle = this.color;
       const halfW = this.w / 2;
       ctx.fillRect(this.x - halfW, 0, this.w, this.y);
+      ctx.globalAlpha = 1;
+    } else if (this.kind === 'flarebeam') {
+      // Same vertical pillar as 'beam' (and same `hold`-then-fade timing,
+      // used by staffcast so its columns still STAND for the whole freeze),
+      // but the column itself is a soft flare instead of one flat block: a
+      // narrow white-hot core with a wider, translucent glow feathered out
+      // on either side via a horizontal gradient, plus a slow horizontal
+      // flicker so the flare visibly breathes instead of sitting static for
+      // 3 full seconds.
+      const fadeStart = this.hold || 0;
+      const fadeP = p < fadeStart ? 0 : (p - fadeStart) / (1 - fadeStart);
+      const baseAlpha = 1 - fadeP;
+      const flicker = 0.85 + 0.15 * Math.sin(this.t * 0.5 + this.seed * 10);
+      const halfW = this.w / 2;
+      const glowW = this.w * 2.2;
+
+      ctx.globalAlpha = baseAlpha * 0.35 * flicker;
+      const glowGrad = ctx.createLinearGradient(this.x - glowW / 2, 0, this.x + glowW / 2, 0);
+      glowGrad.addColorStop(0, 'transparent');
+      glowGrad.addColorStop(0.5, this.color);
+      glowGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(this.x - glowW / 2, 0, glowW, this.y);
+
+      ctx.globalAlpha = baseAlpha * 0.7 * flicker;
+      const midGrad = ctx.createLinearGradient(this.x - halfW, 0, this.x + halfW, 0);
+      midGrad.addColorStop(0, 'transparent');
+      midGrad.addColorStop(0.5, this.color);
+      midGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = midGrad;
+      ctx.fillRect(this.x - halfW, 0, this.w, this.y);
+
+      ctx.globalAlpha = baseAlpha * flicker;
+      ctx.fillStyle = '#ffffff';
+      const coreW = this.w * 0.28;
+      ctx.fillRect(this.x - coreW / 2, 0, coreW, this.y);
       ctx.globalAlpha = 1;
     }
   }
@@ -233,6 +282,13 @@ export class ParticleSystem {
         break;
       case 'dawnbreaker':
         this._dawnbreaker(x, y, W, H);
+        break;
+      // ---- an empowered Staff-of-Wisdom cast, layered on TOP of whatever
+      // skill.effect the hit already played (see onProjectileHit in main.js) —
+      // this is what makes a full-charge cast feel like the Staff itself did
+      // something, no matter which skill is equipped.
+      case 'staffcast':
+        this._staffcast(x, y, W, H);
         break;
       // ---- the multi-phase boss turning a corner ----
       case 'phasechange':
@@ -504,7 +560,7 @@ export class ParticleSystem {
     }
   }
 
-  // Dòng Suối's Cleanse: a calm ripple radiating out, like water settling —
+  // Rain Princess's Cleanse: a calm ripple radiating out, like water settling —
   // deliberately the quietest effect in the roster, matching a rescue from a
   // stuck moment rather than a triumphant flourish.
   _princessCleanse(x, y) {
@@ -665,6 +721,122 @@ export class ParticleSystem {
           gravity: 0.18,
           drag: 0.96,
           size: DOT * 2.5,
+          shrink: true,
+        })
+      );
+    }
+  }
+
+  // An empowered Staff-of-Wisdom cast landing. Always layered on top of the
+  // hit skill's own effect (see the 'staffcast' case in play()), so this is
+  // what tells the kid "the CHARGE did that" — by far the longest-held effect
+  // in the game (STAFFCAST_FRAMES, ~3s). The struck monster is held frozen
+  // (main.js sets frozenTimer = STAFFCAST_FRAMES) for exactly this long, so
+  // the fight visibly PAUSES for the cast rather than continuing to
+  // march/attack underneath it — the effect is what fills that pause.
+  // Two speeds layered together: a fast, punchy IMPACT beat (shockwaves,
+  // burst, spiraling runes — all quick, like every other skill) reading as
+  // the initial shock, followed by a SLOW ambient phase (the columns holding,
+  // and a ring of orbiting sparks circling the frozen monster) that stretches
+  // out to fill the whole frozen window, so a 3-second hold never reads as
+  // "the effect ended and nothing is happening."
+  _staffcast(x, y, W, H) {
+    this.visuals.push(new Visual('flash', 0, 0, { color: '#eaf6ff', w: W, h: H, life: 14 }));
+    // Five light columns fanned across the impact (not one pillar) — a row of
+    // descending flares reads as "the sky opened". `hold` keeps each one at
+    // FULL brightness for nearly its whole life instead of fading from frame
+    // one, so the columns visibly STAND for the entire frozen window — life
+    // is STAFFCAST_FRAMES itself, ~12x any other beam in the file
+    // (holylight/dawnbreaker sit at 20-24). 'flarebeam' (not 'beam') so each
+    // column is a soft-edged, gently flickering flare rather than one flat
+    // solid block — it's on screen for 3 whole seconds, long enough that a
+    // static rectangle would read as scenery rather than living light.
+    const COLS = 5;
+    for (let c = 0; c < COLS; c++) {
+      const off = (c - (COLS - 1) / 2) * DOT * 9;
+      const col = c % 2 === 0 ? '#fff6d0' : '#8ff0ff';
+      this.visuals.push(
+        new Visual('flarebeam', x + off, y, {
+          color: col,
+          w: DOT * (c === Math.floor(COLS / 2) ? 10 : 7),
+          life: STAFFCAST_FRAMES - Math.abs(c - (COLS - 1) / 2) * 12,
+          hold: 0.85,
+          seed: c,
+        })
+      );
+    }
+    // The fast impact beat: stacked shockwaves + a bright core, all quick
+    // (life 30-60, same range as every other skill's impact) so the initial
+    // "shock" lands with a hard snap instead of a slow bloom.
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#8ff0ff', radius: 170, life: 60 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffd24a', radius: 130, life: 52 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffffff', radius: 90, life: 40 }));
+    this.visuals.push(new Visual('shockwave', x, y, { color: '#ffffff', radius: 210, life: 40 }));
+    this.visuals.push(new Visual('burst', x, y, { color: '#ffffff', radius: 70, life: 30 }));
+    this.screenShake = Math.max(this.screenShake, 30);
+    // A ring of runes launched on a spiral (same trick as windblade's curl:
+    // the launch angle advances with the index) so they swing around the
+    // impact before flying outward — part of the fast impact beat.
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 3;
+      const spd = 3 + (i % 5) * 0.5;
+      const col = i % 2 ? '#8ff0ff' : '#ffd24a';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd * 0.7, col, 70 + (i % 20), {
+          gravity: 0,
+          drag: 0.97,
+          size: DOT * 1.4,
+          shrink: true,
+        })
+      );
+    }
+    // The outward starburst: slower than the impact beat, its motes hanging
+    // and drifting rather than snapping away, bridging into the ambient phase.
+    for (let i = 0; i < 60; i++) {
+      const a = (Math.PI * 2 * i) / 60 + rand(i) * 0.15;
+      const spd = 3 + (i % 8) * 0.7;
+      const col = i % 4 === 0 ? '#ffffff' : i % 4 === 1 ? '#fff6d0' : i % 4 === 2 ? '#ffd24a' : '#8ff0ff';
+      this.particles.push(
+        new Particle(x, y, Math.cos(a) * spd, Math.sin(a) * spd - 1, col, 90 + (i % 60), {
+          gravity: -0.01, // hangs and drifts up gently rather than falling
+          drag: 0.992,
+          size: DOT * 2,
+          shrink: true,
+        })
+      );
+    }
+    // The AMBIENT phase: a ring of slow sparks launched on tiny individual
+    // orbits (angular launch velocity around the impact point, same spiral
+    // trick as the rune-ring but far gentler) so they circle the frozen
+    // monster for almost the entire freeze instead of flying away — this is
+    // what carries the "shocked and held" read across the full 5 seconds,
+    // echoing the Staff companion's own orbiting motif (drawStaffCompanion)
+    // and twinkle (drawStaffStars) so the effect and the companion read as
+    // the same magic all the way through.
+    for (let i = 0; i < 16; i++) {
+      const a0 = (Math.PI * 2 * i) / 16;
+      const r = 50 + (i % 3) * 14;
+      const tangent = i % 2 ? 1 : -1; // half orbit one way, half the other
+      this.particles.push(
+        new Particle(x + Math.cos(a0) * r, y + Math.sin(a0) * r * 0.6, -Math.sin(a0) * 1.1 * tangent, Math.cos(a0) * 0.7 * tangent, i % 2 ? '#8ff0ff' : '#ffd24a', STAFFCAST_FRAMES - 20 - (i % 30), {
+          gravity: 0,
+          drag: 0.998,
+          size: DOT * 1.3,
+          shrink: true,
+        })
+      );
+    }
+    // A handful of tiny star-sparkles lingering longest of all, twinkling as
+    // they fade — the last thing on screen, timed to fade out right as the
+    // monster thaws.
+    for (let i = 0; i < 10; i++) {
+      const a = (Math.PI * 2 * i) / 10 + 0.3;
+      const r = 30 + rand(i + 20) * 50;
+      this.particles.push(
+        new Particle(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.6, Math.cos(a) * 0.3, Math.sin(a) * 0.3 - 0.15, '#fff6d0', STAFFCAST_FRAMES - 10 - (i % 20), {
+          gravity: 0,
+          drag: 0.996,
+          size: DOT * 1.2,
           shrink: true,
         })
       );
@@ -1253,6 +1425,73 @@ export function drawAura(ctx, cx, cy, r, color, tick) {
     ctx.fillRect(mx - DOT / 2, my - DOT / 2, DOT * 1.2, DOT * 1.2);
   }
   ctx.globalAlpha = 1;
+}
+
+// Pixel mask for Ánh Dương's Shield aura: a classic heater-shield silhouette
+// (pointed top notch, angular shoulders, tapering to a point) — not a round
+// blob, so it actually reads as a shield. 'k' outline, 'L' light face,
+// 'D' dark face (the two-tone split down the middle), 'h' highlight glint.
+const SHIELD_MASK = [
+  '  kkkkkkkk  ',
+  ' kLLLkDDDk ',
+  'kLLLLkDDDDk',
+  'kLLhLkDDDDk',
+  'kLLLLkDDDDk',
+  'kLLLLkDDDDk',
+  'kLLLLkDDDDk',
+  ' kLLLkDDDk ',
+  ' kLLLkDDDk ',
+  '  kLLkDDk  ',
+  '  kLLkDDk  ',
+  '   kLkDk   ',
+  '   kLkDk   ',
+  '    kkk    ',
+];
+const SHIELD_W = SHIELD_MASK[0].length;
+const SHIELD_H = SHIELD_MASK.length;
+
+// A persistent shield-shaped ward for Ánh Dương's Shield, drawn over the hero
+// for as long as the ward is armed (see hero.shielded in main.js). Centered
+// on him like an enveloping ward, but translucent — solid fill would hide the
+// hero sprite completely, which reads as "he vanished," not "he is
+// protected." Uses an actual shield silhouette (see SHIELD_MASK) instead of
+// the round rank aura, plus a soft glow + slow rotation so it still reads as
+// magic, not a static sticker.
+export function drawShieldAura(ctx, cx, cy, r, color, tick) {
+  const pulse = 0.5 + 0.5 * Math.sin(tick * 0.08);
+  const glowR = r * (0.95 + pulse * 0.15);
+  const grad = ctx.createRadialGradient(cx, cy, glowR * 0.2, cx, cy, glowR);
+  grad.addColorStop(0, hexA(color, 0.35 + pulse * 0.15));
+  grad.addColorStop(0.6, hexA(color, 0.15));
+  grad.addColorStop(1, hexA(color, 0));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Slight rock (not a full spin) so the shield reads as held/animated
+  // without ever looking upside-down.
+  const rock = Math.sin(tick * 0.05) * 0.12;
+  const px = r / SHIELD_W; // pixel size scaled to the aura radius, ~hero-sized
+  const w = SHIELD_W * px;
+  const h = SHIELD_H * px;
+  const faceColors = { L: '#ffcf6b', D: '#e08a2c', h: '#fff3c4', k: '#2b3a55' };
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rock);
+  ctx.globalAlpha = 0.4 + pulse * 0.1; // see-through so the hero reads underneath
+  for (let row = 0; row < SHIELD_H; row++) {
+    const line = SHIELD_MASK[row];
+    for (let col = 0; col < line.length; col++) {
+      const key = line[col];
+      if (key === ' ') continue;
+      ctx.fillStyle = faceColors[key] || color;
+      ctx.fillRect(-w / 2 + col * px, -h / 2 + row * px, px + 0.5, px + 0.5);
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 // "#rrggbb" + alpha → "rgba(...)" for gradient stops.

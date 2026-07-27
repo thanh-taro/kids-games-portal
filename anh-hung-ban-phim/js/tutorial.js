@@ -212,6 +212,22 @@ export class Tutorial {
     return telexPrefixLen(cur, target);
   }
 
+  // Which char of the target the cursor (underline) should sit under.
+  // _matchedLen counts an untoned vowel as already matching its toned target
+  // char (see above), which is right for coloring but wrong for a single
+  // cursor position: it can reach target.length before the buffer's last char
+  // has actually taken its final tone/shape (e.g. target "bế" typed as
+  // "b","e" already scores matchedLen 2, one past the end, even though the
+  // "s" tone key hasn't landed yet). The cursor instead belongs on the first
+  // char where `cur` diverges from `target`'s literal text — the char still
+  // being built — falling back to matchedLen only once cur has caught up.
+  _cursorIndex(cur, target) {
+    for (let i = 0; i < cur.length; i++) {
+      if (cur[i].toLowerCase() !== (target[i] || '').toLowerCase()) return i;
+    }
+    return this._matchedLen(cur, target);
+  }
+
   // Advance to the next lesson, or finish the tutorial on the last one.
   _advance() {
     if (this.step + 1 >= LESSONS.length) {
@@ -296,8 +312,13 @@ export class Tutorial {
     drawSprite(ctx, CACTUS, 0, W * 0.20, foot(CACTUS, 2), 2);
     drawSprite(ctx, BUSH, 0, W * 0.88, foot(BUSH, 2), 2);
 
-    // A friendly hero on the left "teaching" the lesson.
-    drawSprite(ctx, SPRITES.hero_knight, Math.floor(tick / 12) % 2, W * 0.10, foot(SPRITES.hero_knight, 2.4), 2.4);
+    // A friendly hero on the left "teaching" the lesson. Feet sink to the
+    // middle of this scene's ground box, same principle as GROUND_FEET_SINK
+    // elsewhere — but this ground box is 90px tall (groundY = H - 90) rather
+    // than the 110px every biome scene uses, so half of it is a smaller,
+    // fixed constant (not scaled by the sprite's own draw scale).
+    const TUTORIAL_GROUND_FEET_SINK = 45;
+    drawSprite(ctx, SPRITES.hero_knight, Math.floor(tick / 12) % 2, W * 0.10, foot(SPRITES.hero_knight, 2.4) + TUTORIAL_GROUND_FEET_SINK, 2.4);
 
     const lesson = this.lesson;
 
@@ -369,6 +390,7 @@ export class Tutorial {
     // other. Set the font once before the loop and never let it drift.
     const cur = render(this.buffer);
     const matched = this._matchedLen(cur, lesson.target);
+    const cursorIdx = this._cursorIndex(cur, lesson.target);
     ctx.font = `${size}px "PixelFont", monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -394,7 +416,7 @@ export class Tutorial {
       // Kept tight under the glyphs (not at +size+4): lower down it collided
       // with the chip row's ▼ pointer and the two gold marks merged into one
       // unreadable smudge.
-      const isCursor = !this.solved && !this.mistake && i === matched;
+      const isCursor = !this.solved && !this.mistake && i === cursorIdx;
       if (isCursor) {
         drawRect(ctx, dx + 2, wy + size * 0.95, Math.max(6, chW - 4), 4, '#ffe08a');
       }

@@ -340,7 +340,7 @@ const CROWNS = {
 export const PRINCESS_STYLES = {
   // "Princess Flower" — rose gown, auburn braid, pink petal crown.
   flower: { gown: '1', gownShade: '2', hair: '+', hairShade: 'H', crown: '1', motif: 'flower' },
-  // "Princess Stream" — teal-and-white, hair like running water.
+  // "Rain Princess" — teal-and-white, hair like running water.
   stream: { gown: '3', gownShade: '4', hair: 'A', hairShade: 'a', crown: '#', motif: 'droplet' },
   // "Princess Star" — indigo night gown, pale-blue hair, white star.
   star: { gown: '5', gownShade: '6', hair: 'e', hairShade: 'A', crown: 'W', motif: 'star' },
@@ -409,7 +409,7 @@ export const PRINCESS = princessSprite(null);
 // --- Creep monster: "Slime" (green, outlined). 12 x 10 ---
 export const CREEP_SLIME = {
   w: 12,
-  h: 10,
+  h: 9,
   frames: [
     [
       '    kkkk     ',
@@ -421,19 +421,17 @@ export const CREEP_SLIME = {
       'kGgGGGGgGGk  ',
       'kGGGGGGGGGk  ',
       ' kkkkkkkkk   ',
-      '             ',
     ],
     [
-      '             ',
       '    kkkk     ',
       '   kGGGGk    ',
-      '  kGWkGWGk   ',
+      '  kGGGGGGk   ',
+      ' kGWkGWGk    ',
       ' kGGkGGGkk   ',
       'kGGGGGGGGGk  ',
       'kGgGGGGgGGk  ',
       'kGGGGGGGGGk  ',
       ' kkkkkkkkk   ',
-      '             ',
     ],
   ],
 };
@@ -617,9 +615,14 @@ export const BOSS_QUEENBEE = {
 // --- Forest boss: "Gấu Rừng Già" (Old Forest Bear). 20 x 18 ---
 // A broad standing bear: round ears, a pale muzzle, a heavy moss-dark body and
 // big clawed forepaws. Bulk is the read here, not detail.
+// Idle animation is a rear-up roar, not a single-pixel wiggle: frame 1 opens
+// the muzzle wider with a white fang glint, and lifts both forepaws so their
+// claws poke up past the shoulder line — legs and feet stay pinned so footing
+// never shifts, matching the dragon's roar/stride pairing rather than a static
+// held pose.
 export const BOSS_BEAR = {
   w: 20,
-  h: 18,
+  h: 17,
   frames: [
     [
       '  kk      kk        ',
@@ -639,27 +642,25 @@ export const BOSS_BEAR = {
       ' kkTTTTTTTTkk       ',
       '  kITTk kTTIk       ',
       '  kkkkk kkkkk       ',
-      '                    ',
     ],
     [
-      '                    ',
       '  kk      kk        ',
       ' kTTk    kTTk       ',
       ' kTTkkkkkkTTk       ',
       '  kTTTTTTTTk        ',
       '  kTTWTTWTTk        ',
-      '  kTTkSSkTTk        ',
-      '  kTTTSSTTTk        ',
-      '   kkTTTTkk         ',
+      '  kTTTTTTTTk        ',
+      '  kTkSSSSkTk        ',
+      '  kTTSWWSTTk        ',
+      '  IkkTTTTkkI        ',
       ' kkTTTTTTTTkk       ',
       'kTTTTTTTTTTTTk      ',
       'kTTtTTTTTTtTTk      ',
       'kTTTTTTTTTTTTk      ',
-      'kITTTTTTTTTTIk      ',
-      ' kkTTTTTTTTkk       ',
+      'kTTTTTTTTTTTTk      ',
+      ' kkITTTTTTITkk      ',
       '  kITTk kTTIk       ',
-      '  kkkk   kkkk       ',
-      '                    ',
+      '  kkkkk kkkkk       ',
     ],
   ],
 };
@@ -668,11 +669,15 @@ export const BOSS_BEAR = {
 // A blocky rock giant with a glowing crystal core in its chest — deliberately
 // all right angles (it's made of cave rock), which also keeps it from reading
 // cute. The core is the one bright thing in the darkest biome.
+// Idle animation: the whole body bobs up one row (heavy, grinding-stone feel
+// rather than a bounce) and the chest core pulses core->white on the raised
+// frame, so the one bright thing in the cave visibly breathes.
 export const BOSS_GOLEM = {
   w: 20,
-  h: 18,
+  h: 17,
   frames: [
     [
+      '                    ',
       '   kkkkkkkk         ',
       '  kLLLLLLLLk        ',
       '  kLCLLLLCLk        ',
@@ -689,11 +694,8 @@ export const BOSS_GOLEM = {
       '  kLLLk kLLLk       ',
       '  kLLLk kLLLk       ',
       '  klLlk klLlk       ',
-      '  kkkkk kkkkk       ',
-      '                    ',
     ],
     [
-      '                    ',
       '   kkkkkkkk         ',
       '  kLLLLLLLLk        ',
       '  kLCLLLLCLk        ',
@@ -701,16 +703,16 @@ export const BOSS_GOLEM = {
       '  kkkkkkkkkk        ',
       ' kLLLLLLLLLLk       ',
       'kLLLLLLLLLLLLk      ',
-      'kLLLLkCCkLLLLk      ',
-      'kLLLLkCCkLLLLk      ',
+      'kLLLLkWWkLLLLk      ',
+      'kLLLLkWWkLLLLk      ',
       'kLLLLLkkLLLLLk      ',
       'kLLLLLLLLLLLLk      ',
       'klLLLLLLLLLLlk      ',
       ' kkLLLLLLLLkk       ',
       '  kLLLk kLLLk       ',
+      '  kLLLk kLLLk       ',
       '  klLlk klLlk       ',
       '  kkkkk kkkkk       ',
-      '                    ',
     ],
   ],
 };
@@ -774,7 +776,7 @@ export const BOSS_CAPTAIN = {
 // in the abdomen, and the claws are chunky pincer blocks rather than nubs.
 export const BOSS_SCORPION = {
   w: 20,
-  h: 16,
+  h: 15,
   frames: [
     [
       '                    ',
@@ -792,7 +794,6 @@ export const BOSS_SCORPION = {
       'kNNnNNNNNNNNnNk     ',
       ' kkNNNNNNNNNNkk     ',
       '  k kk k kk k       ',
-      '                    ',
     ],
     [
       '                    ',
@@ -810,7 +811,6 @@ export const BOSS_SCORPION = {
       'kNNnNNNNNNNNnNk     ',
       ' kkNNNNNNNNNNkk     ',
       ' kk  k k  k kk      ',
-      '                    ',
     ],
   ],
 };
@@ -820,7 +820,7 @@ export const BOSS_SCORPION = {
 // Wide, heavy, and slightly hunched — the biggest silhouette in the set.
 export const BOSS_ICEGIANT = {
   w: 20,
-  h: 18,
+  h: 17,
   frames: [
     [
       '   k  kk  k         ',
@@ -840,15 +840,14 @@ export const BOSS_ICEGIANT = {
       '  kkmmmmmmkk        ',
       '  kmmxk kxmmk       ',
       '  kkkkk kkkkk       ',
-      '                    ',
     ],
     [
       '                    ',
       '   k  kk  k         ',
-      '   kAkAAkAk         ',
+      '   kCkCCkCk         ',
       '  kkmmmmmmkk        ',
       ' kmmmmmmmmmmk       ',
-      ' kmmAkmmkAmmk       ',
+      ' kmmCkmmkCmmk       ',
       ' kmmmmmmmmmmk       ',
       ' kmmmxxxxmmmk       ',
       '  kkmmmmmmkk        ',
@@ -856,11 +855,10 @@ export const BOSS_ICEGIANT = {
       'kmmmmmmmmmmmmk      ',
       'kmmxmmmmmmxmmk      ',
       'kmmmmmmmmmmmmk      ',
+      'kmmmmmmmmmmmmk      ',
       ' kxmmmmmmmmxk       ',
       '  kkmmmmmmkk        ',
       '  kmmxk kxmmk       ',
-      '  kkkk   kkkk       ',
-      '                    ',
     ],
   ],
 };
@@ -920,7 +918,7 @@ export const BOSS_BOGSPIRIT = {
 // Angular and top-heavy so it reads as a demon rather than a big friendly imp.
 export const BOSS_FIREDEMON = {
   w: 20,
-  h: 18,
+  h: 17,
   frames: [
     [
       ' kk        kk       ',
@@ -940,10 +938,8 @@ export const BOSS_FIREDEMON = {
       ' kkMMMMMMMMkk       ',
       '  kMVMk kMVMk       ',
       '  kkkkk kkkkk       ',
-      '                    ',
     ],
     [
-      '                    ',
       ' kk        kk       ',
       'kVVk      kVVk      ',
       'kVVkk    kkVVk      ',
@@ -957,10 +953,10 @@ export const BOSS_FIREDEMON = {
       'kMMMMvvvvMMMMk      ',
       'kMMMvvkkvvMMMk      ',
       'kMMMMvvvvMMMMk      ',
+      'kMMMMMMMMMMMMk      ',
       ' kkMMMMMMMMkk       ',
       '  kMvMk kMvMk       ',
       '  kkkkk kkkkk       ',
-      '                    ',
     ],
   ],
 };
@@ -971,7 +967,7 @@ export const BOSS_FIREDEMON = {
 // as "his servant" — so the stageboss still reads as the one true villain.
 export const BOSS_SORCERER = {
   w: 20,
-  h: 18,
+  h: 17,
   frames: [
     [
       '      kk            ',
@@ -991,10 +987,8 @@ export const BOSS_SORCERER = {
       ' kPpPPkppkPPpPk     ',
       ' kkkkkkkkkkkkk      ',
       '  k k k k k k       ',
-      '                    ',
     ],
     [
-      '                    ',
       '      kk            ',
       '     kPPk           ',
       '    kPPPPk          ',
@@ -1008,10 +1002,10 @@ export const BOSS_SORCERER = {
       '  kPPkkppkkPPk      ',
       ' kPPPPkppkPPPPk     ',
       ' kPPPPkppkPPPPk     ',
+      ' kPPPPkppkPPPPk     ',
       ' kPpPPkppkPPpPk     ',
       ' kkkkkkkkkkkkk      ',
       ' k k k k k k k      ',
-      '                    ',
     ],
   ],
 };
@@ -1030,7 +1024,7 @@ export const BOSS_SORCERER = {
 // Frame 1 flares the cape wider and drops the hem spikes: he looms, never walks.
 export const STAGEBOSS_DARKLORD = {
   w: 21,
-  h: 22,
+  h: 21,
   frames: [
     [
       '  k k  kkk  k k      ',
@@ -1054,7 +1048,6 @@ export const STAGEBOSS_DARKLORD = {
       'kPPPPkPPPPPkPPPPk    ',
       'kPpPPkPpPPPkPPpPk    ',
       'kkkkkkkkkkkkkkkkk    ',
-      '                     ',
     ],
     [
       '  k k  kkk  k k      ',
@@ -1078,7 +1071,6 @@ export const STAGEBOSS_DARKLORD = {
       'kPpPPkPpPPPkPPpPk    ',
       'kkkkkkkkkkkkkkkkk    ',
       'k k k k k k k k k    ',
-      '                     ',
     ],
   ],
 };
@@ -2935,7 +2927,7 @@ export const STAFF_WISDOM = {
 // reads as a puddle of living ink rather than the swamp/meadow slime.
 export const CREEP_INKSLIME = {
   w: 12,
-  h: 10,
+  h: 9,
   frames: [
     [
       '    kkkk     ',
@@ -2947,19 +2939,17 @@ export const CREEP_INKSLIME = {
       'kPpPPPPpPPk  ',
       'kPPPPPPPPPk  ',
       ' kkkkkkkkk   ',
-      '             ',
     ],
     [
-      '             ',
       '    kkkk     ',
       '   kPPPPk    ',
-      '  kPWkPWPk   ',
+      '  kPPPPPPk   ',
+      ' kPWkPWPk    ',
       ' kPPkPPPkk   ',
       'kPPPPPPPPPk  ',
       'kPpPPPPpPPk  ',
       'kPPPPPPPPPk  ',
       ' kkkkkkkkk   ',
-      '             ',
     ],
   ],
 };
@@ -3805,7 +3795,7 @@ export const BOSS_GENERAL = {
 // unsettling — evenly spaced ones would read as a face.
 export const BOSS_FORMLESS = {
   w: 20,
-  h: 18,
+  h: 17,
   frames: [
     [
       '     kkkk           ',
@@ -3825,7 +3815,6 @@ export const BOSS_FORMLESS = {
       '  k..PPPP..k        ',
       '  k.k.kk.k.k        ',   // ragged, dissolving hem
       '   k  kk  k         ',
-      '                    ',
     ],
     [
       '      kkkk          ',
@@ -3845,7 +3834,6 @@ export const BOSS_FORMLESS = {
       '   k.PPPP..k        ',
       '   k.k.kk.kk        ',
       '    k  kk k         ',
-      '                    ',
     ],
   ],
 };

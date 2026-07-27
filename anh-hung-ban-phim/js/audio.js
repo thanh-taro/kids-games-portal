@@ -36,9 +36,13 @@ function ensureCtx() {
 }
 
 // Resume the context after a user gesture (call on first keypress/click).
+// Returns the resume promise so callers can retry anything that needs a
+// running context — `resume()` is not guaranteed to flip `state` synchronously,
+// so code that checks `state` right after calling this can still see 'suspended'.
 export function resumeAudio() {
   const c = ensureCtx();
-  if (c && c.state === 'suspended') c.resume();
+  if (c && c.state === 'suspended') return c.resume();
+  return Promise.resolve();
 }
 
 // --- Shared plumbing for music.js -------------------------------------------
@@ -232,13 +236,31 @@ export function staffCharged() {
 }
 
 // Spending the charge: a deep swell under a bright strike, so an empowered hit
-// sounds heavier than any ordinary special.
+// sounds heavier than any ordinary special. Matches the FAST impact beat of
+// the _staffcast visual (effects.js) — the columns landing + the stacked
+// shockwave punch — not the full ~5s frozen hold that follows (see
+// STAFFCAST_FRAMES): a rumble under the strike, a stacked double impact for
+// the shockwave punch, and a shimmering tail, resolving in under a second.
+// The long ambient tail after that is deliberately silent, same as every
+// other skill's lingering particles (holylight's rising motes, voidrend's
+// drifting debris) — a sustained SFX for the whole freeze would be fatiguing,
+// not exciting.
 export function staffStrike() {
-  duckMusic(0.6, 0.4);                    // the biggest hit in the game
-  tone(147, 0, 0.30, 'sawtooth', 0.34);   // low swell
-  tone(587, 0.03, 0.16, 'square', 0.42);
-  tone(1175, 0.10, 0.22, 'triangle', 0.38);
-  noise(0.02, 0.30, 0.34);
+  duckMusic(0.7, 0.9);                       // the biggest hit in the game — duck longer to match
+  tone(98, 0, 0.55, 'sawtooth', 0.30);        // low rumble, held under the standing columns
+  tone(147, 0.04, 0.45, 'sawtooth', 0.26);
+  noise(0.02, 0.16, 0.30);                    // the initial column-strike crack
+  // The stacked shockwave punch: two impacts close together, not one, so it
+  // reads as the double-ring hit rather than a single thud.
+  tone(587, 0.08, 0.18, 'square', 0.44);
+  noise(0.09, 0.22, 0.34);
+  tone(494, 0.16, 0.20, 'square', 0.38);
+  noise(0.17, 0.26, 0.30);
+  // A bright ascending shimmer tail — rings on well after the impact, matching
+  // the particles that keep drifting and twinkling long after the burst.
+  tone(1175, 0.24, 0.30, 'triangle', 0.36);
+  tone(1568, 0.34, 0.34, 'sine', 0.26);
+  tone(1976, 0.46, 0.40, 'sine', 0.18);
 }
 
 // --- Multi-phase boss (stage 26) --------------------------------------------
@@ -483,7 +505,7 @@ export function princessStaffCharge() {
   tone(1976, 0.16, 0.22, 'sine', 0.20);
 }
 
-// Dòng Suối's Cleanse — the quietest cue in the roster, a soft two-note
+// Rain Princess's Cleanse — the quietest cue in the roster, a soft two-note
 // ripple, matching a rescue from a stuck moment rather than a triumph.
 export function princessCleanse() {
   tone(587, 0, 0.10, 'sine', 0.24);

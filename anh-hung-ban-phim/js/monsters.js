@@ -45,7 +45,7 @@ export const BIOME_MONSTERS = {
   },
   practice_yard: {
     creep: 'creep_glyph',
-    creepName: 'Chữ Sống',          // "Living Glyph"
+    creepName: 'Dấu Ấn Ma Quái',          // "Living Glyph"
     bossName: 'Rune Lớn',           // "Great Rune"
     stagebossName: 'Thủ Vệ Rune',   // "Rune Guardian"
     deathColor: '#b06cf0',
@@ -173,7 +173,7 @@ export const BIOME_MONSTERS = {
     creep: 'creep_glyph',
     boss: 'boss_guardian_statue',
     stageboss: 'boss_guardian_statue',
-    creepName: 'Chữ Sống',          // "Living Glyph"
+    creepName: 'Dấu Ấn Ma Quái',          // "Living Glyph"
     bossName: 'Tượng Thủ Đền',      // "Temple Statue"
     stagebossName: 'Tượng Thủ Lớn', // "Great Temple Statue"
     deathColor: '#4ad4d4',

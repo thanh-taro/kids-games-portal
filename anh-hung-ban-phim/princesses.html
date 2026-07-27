@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Công Chúa Hỗ Trợ — Cứu Công Chúa</title>
+<meta name="description" content="Danh sách mười công chúa và kỹ năng hỗ trợ của họ trong Cứu Công Chúa." />
+<style>
+  @font-face {
+    font-family: "PixelFont";
+    src: local("Courier New"), local("monospace");
+  }
+
+  :root {
+    --bg: #14101d;
+    --bg-alt: #1a1423;
+    --ink: #fff4d6;
+    --ink-soft: #cfc8dd;
+    --line: rgba(255, 244, 214, 0.12);
+    --card-bg: #1e1830;
+    --gold: #ffd24a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 55% 35% at 12% -8%, rgba(255, 210, 74, 0.06), transparent),
+      radial-gradient(ellipse 45% 30% at 100% 0%, rgba(143, 227, 255, 0.06), transparent);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px 64px;
+  }
+
+  a { color: inherit; }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  .back:hover { color: var(--ink); border-color: var(--ink-soft); }
+
+  header { margin-bottom: 36px; }
+
+  .eyebrow {
+    font-family: "PixelFont", monospace;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 12px;
+  }
+
+  h1 {
+    font-family: "PixelFont", monospace;
+    font-weight: 400;
+    font-size: clamp(26px, 4.4vw, 36px);
+    line-height: 1.25;
+    margin: 0 0 12px;
+  }
+
+  .sub {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 24px;
+  }
+
+  .mechanic {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .mechanic > div { background: var(--bg-alt); padding: 14px 16px; }
+  .mechanic dt {
+    font-family: "PixelFont", monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+  .mechanic dd { margin: 0; font-size: 13.5px; line-height: 1.5; }
+
+  .rundown {
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+  }
+  .rundown h2 {
+    font-family: "PixelFont", monospace;
+    font-weight: 400;
+    font-size: 19px;
+    margin: 0;
+  }
+  .rundown .note { font-size: 12.5px; color: var(--ink-soft); text-align: right; }
+
+  .list { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    --c: #b0366b;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--c);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+
+  .rank {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding-top: 2px;
+  }
+  .rank .num {
+    font-family: "PixelFont", monospace;
+    font-size: 20px;
+    color: var(--c);
+    line-height: 1;
+  }
+  .rank .crest {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--c) 28%, var(--card-bg));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .name-block h3 {
+    font-family: "PixelFont", monospace;
+    font-weight: 400;
+    font-size: 17px;
+    margin: 0 0 2px;
+  }
+  .name-en { font-size: 12px; color: var(--ink-soft); font-style: italic; }
+  .stage-tag {
+    flex-shrink: 0;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .blurb { font-size: 14px; line-height: 1.55; margin: 6px 0 10px; }
+  .blurb .en { color: var(--ink-soft); font-style: italic; }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    font-size: 11.5px;
+    line-height: 1.3;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 244, 214, 0.06);
+    border: 1px solid var(--line);
+  }
+  .pill b { font-weight: 600; color: var(--c); }
+  .pill code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  footer code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    background: rgba(255, 244, 214, 0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11.5px;
+  }
+
+  @media (max-width: 600px) {
+    .mechanic { grid-template-columns: 1fr; }
+    .card { grid-template-columns: 40px 1fr; gap: 12px; padding: 14px; }
+    .rank .crest { width: 26px; height: 26px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Về trò chơi</a>
+
+  <header>
+    <p class="eyebrow">Cứu Công Chúa — Tài liệu tham khảo</p>
+    <h1>Mười Công Chúa trả ơn<br>The Ten Princesses' Repayment</h1>
+    <p class="sub">
+      Chương 1 giải cứu cả mười công chúa. Từ Chương 2 trở đi, mỗi công chúa trả ơn người anh hùng
+      <strong>đúng một lần</strong> cho cả lượt chơi — tự động, ngay giữa trận đấu, không cần bấm phím nào.
+      Đây là danh sách đầy đủ: ai sẽ ra tay, khi nào, và vì sao.
+    </p>
+    <dl class="mechanic">
+      <div>
+        <dt>Cách kích hoạt</dt>
+        <dd>Mỗi khung hình hợp lệ, trò chơi duyệt danh sách dưới đây từ trên xuống và kích hoạt kỹ năng <em>đầu tiên</em> có điều kiện đúng và chưa được dùng.</dd>
+      </div>
+      <div>
+        <dt>Thứ tự = độ ưu tiên</dt>
+        <dd>Danh sách được sắp để phản ứng khẩn cấp nhất luôn thắng — ví dụ hồi máu toàn phần được kiểm tra trước hồi máu một phần, nên khi máu còn 10% sẽ được cứu chữa toàn phần.</dd>
+      </div>
+      <div>
+        <dt>Một lần, mãi mãi</dt>
+        <dd>Mỗi trong mười công chúa chỉ ra tay một lần cho cả lượt chơi. Sau khi dùng, cô ấy không hồi phục lại — không có thời gian hồi chiêu.</dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="rundown">
+    <h2>Thứ tự ưu tiên</h2>
+    <span class="note">Được kiểm tra theo thứ tự này,<br>mỗi khung hình, cho đến khi có điều kiện khớp.</span>
+  </div>
+
+  <div class="list">
+
+    <div class="card" style="--c:#e8425f">
+      <div class="rank"><span class="num">01</span><span class="crest">☁️</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Mây</h3>
+            <span class="name-en">Princess Cloud</span>
+          </div>
+          <span class="stage-tag">Màn 10 · Đầm Lầy Sương (Misty Swamp)</span>
+        </div>
+        <p class="blurb">Mây chữa lành hoàn toàn cho bạn! <span class="en">— Cloud fully heals you.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: <b>Máu dưới 15%</b></span>
+          <span class="pill">Hiệu ứng: <code>fullheal</code></span>
+          <span class="pill">Hồi máu về <b>tối đa</b> và xóa số lỗi gõ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#c94a75">
+      <div class="rank"><span class="num">02</span><span class="crest">🌸</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Hoa</h3>
+            <span class="name-en">Princess Flower</span>
+          </div>
+          <span class="stage-tag">Màn 3 · Đồng Cỏ Xanh (Green Meadow)</span>
+        </div>
+        <p class="blurb">Hoa hồi phục sức mạnh cho bạn! <span class="en">— Flower restores your strength.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: <b>Máu dưới 35%</b></span>
+          <span class="pill">Hiệu ứng: <code>heal</code></span>
+          <span class="pill">Hồi <b>+300 máu</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#ffb43d">
+      <div class="rank"><span class="num">03</span><span class="crest">☀️</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Ánh Dương</h3>
+            <span class="name-en">Princess Sunlight</span>
+          </div>
+          <span class="stage-tag">Màn 6 · Hang Khủng Long (Dinosaur Cave)</span>
+        </div>
+        <p class="blurb">Ánh Dương che chắn cho bạn khỏi đòn đánh tới! <span class="en">— Sunlight shields you from the next attack.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: một đợt <b>trùm (boss)</b> xuất hiện</span>
+          <span class="pill">Hiệu ứng: <code>shield</code></span>
+          <span class="pill">Người chơi được <b>khiên chắn</b> đòn tới của trùm</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#8fe3ff">
+      <div class="rank"><span class="num">04</span><span class="crest">❄️</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Băng</h3>
+            <span class="name-en">Princess Ice</span>
+          </div>
+          <span class="stage-tag">Màn 9 · Đỉnh Núi Tuyết (Snowy Peak)</span>
+        </div>
+        <p class="blurb">Băng đóng băng kẻ địch! <span class="en">— Ice freezes the enemy.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: trùm sắp <b>tấn công</b></span>
+          <span class="pill">Hiệu ứng: <code>freeze</code></span>
+          <span class="pill">Đóng băng <b>~2.5 giây</b> và trì hoãn đòn kế tiếp</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#c0aa74">
+      <div class="rank"><span class="num">05</span><span class="crest">🏜️</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Cát</h3>
+            <span class="name-en">Princess Sand</span>
+          </div>
+          <span class="stage-tag">Màn 8 · Sa Mạc Vàng (Golden Desert)</span>
+        </div>
+        <p class="blurb">Cát làm chậm bước chân kẻ địch! <span class="en">— Sand slows the enemy's steps.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: đợt <b>quái thường</b> xuất hiện, combo <b>≥ 3</b></span>
+          <span class="pill">Hiệu ứng: <code>slow</code></span>
+          <span class="pill">Làm chậm quái trong <b>~6 giây</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#249472">
+      <div class="rank"><span class="num">06</span><span class="crest">🌊</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Sóng Biển</h3>
+            <span class="name-en">Princess Wave</span>
+          </div>
+          <span class="stage-tag">Màn 7 · Bờ Biển Ngọc (Jade Coast)</span>
+        </div>
+        <p class="blurb">Sóng Biển đẩy lùi kẻ địch! <span class="en">— Wave pushes the enemy back.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: quái thường <b>chạm tới</b> người chơi</span>
+          <span class="pill">Hiệu ứng: <code>knockback</code></span>
+          <span class="pill">Đẩy lùi <b>200px</b>, tạo khoảng cách thở</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#4a4a9e">
+      <div class="rank"><span class="num">07</span><span class="crest">⭐</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Sao</h3>
+            <span class="name-en">Princess Star</span>
+          </div>
+          <span class="stage-tag">Màn 5 · Hang Động Tối (Dark Cave)</span>
+        </div>
+        <p class="blurb">Sao giáng một đòn ánh sao! <span class="en">— Star strikes a blow of starlight.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: <b>trùm cuối</b> bước sang <b>Giai đoạn 3</b></span>
+          <span class="pill">Hiệu ứng: <code>starnova</code></span>
+          <span class="pill">Một đòn đánh miễn phí lên quái hiện tại</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#ffdf7a">
+      <div class="rank"><span class="num">08</span><span class="crest">✨</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Ánh Sáng</h3>
+            <span class="name-en">Princess Light</span>
+          </div>
+          <span class="stage-tag">Màn 12 · Thành Trì Bóng Tối (Fortress of Darkness)</span>
+        </div>
+        <p class="blurb">Ánh Sáng bùng nổ rực rỡ! <span class="en">— Light bursts forth radiantly.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: bất kỳ trùm nào <b>chuyển giai đoạn</b> — trừ Giai đoạn 3 của trùm cuối, vì Sao đã nhận trước</span>
+          <span class="pill">Hiệu ứng: <code>lightnova</code></span>
+          <span class="pill">Đòn đánh miễn phí — tương đương <b>2 đòn</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#e8425f">
+      <div class="rank"><span class="num">09</span><span class="crest">💗</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Tình Yêu</h3>
+            <span class="name-en">Princess of Love</span>
+          </div>
+          <span class="stage-tag">Màn 11 · Núi Lửa Nóng Rực (Blazing Volcano)</span>
+        </div>
+        <p class="blurb">Tình Yêu nạp đầy năng lượng cho Trượng! <span class="en">— Love fills the Staff with energy.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: trùm xuất hiện, người chơi <b>đã có Trượng</b>, năng lượng đang <b>trống</b></span>
+          <span class="pill">Hiệu ứng: <code>staffcharge</code></span>
+          <span class="pill">Nạp đầy Trượng Của Trí Tuệ ngay lập tức</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--c:#6fd8e8">
+      <div class="rank"><span class="num">10</span><span class="crest">💧</span></div>
+      <div>
+        <div class="card-top">
+          <div class="name-block">
+            <h3>Công Chúa Mưa</h3>
+            <span class="name-en">Rain Princess</span>
+          </div>
+          <span class="stage-tag">Màn 4 · Rừng Rậm (Deep Forest)</span>
+        </div>
+        <p class="blurb">Mưa gột sạch lỗi gõ cho bạn! <span class="en">— Rain washes your mistakes away.</span></p>
+        <div class="meta-row">
+          <span class="pill">Kích hoạt: <b>3 lỗi gõ trở lên</b> trên từ hiện tại</span>
+          <span class="pill">Hiệu ứng: <code>cleanse</code></span>
+          <span class="pill">Xóa số lỗi gõ và đặt lại từ mục tiêu</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Nguồn dữ liệu: <code>js/princesses.js</code> (<code>PRINCESS_SUPPORT</code>, kiểm tra bởi <code>PrincessSupport.find()</code>)
+    · ánh xạ công chúa ↔ màn chơi từ <code>js/stages.js</code>
+    · màu sắc từ <code>PRINCESS_STYLES</code> trong <code>js/sprites.js</code>.
+  </footer>
+</div>
+</body>
+</html>

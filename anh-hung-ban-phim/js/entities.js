@@ -6,6 +6,7 @@
 import { SPRITES, heroSprite } from './sprites.js';
 import { DOT } from './render.js';
 import { attackFor } from './bossattacks.js';
+import { GROUND_FEET_SINK } from './biomes.js';
 
 export const MONSTER_KIND = {
   CREEP: 'creep',
@@ -96,7 +97,7 @@ export class Hero {
   }
 
   get y() {
-    return this.groundY - this.sprite.h * DOT * this.scale;
+    return this.groundY + GROUND_FEET_SINK - this.sprite.h * DOT * this.scale;
   }
 
   update() {
@@ -260,7 +261,7 @@ export class Monster {
   }
 
   get y() {
-    return this.groundY - this.sprite.h * DOT * this.scale;
+    return this.groundY + GROUND_FEET_SINK - this.sprite.h * DOT * this.scale;
   }
 
   get width() {

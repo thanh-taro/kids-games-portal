@@ -9,7 +9,7 @@ import { SPRITES, STAFF_WISDOM, princessSprite, princessThemeColor } from './spr
 import { getBiome, drawBiomeTerrain, drawBiomeScenery, drawBiomeLights, drawBiomeWeather } from './biomes.js';
 import { Hero, Monster, Projectile, MONSTER_KIND } from './entities.js';
 import { attackFor } from './bossattacks.js';
-import { ParticleSystem, drawAura } from './effects.js';
+import { ParticleSystem, drawAura, drawShieldAura, STAFFCAST_FRAMES } from './effects.js';
 import { TypingTracker, attachKeyboard } from './input.js';
 import { RankTracker } from './rank.js';
 import { SKILLS, SKILL_CLASS, pickWord, resolveSkill } from './skills.js';
@@ -39,7 +39,10 @@ ctx.imageSmoothingEnabled = false;
 // W / H / GROUND_Y are recomputed on each resize (see resize()).
 let W = 960;
 let H = 540;
-let GROUND_Y = H - 60;
+// 180 = 3x the original 60px ground band (see drawBiomeTerrain in biomes.js,
+// which fills from GROUND_Y to H as solid ground).
+const GROUND_HEIGHT = 180;
+let GROUND_Y = H - GROUND_HEIGHT;
 
 function resize() {
   const cssW = window.innerWidth;
@@ -53,7 +56,7 @@ function resize() {
   ctx.imageSmoothingEnabled = false; // reset whenever the backing store resizes
   W = cssW;
   H = cssH;
-  GROUND_Y = H - 60;
+  GROUND_Y = H - GROUND_HEIGHT;
 }
 
 resize();
@@ -94,6 +97,7 @@ let bossWarningTimer = 0;
 let slowMoTimer = 0;          // >0 while a stageboss's death is being savored
 let deathFocus = null;        // {x, y} the slow-mo zoom pushes in on
 let pausedFrom = null;        // STATE.PLAYING or STATE.BOSS_WARNING — where F8 resumes to
+let showTelexHelper = true;   // F7 toggles the keystroke guide row under the target word
 
 // --- The Staff of Wisdom's spell (see startSpell/castSpell/abandonSpell) -----
 // A second, independent typing target. While `spellActive` is true, keystrokes
@@ -119,8 +123,12 @@ const tutorial = new Tutorial();
 // see princesses.js). Seeded from persisted progress so a princess already
 // spent stays spent across sessions.
 const princesses = new PrincessSupport(progress.princessesUsed || []);
-let princessBannerTimer = 0; // frames the cast banner + blurb stay on screen
-let princessBannerWho = null; // the PRINCESS_SUPPORT entry currently being shown
+// Stack of active princess-cast banners (see drawPrincessBanner). Each entry
+// is {p, timer}; a new cast PUSHES rather than replacing, so back-to-back
+// casts (e.g. two support triggers on the same wave) stack and slide, instead
+// of the newer banner silently cutting off a kid still reading the last one.
+let princessBanners = [];
+const PRINCESS_BANNER_LIFE = 780; // frames a banner stays before it starts sliding out
 
 // A stageboss's signature attack name, announced above the hero's head with a
 // zoom in -> hold -> zoom out (see drawBossSkillBanner) the instant the attack
@@ -335,8 +343,7 @@ function startStage() {
   tracker.clear();
   endSpell(); // a retry/restart shouldn't leave a stale spell armed
   combo.reset();
-  princessBannerTimer = 0; // a retry/restart shouldn't leave a stale banner up
-  princessBannerWho = null;
+  princessBanners = []; // a retry/restart shouldn't leave stale banners up
   bossSkillBannerTimer = 0;
   bossSkillBannerText = '';
   setState(STATE.PLAYING);
@@ -443,15 +450,11 @@ function spawnNextWave() {
   // Princess support tied to a wave just spawning — see princesses.js.
   // `bossSpawn` covers Ánh Dương's Shield and Tình Yêu's instant Staff
   // charge (both boss/stageboss); `creepSpawn` covers Cát's Slow (a hot
-  // streak against a run of weak enemies); `halfway` covers Sao's free hit,
-  // checked once, on the exact wave that crosses the stage's midpoint.
+  // streak against a run of weak enemies).
   if (monster.kind === MONSTER_KIND.BOSS || monster.kind === MONSTER_KIND.STAGEBOSS) {
     checkPrincessSupport('bossSpawn');
   } else {
     checkPrincessSupport('creepSpawn');
-  }
-  if (waveCursor === Math.ceil(stage.waves.length / 2)) {
-    checkPrincessSupport('halfway');
   }
 }
 
@@ -656,6 +659,11 @@ function onProjectileHit(p) {
 
   // Signature skill effect (slash arc / explosion / lightning / meteor).
   particles.play(skill.effect, cx, cy, W, H);
+  // An empowered Staff cast layers its OWN effect on top, regardless of which
+  // skill is equipped — this is what makes spending a full charge feel like
+  // the Staff itself did something, instead of just a recolored version of
+  // the same hit the kid sees every other word.
+  if (p.empowered) particles.play('staffcast', cx, cy, W, H);
   if (particles.screenShake > shakeTimer) shakeTimer = particles.screenShake;
   monster.reactToHit(); // white flash + knockback
   Audio.hit();
@@ -692,11 +700,19 @@ function onProjectileHit(p) {
     Audio.phaseChange();
     updateMusic(); // final boss: theme escalates with monster.phaseIndex
     assignBossWord();
-    // Princess Ánh Sáng's heavy nova rides in right on this dramatic beat.
+    // Princess Ánh Sáng's heavy nova rides in right on this dramatic beat —
+    // or, on the Devourer's phase-3 entry specifically, Princess Sao's instead
+    // (starnova's `when` is more specific and is checked first).
     checkPrincessSupport('phaseChange');
     return;
   }
   if (!monster.isDefeated) {
+    // A cast that lands but doesn't finish the monster holds it frozen for as
+    // long as the staffcast effect is on screen (see STAFFCAST_FRAMES) —
+    // reusing the same freeze the princesses use (frozenTimer) so a struck
+    // monster visibly stops marching/attacking while the effect plays out,
+    // instead of the fight continuing underneath a 5-second visual.
+    if (p.empowered) monster.frozenTimer = STAFFCAST_FRAMES;
     assignBossWord(); // boss survives → next word
   } else {
     // Defeated → a big death explosion scaled to the monster tier. A stageboss
@@ -758,14 +774,24 @@ function castPrincess(p, ctx) {
   progress.princessesUsed = [...princesses.used];
   saveProgress(progress);
 
-  princessBannerWho = p;
-  princessBannerTimer = 100;
+  // Newest goes at the end of the array and is drawn at the TOP of the stack
+  // (see drawPrincessBanner) so it reads as pushing older ones up and out of
+  // the way, rather than appearing to shove in from below.
+  princessBanners.push({ p, timer: PRINCESS_BANNER_LIFE });
   Audio.princessCast();
   if (Audio[p.audioCue]) Audio[p.audioCue]();
 
   const hx = hero.x + (hero.sprite.w * DOT * hero.scale) / 2;
   const hy = hero.y + (hero.sprite.h * DOT * hero.scale) / 2;
   particles.playPrincess(p.effect, hx, hy, W, H);
+
+  // Princess Tình Yêu's staffcharge fills the meter directly rather than via
+  // hero.chargeStaff() (see princesses.js) — start the spell here so "SẴN
+  // SÀNG!" always comes with a spell word to type, same as the normal path.
+  if (result.staffFilled) {
+    Audio.staffCharged();
+    startSpell();
+  }
 
   // The two nova abilities (Sao, Ánh Sáng) hit the CURRENT monster instead of
   // just decorating the hero — apply() reports how many registerHit()s to
@@ -916,7 +942,8 @@ function updatePlaying() {
   combo.update();
   rank.update();
   princesses.update();
-  if (princessBannerTimer > 0) princessBannerTimer--;
+  for (const b of princessBanners) if (b.timer > 0) b.timer--;
+  princessBanners = princessBanners.filter((b) => b.timer > 0);
   if (bossSkillBannerTimer > 0) bossSkillBannerTimer--;
   if (animate && shakeTimer > 0) shakeTimer--;
 }
@@ -936,13 +963,27 @@ function grantReward() {
 // ---------------------------------------------------------------------------
 window.addEventListener('keydown', (e) => {
   // First user gesture unlocks the AudioContext (browsers require this).
-  Audio.resumeAudio();
   // ...and only NOW can the soundtrack actually start. The title's setState()
   // runs at load time, long before any gesture, so its playMusic() call reaches
   // a suspended context and schedules nothing. Re-asserting the current state's
   // theme here is what gets the title loop going on the kid's first keypress.
   // It's a no-op once the right song is already running.
   updateMusic();
+  // resume() isn't guaranteed to flip the context to 'running' synchronously,
+  // so on some machines the call above still finds it 'suspended' and schedules
+  // nothing — the kid would then need a SECOND keypress before music starts.
+  // Re-running updateMusic() once the promise actually resolves closes that gap.
+  Audio.resumeAudio().then(updateMusic);
+
+  // F7 toggles the Telex keystroke guide row under the target word — a kid who
+  // has learned the keys can hide the crutch, or a stuck kid can bring it back.
+  // A function key for the same reason as F8/F9/F10: every letter is a real
+  // Telex typing character.
+  if (e.key === 'F7') {
+    e.preventDefault();
+    showTelexHelper = !showTelexHelper;
+    return;
+  }
 
   // F9 toggles mute at any time, in EVERY state (including the tutorial, which
   // otherwise owns the keyboard). A function key is used because every letter —
@@ -1217,6 +1258,7 @@ if (['localhost', '127.0.0.1'].includes(location.hostname)) {
         },
         staff: hero && hero.hasStaff ? `${hero.staffCharge}/${hero.staffChargeFull}` : null,
         spell: spellActive ? { word: spellTracker.target, mistakePending: spellMistakePending } : null,
+        princessBanners: princessBanners.map((b) => ({ id: b.p.id, timer: b.timer })),
       };
     },
   };
@@ -1230,21 +1272,29 @@ function drawTargetWord() {
   // The typed word sits ABOVE the name/HP bar (drawBossBar) so the reading
   // order top-to-bottom is "what to type" then "what it hits" — it should be
   // unmistakable that the word you're about to complete is what strikes the
-  // monster below it. Creeps have no bar, so their word floats at the same
-  // fixed clearance a boss's word keeps above its bar, plus CREEP_NAME_GAP to
-  // leave room for drawCreepName's plate directly over the creep's head.
-  // Derived from drawBossBar's barY (not an independent clamp) so the two
-  // blocks can never drift apart or overlap as the monster nears the top of
-  // the screen.
+  // monster below it. Creeps have no bar, so their word floats above
+  // drawCreepName's plate instead: CREEP_NAME_OFFSET is where that plate's
+  // TOP sits relative to the monster (drawCreepName keeps it small, directly
+  // over the creep's head) and CREEP_WORD_CLEARANCE is the visible gap the two
+  // stacks must keep between them — the guide row's own footprint
+  // (topY+size+4 to topY+size+guideSize+12, i.e. ~61px below topY with
+  // size=30, guideSize=19) has to fully clear the name plate above it.
   const topY = monster.kind === MONSTER_KIND.CREEP
-    ? monster.y - 58 - CREEP_NAME_GAP
+    ? monster.y - CREEP_NAME_OFFSET - CREEP_WORD_CLEARANCE - 61
     : Math.max(monster.y - 58, 118) - 96;
   const word = monster.word;
-  const matched = tracker.matchedLen();
-  const mistake = tracker.isMistake();
+  // While the Staff's spell is active, keystrokes route to spellTracker (see
+  // attachKeyboard) and this word is frozen — it takes no input. Drawing it
+  // fully dim (no green progress, no mistake red, no keystroke guide) is what
+  // tells the kid "not listening right now" without hiding it outright, so
+  // there is only ever ONE plate on screen that reads as live/typeable at a
+  // time: drawSpellWord takes over that job and gets the prominent slot below.
+  const frozen = spellActive;
+  const matched = frozen ? 0 : tracker.matchedLen();
+  const mistake = frozen ? false : tracker.isMistake();
   const isSpecial = monster.skill.cls === SKILL_CLASS.SPECIAL;
 
-  const size = 26;
+  const size = 30;
   ctx.font = `${size}px "PixelFont", monospace`;
   const textW = ctx.measureText(word.vi).width;
   // Where the word plate sits. Normally it floats above the monster, but the late
@@ -1271,9 +1321,9 @@ function drawTargetWord() {
   ctx.textBaseline = 'top';
   let dx = cx - textW / 2;
   for (let i = 0; i < word.vi.length; i++) {
-    let color = '#f4f4f4';
-    if (i < matched) color = '#3aa655';
-    else if (mistake && i === matched) color = '#c0392b';
+    let color = frozen ? '#6a6480' : '#f4f4f4';
+    if (!frozen && i < matched) color = '#3aa655';
+    else if (!frozen && mistake && i === matched) color = '#c0392b';
     ctx.fillStyle = color;
     ctx.fillText(word.vi[i], dx, topY);
     dx += ctx.measureText(word.vi[i]).width;
@@ -1281,30 +1331,49 @@ function drawTargetWord() {
 
   const label = isSpecial ? `⚡ ${monster.skill.name}` : monster.skill.name;
   // Small dark backing so the label + telex hint stay legible on the sky.
-  ctx.font = '15px "PixelFont", monospace';
+  ctx.font = '16px "PixelFont", monospace';
   const lw = ctx.measureText(label).width;
-  drawRect(ctx, cx - lw / 2 - 6, topY - 34, lw + 12, 22, '#1a1423');
-  drawText(ctx, label, cx, topY - 30, 15, isSpecial ? '#ffb08a' : '#fff4d6', 'center');
+  drawRect(ctx, cx - lw / 2 - 6, topY - 36, lw + 12, 24, '#1a1423');
+  drawText(ctx, label, cx, topY - 31, 16, frozen ? '#6a6480' : isSpecial ? '#ffb08a' : '#fff4d6', 'center');
   // Keystroke guide: the ideal Telex keys IN CAPITALS so a kid can read them at
   // a glance, with the keys already pressed lit up in green and the very next
   // key to press highlighted — a little "type this now" cue that walks them
-  // through the word one letter at a time.
-  const guide = word.telex.toUpperCase();
-  const pressed = tracker.telexMatchedLen();
-  ctx.font = '15px "PixelFont", monospace';
-  const gw = ctx.measureText(guide).width;
-  const gy = topY + size + 7;
-  drawRect(ctx, cx - gw / 2 - 8, topY + size + 4, gw + 16, 22, '#1a1423');
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  let gx = cx - gw / 2;
-  for (let i = 0; i < guide.length; i++) {
-    let color = '#8a83a0';        // not yet typed — dim
-    if (i < pressed) color = '#6fe08a';        // already pressed — lit green
-    else if (i === pressed && !mistake) color = '#ffe27a'; // next key — glowing
-    ctx.fillStyle = color;
-    ctx.fillText(guide[i], gx, gy);
-    gx += ctx.measureText(guide[i]).width;
+  // through the word one letter at a time. Sized close to the target word itself
+  // since this is the line a kid actually reads keystroke-by-keystroke.
+  // F7 hides this row for a kid who no longer needs the crutch; the mistake
+  // hint below it then closes the gap the row would have left.
+  // Suppressed entirely while frozen — a guide row implies "type this now",
+  // which is exactly the wrong message while the spell owns the keyboard.
+  const guideSize = 19;
+  if (showTelexHelper && !frozen) {
+    const guide = word.telex.toUpperCase();
+    const pressed = tracker.telexMatchedLen();
+    ctx.font = `${guideSize}px "PixelFont", monospace`;
+    const gw = ctx.measureText(guide).width;
+    const gy = topY + size + 8;
+    drawRect(ctx, cx - gw / 2 - 8, topY + size + 4, gw + 16, guideSize + 8, '#1a1423');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    let gx = cx - gw / 2;
+    for (let i = 0; i < guide.length; i++) {
+      let color = '#8a83a0';        // not yet typed — dim
+      if (i < pressed) color = '#6fe08a';        // already pressed — lit green
+      else if (i === pressed && !mistake) color = '#ffe27a'; // next key — glowing
+      const chWidth = ctx.measureText(guide[i]).width;
+      if (guide[i] === ' ' && i === pressed && !mistake) {
+        // A space has no glyph to color, so the "next key" glow (the moment
+        // that matters — it's the one cue telling a kid to press it at all)
+        // would otherwise be invisible. Fill it as a small block instead,
+        // inset a hair from its neighbours so it still reads as its own key
+        // rather than fusing the two letters on either side into one stripe.
+        const pad = 2;
+        drawRect(ctx, gx + pad, gy + 2, Math.max(chWidth - pad * 2, 2), guideSize - 4, color);
+      } else if (guide[i] !== ' ') {
+        ctx.fillStyle = color;
+        ctx.fillText(guide[i], gx, gy);
+      }
+      gx += chWidth;
+    }
   }
 
   // When the kid has gone off the rails, gently nudge them to just type the
@@ -1312,17 +1381,22 @@ function drawTargetWord() {
   // first key of a fresh attempt (see input.js), so no Backspace hunting.
   if (mistake) {
     const hint = 'Sai rồi? Gõ lại từ đầu nhé!'; // "Wrong? Just type it again from the start!"
+    const hintY = showTelexHelper ? topY + size + guideSize + 20 : topY + size + 8;
     ctx.font = '13px "PixelFont", monospace';
     const hw = ctx.measureText(hint).width;
-    drawRect(ctx, cx - hw / 2 - 6, topY + size + 30, hw + 12, 20, '#3a1a1a');
-    drawText(ctx, hint, cx, topY + size + 33, 13, '#ffb08a', 'center');
+    drawRect(ctx, cx - hw / 2 - 6, hintY, hw + 12, 20, '#3a1a1a');
+    drawText(ctx, hint, cx, hintY + 3, 13, '#ffb08a', 'center');
   }
 }
 
-// Height reserved above a creep's head for drawCreepName's plate. drawTargetWord
-// pushes its whole word/skill/guide stack up by this much for CREEP monsters so
-// the name plate has clean space right over the sprite instead of overlapping it.
-const CREEP_NAME_GAP = 26;
+// How far above a creep's head drawCreepName floats its plate, and that
+// plate's own height — kept small and fixed so the name always reads as
+// "labeling the monster", not drifting up toward the typed word above it.
+const CREEP_NAME_OFFSET = 26;
+const CREEP_NAME_PLATE_H = 20;
+// Visible gap drawTargetWord must leave between its own stack (the guide row)
+// and the top of drawCreepName's plate, so the two never touch/overlap.
+const CREEP_WORD_CLEARANCE = 12;
 
 function drawCreepName() {
   // Bosses show their name on drawBossBar (which follows the same "clamp near
@@ -1336,8 +1410,8 @@ function drawCreepName() {
   ctx.font = '15px "PixelFont", monospace';
   const nw = ctx.measureText(name).width;
   const cx = Math.min(Math.max(monster.x + monster.width / 2, nw / 2 + 6), W - nw / 2 - 6);
-  const ny = monster.y - CREEP_NAME_GAP;
-  drawRect(ctx, cx - nw / 2 - 6, ny, nw + 12, 20, '#1a1423');
+  const ny = monster.y - CREEP_NAME_OFFSET;
+  drawRect(ctx, cx - nw / 2 - 6, ny, nw + 12, CREEP_NAME_PLATE_H, '#1a1423');
   // Name color signals rank at a glance: white (creep) < yellow (elite).
   const nameColor = monster.tint === 'elite' ? '#ffd24a' : '#ffffff';
   drawText(ctx, name, cx, ny + 3, 15, nameColor, 'center');
@@ -1524,8 +1598,13 @@ function drawStaffMeter() {
   const y = 186;
   const full = hero.staffChargeFull;
   const ready = hero.staffReady;
+  // Once the spell word takes over the main focal spot (drawSpellWord), this
+  // corner box should stop competing for attention — the pulse's job (pull
+  // the eye here) is done the instant the spell appears. Steady gold instead
+  // of flashing, so the two are clearly "same charge, different moment".
+  const casting = spellActive;
 
-  const label = ready ? '⚡ TRƯỢNG SẴN SÀNG!' : 'TRƯỢNG TRÍ TUỆ';
+  const label = casting ? '✨ ĐANG NIỆM CHÚ...' : ready ? '⚡ TRƯỢNG SẴN SÀNG!' : 'TRƯỢNG TRÍ TUỆ';
   ctx.font = '15px "PixelFont", monospace';
   const lw = ctx.measureText(label).width;
   const pipW = 16;
@@ -1533,75 +1612,102 @@ function drawStaffMeter() {
   const pipsW = full * pipW + (full - 1) * gap;
   const boxW = Math.max(lw, pipsW) + 16;
   drawRect(ctx, x - 8, y - 4, boxW, 46, '#1a1423');
-  // The label pulses gold when charged, so "ready" is visible peripherally.
-  const labelCol = ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : '#cfc8dd';
+  // The label pulses gold when charged (but not yet casting), so "ready" is
+  // visible peripherally; once casting it settles to steady gold.
+  const labelCol = casting ? '#ffd24a' : ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : '#cfc8dd';
   drawText(ctx, label, x, y, 15, labelCol, 'left');
 
   for (let i = 0; i < full; i++) {
     const on = i < hero.staffCharge;
-    const col = ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : on ? '#8ff0ff' : '#3a3350';
+    const col = casting ? '#ffd24a' : ready ? (tick % 30 < 15 ? '#ffffff' : '#ffd24a') : on ? '#8ff0ff' : '#3a3350';
     drawRect(ctx, x + i * (pipW + gap), y + 22, pipW, 12, col);
   }
 }
 
-// The Staff's spell incantation: a THIRD typing target that appears under the
-// staff meter once it's full. Gold-themed (vs. the monster word's neutral
-// plate) so it reads as "a different, special thing to type" at a glance.
-// Keystrokes route here instead of the monster's word while spellActive (see
-// the attachKeyboard dispatcher) — the monster's own plate stays visible but
-// frozen underneath it.
+// The Staff's spell incantation: a THIRD typing target that appears once the
+// meter is full. It takes over the monster word's own focal spot (same anchor
+// logic as drawTargetWord, same size) so there is only ever ONE plate on
+// screen reading as "live" at a time — the monster's word is drawn dimmed and
+// frozen behind it (see the `frozen` branch in drawTargetWord). Gold-themed
+// so it still reads as "a different, special thing" even sharing the slot.
 function drawSpellWord() {
   if (!spellActive) return;
-  const x = 26;
-  const topY = 246; // just under drawStaffMeter's box (y=186, height 46)
+  const topY = monster && monster.kind === MONSTER_KIND.CREEP
+    ? monster.y - CREEP_NAME_OFFSET - CREEP_WORD_CLEARANCE - 61
+    : monster ? Math.max(monster.y - 58, 118) - 96 : 118;
   const word = spellTracker.target;
   const matched = spellTracker.matchedLen();
   const mistake = spellTracker.isMistake();
 
-  const size = 20;
+  const size = 30;
   ctx.font = `${size}px "PixelFont", monospace`;
   const textW = ctx.measureText(word).width;
-  const boxW = Math.max(textW, 160) + 24;
-  drawRect(ctx, x - 8, topY - 24, boxW, size + 66, '#3a2a08');
-  drawRect(ctx, x - 8, topY - 24, boxW, 3, '#ffd24a');
-
-  const label = '✨ CÂU THẦN CHÚ'; // "THE SPELL"
-  drawText(ctx, label, x, topY - 20, 14, '#ffe27a', 'left');
+  // Same long-line handling as drawTargetWord: centre rather than anchor to
+  // the monster once the plate would be a big fraction of the screen.
+  const halfPlate = textW / 2 + 32;
+  const cx = halfPlate * 2 > W * 0.55
+    ? W / 2
+    : monster
+      ? Math.min(Math.max(monster.x + monster.width / 2, halfPlate), W - halfPlate)
+      : W / 2;
+  drawRect(ctx, cx - textW / 2 - 14, topY - 10, textW + 28, size + 20, '#3a2a08');
+  drawRect(ctx, cx - textW / 2 - 14, topY - 10, textW + 28, 3, '#ffd24a');
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  let dx = x;
-  const wordY = topY;
+  let dx = cx - textW / 2;
   for (let i = 0; i < word.length; i++) {
     let color = '#fff4d6';
     if (i < matched) color = '#3aa655';
     else if (mistake && i === matched) color = '#e0503a';
     ctx.fillStyle = color;
-    ctx.fillText(word[i], dx, wordY);
+    ctx.fillText(word[i], dx, topY);
     dx += ctx.measureText(word[i]).width;
   }
 
+  const label = '✨ CÂU THẦN CHÚ'; // "THE SPELL"
+  ctx.font = '16px "PixelFont", monospace';
+  const lw = ctx.measureText(label).width;
+  drawRect(ctx, cx - lw / 2 - 6, topY - 36, lw + 12, 24, '#1a1423');
+  drawText(ctx, label, cx, topY - 31, 16, '#ffe27a', 'center');
+
   // Same keystroke guide as the monster word, so a kid reads it the same way.
-  const guide = spellTracker.telex.toUpperCase();
-  const pressed = spellTracker.telexMatchedLen();
-  ctx.font = '14px "PixelFont", monospace';
-  const gy = wordY + size + 6;
-  let gx = x;
-  for (let i = 0; i < guide.length; i++) {
-    let color = '#c9a86a';
-    if (i < pressed) color = '#6fe08a';
-    else if (i === pressed && !mistake) color = '#ffe27a';
-    ctx.fillStyle = color;
-    ctx.fillText(guide[i], gx, gy);
-    gx += ctx.measureText(guide[i]).width;
+  const guideSize = 19;
+  if (showTelexHelper) {
+    const guide = spellTracker.telex.toUpperCase();
+    const pressed = spellTracker.telexMatchedLen();
+    ctx.font = `${guideSize}px "PixelFont", monospace`;
+    const gw = ctx.measureText(guide).width;
+    const gy = topY + size + 8;
+    drawRect(ctx, cx - gw / 2 - 8, topY + size + 4, gw + 16, guideSize + 8, '#1a1423');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    let gx = cx - gw / 2;
+    for (let i = 0; i < guide.length; i++) {
+      let color = '#c9a86a';
+      if (i < pressed) color = '#6fe08a';
+      else if (i === pressed && !mistake) color = '#ffe27a';
+      const chWidth = ctx.measureText(guide[i]).width;
+      if (guide[i] === ' ' && i === pressed && !mistake) {
+        const pad = 2;
+        drawRect(ctx, gx + pad, gy + 2, Math.max(chWidth - pad * 2, 2), guideSize - 4, color);
+      } else if (guide[i] !== ' ') {
+        ctx.fillStyle = color;
+        ctx.fillText(guide[i], gx, gy);
+      }
+      gx += chWidth;
+    }
   }
 
   // A mistake here is one uncorrected keystroke away from burning the whole
   // charge — say so plainly, since the stakes are much higher than a normal word.
   if (mistake) {
     const hint = 'Bấm Backspace ngay để sửa!'; // "Press Backspace right now to fix it!"
-    ctx.font = '12px "PixelFont", monospace';
-    drawText(ctx, hint, x, gy + 20, 12, '#ff8a6a', 'left');
+    const hintY = showTelexHelper ? topY + size + guideSize + 20 : topY + size + 8;
+    ctx.font = '13px "PixelFont", monospace';
+    const hw = ctx.measureText(hint).width;
+    drawRect(ctx, cx - hw / 2 - 6, hintY, hw + 12, 20, '#3a1a1a');
+    drawText(ctx, hint, cx, hintY + 3, 13, '#ff8a6a', 'center');
   }
 }
 
@@ -1625,74 +1731,98 @@ function drawHUD() {
   const total = stage.waves.length;
   const wv = `Đợt ${Math.min(waveCursor, total)}/${total}`;
   const wvW = ctx.measureText(wv).width;
-  drawRect(ctx, W - 20 - wvW - 10, 16, wvW + 16, 28, '#1a1423');
+  // Right edge pinned to W - 20, same as the rank card and the F8/F9/F10
+  // hint below it, so all three right-column HUD boxes share one edge.
+  drawRect(ctx, W - 20 - wvW - 16, 16, wvW + 16, 28, '#1a1423');
   drawText(ctx, wv, W - 24, 21, 18, '#fff4d6', 'right');
 }
 
 // Princess-support reserve: a row of small pips right under the HP bar, each
-// tinted to its own princess's gown color (via princessThemeColor) so a kid
-// can tell WHICH princesses are left, not just how many. Lit while she's
-// still available, dimmed once spent. Chapter-1-only (no princesses to draw
-// down yet) and hidden once all ten are spent so the HUD doesn't keep a
-// permanently-empty row on screen for the rest of the game.
+// tinted to its own princess's gown color (via princessThemeColor) and
+// carrying her own crest emoji (🌸, ☁️, ...) so a kid can tell WHICH
+// princesses are left by her actual theme, not just a color they'd have to
+// memorize. Lit while she's still available, dimmed once spent. Chapter-1-only
+// (no princesses to draw down yet) and hidden once all ten are spent so the
+// HUD doesn't keep a permanently-empty row on screen for the rest of the game.
 function drawPrincessHUD() {
   if (chapterForStage(stageIndex).id < 2) return;
   const total = princesses.total;
-  const pip = 14;
+  const pip = 18; // wide enough for the crest emoji to read at this size
   const gap = 5;
   const rowW = total * pip + (total - 1) * gap;
   const boxW = Math.max(rowW, 90) + 20;
   // Directly below drawHUD's HP bar (x=18..18+barW+4, y=18..46).
   const x = 26;
   const y = 60;
-  const label = 'CÔNG CHÚA'; // "PRINCESSES"
+  const label = 'CÔNG CHÚA HỖ TRỢ'; // "PRINCESSES"
   ctx.font = '13px "PixelFont", monospace';
-  drawRect(ctx, x - 10, y - 4, boxW, 44, '#1a1423');
+  drawRect(ctx, x - 10, y - 4, boxW, 48, '#1a1423');
   drawText(ctx, label, x, y, 13, '#cfc8dd', 'left');
   let px = x;
   const py = y + 22;
   for (const p of PRINCESS_SUPPORT) {
     const spent = princesses.used.has(p.id);
     const color = princessThemeColor(p.style);
-    drawRect(ctx, px, py, pip, pip, spent ? '#3a3350' : color);
-    if (!spent) drawRect(ctx, px + 3, py + 3, pip - 6, pip - 6, '#fff6d0');
+    drawRect(ctx, px, py, pip, pip, spent ? '#221c30' : color);
+    ctx.save();
+    if (spent) ctx.globalAlpha = 0.25;
+    drawText(ctx, p.crest, px + pip / 2, py + 2, 13, '#fff4d6', 'center');
+    ctx.restore();
     px += pip + gap;
   }
 }
 
-// The princess cast banner: a full-width slide-in strip using her real
-// princessSprite() art (the same figure the kid rescued in chapter 1), her
-// name, and a Vietnamese blurb naming what she just did. Timer-driven (set by
-// castPrincess), not click-driven — nothing here should interrupt typing.
+// The princess cast banner stack: each cast is a full-width slide-in strip
+// using her real princessSprite() art (the same figure the kid rescued in
+// chapter 1), her name, and a Vietnamese blurb naming what she just did.
+// Timer-driven (pushed by castPrincess), not click-driven — nothing here
+// should interrupt typing. Multiple casts stack: the newest slides in at the
+// top row, and older ones already on screen are pushed down a row to make
+// room (see targetSlot below) rather than being replaced or overlapped.
+const PRINCESS_BANNER_SLIDE = 36; // frames of the fixed-length slide in/out
 function drawPrincessBanner() {
-  if (princessBannerTimer <= 0 || !princessBannerWho) return;
-  const p = princessBannerWho;
-  const total = 100;
-  const t = princessBannerTimer / total;
-  // Slide in over the first 20%, hold, slide out over the last 20%.
-  const slideIn = Math.min(1, (1 - t) / 0.2);
-  const slideOut = Math.min(1, t / 0.2);
-  const reveal = Math.min(slideIn, slideOut);
+  if (princessBanners.length === 0) return;
   const barH = 78;
-  const barY = H * 0.16 - barH / 2;
-  ctx.save();
-  ctx.globalAlpha = Math.max(0, Math.min(1, reveal * 1.5));
-  drawRect(ctx, 0, barY, W, barH, '#1a1423');
-  drawRect(ctx, 0, barY, W, 3, '#ffd24a');
-  drawRect(ctx, 0, barY + barH - 3, W, 3, '#ffd24a');
+  const rowGap = 10;
+  const baseY = H * 0.16 - barH / 2;
+  // Newest entry is at the end of the array; draw it as row 0 (top), pushing
+  // older entries down — so a fresh cast reads as "arriving above" and
+  // shoving the rest down, matching how the array grows.
+  const n = princessBanners.length;
+  for (let i = 0; i < n; i++) {
+    const b = princessBanners[n - 1 - i]; // i=0 is the newest
+    const p = b.p;
+    const t = b.timer / PRINCESS_BANNER_LIFE;
+    const slideFrac = PRINCESS_BANNER_SLIDE / PRINCESS_BANNER_LIFE;
+    const slideIn = Math.min(1, (1 - t) / slideFrac);
+    const slideOut = Math.min(1, t / slideFrac);
+    const reveal = Math.min(slideIn, slideOut);
+    // Slot eases toward its stacked row so an older banner visibly slides
+    // down when a newer one is pushed in above it, instead of popping there.
+    const targetSlot = i;
+    if (b.slot === undefined) b.slot = targetSlot;
+    b.slot += (targetSlot - b.slot) * 0.25;
+    const barY = baseY + b.slot * (barH + rowGap);
 
-  const sprite = princessSprite(p.style);
-  const pscale = 3.2;
-  const px = 24 + (1 - reveal) * -60;
-  const py = barY + barH / 2 - (sprite.h * DOT * pscale) / 2;
-  drawSprite(ctx, sprite, 0, px, py, pscale, false, null);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, reveal * 1.5));
+    drawRect(ctx, 0, barY, W, barH, '#1a1423');
+    drawRect(ctx, 0, barY, W, 3, '#ffd24a');
+    drawRect(ctx, 0, barY + barH - 3, W, 3, '#ffd24a');
 
-  const textX = px + sprite.w * DOT * pscale + 20;
-  ctx.font = '20px "PixelFont", monospace';
-  drawText(ctx, p.name, textX, barY + 16, 20, '#ffd24a', 'left');
-  ctx.font = '15px "PixelFont", monospace';
-  drawText(ctx, p.blurb, textX, barY + 44, 15, '#fff4d6', 'left');
-  ctx.restore();
+    const sprite = princessSprite(p.style);
+    const pscale = 3.2;
+    const px = 24 + (1 - reveal) * -60;
+    const py = barY + barH / 2 - (sprite.h * DOT * pscale) / 2;
+    drawSprite(ctx, sprite, 0, px, py, pscale, false, null);
+
+    const textX = px + sprite.w * DOT * pscale + 20;
+    ctx.font = '20px "PixelFont", monospace';
+    drawText(ctx, p.name, textX, barY + 16, 20, '#ffd24a', 'left');
+    ctx.font = '15px "PixelFont", monospace';
+    drawText(ctx, p.blurb, textX, barY + 44, 15, '#fff4d6', 'left');
+    ctx.restore();
+  }
 }
 
 // A stageboss attack's name, announced above the hero's head with a zoom
@@ -1745,7 +1875,9 @@ function drawBossSkillBanner() {
 function drawComboMeter() {
   const tier = combo.tier;
   const x = 26;
-  const y = 88; // below drawHUD's HP bar (ends y=46) and drawPrincessHUD's row
+  // Below drawHUD's HP bar (ends y=46); drawPrincessHUD adds its own row
+  // (y=56..104) from chapter 2 on, so drop further down to clear it.
+  const y = chapterForStage(stageIndex).id >= 2 ? 112 : 88;
 
   if (combo.count >= 2) {
     // Pulsing size: pops on each increment, eases back to base.
@@ -1800,7 +1932,7 @@ function drawRankHUD() {
   drawRect(ctx, cardX, cardY, cardW, 5, r.color);
 
   // Rank line: big emoji + name in the rank color.
-  const nameSize = Math.round(23 * pop);
+  const nameSize = Math.round(21 * pop);
   drawText(ctx, `${r.emoji} ${r.name}`, cardX + 8, cardY + 12, nameSize, r.color, 'left');
 
   // "Cấp bậc" (Rank) label + kill-point total on the right.
@@ -1888,19 +2020,53 @@ function plate(text, x, y, size, align = 'left') {
   drawRect(ctx, left - 8, y - 4, tw + 16, size + 10, '#1a1423');
 }
 
-// The mute toggle guide, drawn in EVERY scene (bottom-right) so a kid — or a
-// parent in the next room — can always find the way to silence the game without
-// having to remember it from the title screen. Drawn outside any screen-shake
-// transform in `loop()`, so it stays rock-steady while the world rattles.
+// The function-key control guide, drawn in EVERY scene (bottom-right) so a
+// kid — or a parent in the next room — can always find these controls without
+// having to remember them from the title screen. Drawn outside any
+// screen-shake transform in `loop()`, so it stays rock-steady while the world
+// rattles. Two columns side by side: RIGHT column is F9 (mute) over F10
+// (music), its own right edge pinned to W - 20 (same as the wave counter and
+// rank card above it, so all three right-column HUD boxes share one edge).
+// LEFT column is F7 (telex helper) over F8 (pause), immediately to the left
+// of the right column with a fixed gap — so reading order is "helper/pause"
+// then "sound/music", grouped by what each pair controls rather than by key
+// number. Each column shares ONE plate width (its own widest row) and is
+// LEFT-aligned within it, so icons line up within a column.
 function drawMuteHint() {
-  const text = Audio.isMuted() ? '🔇 F9: bật tiếng' : '🔊 F9: tắt tiếng';
-  plate(text, W - 20, H - 29, 14, 'right');
-  drawText(ctx, text, W - 20, H - 29, 14, '#fff4d6', 'right');
-  // The music toggle sits on its own row just above, so the two controls read
-  // as a pair without either line getting long enough to crowd the corner.
-  const mtext = Music.isMusicOn() ? '🎵 F10: tắt nhạc' : '🎵 F10: bật nhạc';
-  plate(mtext, W - 20, H - 50, 14, 'right');
-  drawText(ctx, mtext, W - 20, H - 50, 14, '#fff4d6', 'right');
+  const size = 14;
+  const helperHint = showTelexHelper ? '⌨️ F7: ẩn gợi ý' : '⌨️ F7: hiện gợi ý';
+  const pauseHint = '⏸️ F8: tạm dừng';
+  const muteText = Audio.isMuted() ? '🔇 F9: bật tiếng' : '🔊 F9: tắt tiếng';
+  const musicText = Music.isMusicOn() ? '🎵 F10: tắt nhạc' : '🎵 F10: bật nhạc';
+  const showPause = state === STATE.PLAYING || state === STATE.BOSS_WARNING || state === STATE.PAUSED;
+
+  ctx.font = `${size}px "PixelFont", monospace`;
+  // Pause is only meaningful mid-fight/boss-warning (see the F8 handler), so
+  // its row only appears in those states, on top of the always-on rows.
+  const leftRows = showPause ? [helperHint, pauseHint] : [helperHint];
+  const rightRows = [muteText, musicText];
+
+  const rightW = Math.max(...rightRows.map((t) => ctx.measureText(t).width));
+  const rightLeft = W - 20 - rightW - 8;
+  const leftW = Math.max(...leftRows.map((t) => ctx.measureText(t).width));
+  // Gap between columns matches the plates' own side padding (8px) so the
+  // two columns read as evenly spaced, not closer together than each plate's
+  // internal margin.
+  const leftLeft = rightLeft - 8 - leftW - 16;
+
+  const plateAt = (x, w, y) => drawRect(ctx, x - 8, y - 4, w + 16, size + 10, '#1a1423');
+
+  plateAt(rightLeft, rightW, H - 29);
+  drawText(ctx, musicText, rightLeft, H - 29, size, '#fff4d6', 'left');
+  plateAt(rightLeft, rightW, H - 50);
+  drawText(ctx, muteText, rightLeft, H - 50, size, '#fff4d6', 'left');
+
+  plateAt(leftLeft, leftW, H - 29);
+  drawText(ctx, helperHint, leftLeft, H - 29, size, '#fff4d6', 'left');
+  if (showPause) {
+    plateAt(leftLeft, leftW, H - 50);
+    drawText(ctx, pauseHint, leftLeft, H - 50, size, '#fff4d6', 'left');
+  }
 }
 
 // Where the gameplay screen wants the sky body and clouds: low enough to clear
@@ -2013,13 +2179,13 @@ function renderPlaying() {
   }
   drawSprite(ctx, hero.sprite, hero.frame, heroX, hero.y, hero.scale, false, heroFlash);
   if (hero.hasStaff) drawStaffCompanion(heroX, hero.y);
-  // Princess Ánh Dương's Shield: a golden dome around the hero for as long as
-  // the ward is armed — pops (see heroHit) the instant it blocks a hit, so it
+  // Princess Ánh Dương's Shield: a shield-shaped ward around the hero for as
+  // long as it's armed — pops (see heroHit) the instant it blocks a hit, so it
   // must be visible continuously, not just at the moment of casting.
   if (hero.shielded) {
     const hw = hero.sprite.w * DOT * hero.scale;
     const hh = hero.sprite.h * DOT * hero.scale;
-    drawAura(ctx, heroX + hw / 2, hero.y + hh / 2, hw * 0.95, '#fff2b0', tick * 1.4);
+    drawShieldAura(ctx, heroX + hw / 2, hero.y + hh / 2, hw * 0.95, '#fff2b0', tick * 1.4);
   }
 
   if (monster) {
@@ -2085,16 +2251,12 @@ function renderPlaying() {
   drawPrincessHUD();
   drawPrincessBanner();
   drawBossSkillBanner();
-  // Bottom hints on dark plates: biome grounds range from dark volcanic rock to
-  // near-white snow, so light text alone would vanish on the bright ones.
+  // Bottom hint on a dark plate: biome grounds range from dark volcanic rock
+  // to near-white snow, so light text alone would vanish on the bright ones.
   const hint = 'Gõ chữ để tấn công! (Telex)';
   plate(hint, W / 2, H - 30, 17, 'center');
   drawText(ctx, hint, W / 2, H - 30, 17, '#fff4d6', 'center');
-  // Pause hint, bottom-left — mirrors the mute/music hints' bottom-right corner
-  // so the two pairs of controls read as two separate, uncluttered groups.
-  const pauseHint = '⏸ F8: tạm dừng';
-  plate(pauseHint, 20, H - 29, 14, 'left');
-  drawText(ctx, pauseHint, 20, H - 29, 14, '#fff4d6', 'left');
+  // Pause hint now lives with F9/F10 in drawMuteHint() (bottom-right stack).
 
   ctx.restore();
 }
@@ -2203,7 +2365,31 @@ function loop() {
   // each scene draw function.
   drawMuteHint();
 
-  requestAnimationFrame(loop);
+  rafHandle = requestAnimationFrame(loop);
 }
+
+// A backgrounded tab that keeps redrawing every frame and running the audio
+// scheduler is exactly what Chrome's Energy Saver (and OS-level battery
+// heuristics) watch for, and canvas games get flagged fast. Stopping rAF and
+// suspending the shared AudioContext while hidden makes the tab genuinely
+// idle instead of merely throttled, and resuming on return is seamless since
+// no game state (stage/progress/tick) depends on wall-clock time passing.
+let rafHandle = null;
+
+function handleVisibilityChange() {
+  if (document.hidden) {
+    if (rafHandle !== null) {
+      cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
+    const c = Audio.audioCtx();
+    if (c && c.state === 'running') c.suspend();
+  } else if (rafHandle === null) {
+    Audio.resumeAudio();
+    rafHandle = requestAnimationFrame(loop);
+  }
+}
+
+document.addEventListener('visibilitychange', handleVisibilityChange);
 
 loop();

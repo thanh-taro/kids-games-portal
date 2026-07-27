@@ -100,7 +100,7 @@ export const STAGES = [
     id: 4,
     biome: 'forest',
     name: 'Rừng Rậm',            // "Deep Forest"
-    princess: 'Công Chúa Dòng Suối',  // "Princess Stream"
+    princess: 'Công Chúa Mưa',  // "Rain Princess"
     princessStyle: 'stream',
     intro: 'Ghép chữ thành từ!', // "Combine letters into words!"
     // 13 waves. Lightning (awarded for stage 3) joins; meteor is NOT here — it is
@@ -334,7 +334,8 @@ export const STAGES = [
     princess: 'Công Chúa Ánh Sáng', // "Princess Light"
     princessStyle: 'light',
     intro: 'Trận cuối — cứu tất cả!', // "Final battle — save everyone!"
-    // 22 waves — the longest gauntlet, closing on TWO stagebosses back to back.
+    // 21 waves — the longest gauntlet, closing on the Dark Lord fought as a
+    // two-phase stageboss (see `phases` below; the same mechanic stage 26 uses).
     // This is where the `sentences` tier debuts for the first time in the game
     // (every earlier stage in the chapter held at phrases), so the endurance
     // peak of chapter 1 doubles as its one true step up in curriculum tier.
@@ -359,8 +360,15 @@ export const STAGES = [
       { type: 'elite', pool: 'sentences', skill: 'meteor' },
       { type: 'boss', pool: 'sentences', skill: 'meteor' },
       { type: 'boss', pool: 'sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'sentences', skill: 'meteor' },
-      { type: 'stageboss', pool: 'sentences', skill: 'meteor' },
+      {
+        type: 'stageboss',
+        pool: 'sentences',
+        skill: 'meteor',
+        phases: [
+          { name: 'CHÚA TỂ BÓNG TỐI — Bóng Đêm', hits: 6, attackEvery: 480 },
+          { name: 'CHÚA TỂ BÓNG TỐI — Thịnh Nộ', hits: 6, attackEvery: 360, attackDamage: 20 },
+        ],
+      },
     ],
   },
   // =========================================================================
@@ -574,8 +582,9 @@ export const STAGES = [
     // CHAPTER 2 FINALE — the Guardian who holds the Staff. This is also where
     // `hard_sentences` (tier 5) debuts in this chapter — every earlier stage
     // held at plain `sentences`, so the tier only steps up here, mirroring how
-    // stage 12 was the one place `sentences` stepped up in chapter 1. Two
-    // stagebosses back to back, both on tier 6, close out the endurance test.
+    // stage 12 was the one place `sentences` stepped up in chapter 1. The
+    // Guardian is fought as a two-phase stageboss (see `phases` below), same
+    // mechanic as stage 12's Dark Lord and stage 26's World Devourer.
     waves: [
       { type: 'creep', pool: 'words', skill: 'slash' },
       { type: 'creep', pool: 'words', skill: 'slash' },
@@ -595,8 +604,15 @@ export const STAGES = [
       { type: 'elite', pool: 'hard_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
       { type: 'boss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'stageboss', pool: 'long_sentences', skill: 'holylight' },
-      { type: 'stageboss', pool: 'long_sentences', skill: 'holylight' },
+      {
+        type: 'stageboss',
+        pool: 'long_sentences',
+        skill: 'holylight',
+        phases: [
+          { name: 'THỦ VỆ TRƯỢNG — Canh Giữ', hits: 6, attackEvery: 480 },
+          { name: 'THỦ VỆ TRƯỢNG — Tuyệt Vọng', hits: 6, attackEvery: 360, attackDamage: 20 },
+        ],
+      },
     ],
   },
 

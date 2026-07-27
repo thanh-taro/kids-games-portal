@@ -16,7 +16,9 @@
 // state directly). `effect` names the flourish in effects.js's playPrincess()
 // and `audioCue` the Audio.* function to call — both fire from main.js at the
 // same moment apply() runs, over the hero (or, for nova abilities, the
-// monster) position.
+// monster) position. `crest` is a single emoji identifying her at a glance —
+// drawn on her pip in drawPrincessHUD() (main.js) so the reserve row reads by
+// theme, not just by color.
 export const PRINCESS_SUPPORT = [
   {
     // Checked BEFORE 'heal': the two conditions overlap (< 15% is also <
@@ -24,6 +26,7 @@ export const PRINCESS_SUPPORT = [
     // a kid at 10% HP should see the full heal, not the partial one.
     id: 'fullheal',
     style: 'cloud',
+    crest: '☁️',
     name: 'Công Chúa Mây',              // "Princess Cloud"
     blurb: 'Mây chữa lành hoàn toàn cho bạn!', // "Cloud fully heals you!"
     effect: 'fullheal',
@@ -37,6 +40,7 @@ export const PRINCESS_SUPPORT = [
   {
     id: 'heal',
     style: 'flower',
+    crest: '🌸',
     name: 'Công Chúa Hoa',              // "Princess Flower"
     blurb: 'Hoa hồi phục sức mạnh cho bạn!', // "Flower restores your strength!"
     effect: 'heal',
@@ -49,6 +53,7 @@ export const PRINCESS_SUPPORT = [
   {
     id: 'shield',
     style: 'sunlight',
+    crest: '☀️',
     name: 'Công Chúa Ánh Dương',        // "Princess Sunlight"
     blurb: 'Ánh Dương che chắn cho bạn khỏi đòn đánh tới!', // "Sunlight shields you from the next attack!"
     effect: 'shield',
@@ -61,6 +66,7 @@ export const PRINCESS_SUPPORT = [
   {
     id: 'freeze',
     style: 'ice',
+    crest: '❄️',
     name: 'Công Chúa Băng',             // "Princess Ice"
     blurb: 'Băng đóng băng kẻ địch!',    // "Ice freezes the enemy!"
     effect: 'freeze',
@@ -75,6 +81,7 @@ export const PRINCESS_SUPPORT = [
   {
     id: 'slow',
     style: 'sand',
+    crest: '🏜️',
     name: 'Công Chúa Cát',              // "Princess Sand"
     blurb: 'Cát làm chậm bước chân kẻ địch!', // "Sand slows the enemy's steps!"
     effect: 'slow',
@@ -87,6 +94,7 @@ export const PRINCESS_SUPPORT = [
   {
     id: 'knockback',
     style: 'wave',
+    crest: '🌊',
     name: 'Công Chúa Sóng Biển',        // "Princess Wave"
     blurb: 'Sóng Biển đẩy lùi kẻ địch!', // "Wave pushes the enemy back!"
     effect: 'knockback',
@@ -97,18 +105,24 @@ export const PRINCESS_SUPPORT = [
     },
   },
   {
+    // Only the World Devourer (stage 26's stageboss) has a third phase, so this
+    // is checked BEFORE lightnova: it's the more specific condition, and must
+    // claim the Devourer's final phase-in before lightnova's broader phaseChange
+    // trigger would otherwise take it.
     id: 'starnova',
     style: 'star',
+    crest: '⭐',
     name: 'Công Chúa Sao',              // "Princess Star"
     blurb: 'Sao giáng một đòn ánh sao!', // "Star strikes a blow of starlight!"
     effect: 'starnova',
     audioCue: 'princessStarNova',
-    when: (ctx) => ctx.wave === 'halfway',
+    when: (ctx) => ctx.wave === 'phaseChange' && ctx.monster?.phaseIndex === 2,
     apply: (ctx) => ({ novaHits: 1 }),
   },
   {
     id: 'lightnova',
     style: 'light',
+    crest: '✨',
     name: 'Công Chúa Ánh Sáng',         // "Princess Light"
     blurb: 'Ánh Sáng bùng nổ rực rỡ!',   // "Light bursts forth radiantly!"
     effect: 'lightnova',
@@ -119,6 +133,7 @@ export const PRINCESS_SUPPORT = [
   {
     id: 'staffcharge',
     style: 'love',
+    crest: '💗',
     name: 'Công Chúa Tình Yêu',         // "Princess of Love"
     blurb: 'Tình Yêu nạp đầy năng lượng cho Trượng!', // "Love fills the Staff with energy!"
     effect: 'staffcharge',
@@ -126,13 +141,20 @@ export const PRINCESS_SUPPORT = [
     when: (ctx) => ctx.wave === 'bossSpawn' && ctx.hero.hasStaff && ctx.hero.staffCharge === 0,
     apply: (ctx) => {
       ctx.hero.staffCharge = ctx.hero.staffChargeFull;
+      // Filling the meter this way skips hero.chargeStaff(), which is what
+      // normally tells main.js to spawn the spell incantation (see the
+      // onComplete handler in main.js). Report it here so castPrincess can
+      // start the spell itself — otherwise the meter reads SẴN SÀNG! with no
+      // spell word ever appearing for the kid to type.
+      return { staffFilled: true };
     },
   },
   {
     id: 'cleanse',
     style: 'stream',
-    name: 'Công Chúa Dòng Suối',        // "Princess Stream"
-    blurb: 'Dòng Suối gột sạch lỗi gõ cho bạn!', // "Stream washes your mistakes away!"
+    crest: '💧',
+    name: 'Công Chúa Mưa',        // "Rain Princess"
+    blurb: 'Mưa gột sạch lỗi gõ cho bạn!', // "Rain washes your mistakes away!"
     effect: 'cleanse',
     audioCue: 'princessCleanse',
     when: (ctx) => ctx.tracker.mistakeCount >= 3,

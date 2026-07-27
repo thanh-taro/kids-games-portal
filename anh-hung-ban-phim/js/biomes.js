@@ -39,6 +39,21 @@ import {
 
 const CELL = 8; // scenery pixel size — terrain is snapped to this chunky grid
 
+// How far PAST groundY (the seam between the walkable band and the darker
+// floor below it, painted by drawBiomeTerrain) a standing entity's feet sink.
+// Used by entities.js (hero/monster during PLAYING) and scenes.js (the menu
+// screens' hero/princess/king art), so every scene sinks feet the same amount
+// instead of resting them on the seam, where they read as floating at the
+// ground's top edge rather than standing IN it.
+//
+// Every scene's ground box (from groundY to the bottom of the canvas) is 110px
+// tall (90px in tutorial.js), so this is set to HALF that: an entity's feet
+// land at the vertical middle of the ground box. This is a property of the
+// BOX, not of the sprite — callers must NOT multiply it by their own draw
+// scale (a bigger sprite drawn at the same ground box should still plant its
+// feet at that same fixed depth, not sink deeper the bigger it's drawn).
+export const GROUND_FEET_SINK = 55;
+
 // A prop entry: { sprite, at, scale }
 //   at:    horizontal position as a fraction of screen width
 //   scale: multiplies DOT (props are drawn resting on the ground line)

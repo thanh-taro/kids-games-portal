@@ -12,17 +12,17 @@
 // use, just for the boss's own attack rather than the hero's.
 
 export const BOSS_ATTACKS = {
-  stageboss_ogre: { name: 'Đập Đất', effect: 'groundslam', sound: 'bossGroundSlam', windup: 34 },
-  boss_dragon: { name: 'Phun Lửa', effect: 'firebreath', sound: 'bossFireBreath', windup: 30 },
-  stageboss_darklord: { name: 'Cầu Bóng Tối', effect: 'shadowbolt', sound: 'bossShadowBolt', windup: 26 },
-  boss_scribe: { name: 'Vảy Mực', effect: 'inksplatter', sound: 'bossInkSplatter', windup: 26 },
-  boss_windserpent: { name: 'Chém Gió', effect: 'galeslash', sound: 'bossGaleSlash', windup: 20 },
-  boss_guardian_statue: { name: 'Đấm Đá', effect: 'stonefist', sound: 'bossStoneFist', windup: 40 },
-  boss_formless: { name: 'Vuốt Bóng Tối', effect: 'shadowgrasp', sound: 'bossShadowGrasp', windup: 30 },
+  stageboss_ogre: { name: 'Địa Chấn Kích', effect: 'groundslam', sound: 'bossGroundSlam', windup: 34 },
+  boss_dragon: { name: 'Hỏa Long Tức', effect: 'firebreath', sound: 'bossFireBreath', windup: 30 },
+  stageboss_darklord: { name: 'Ảnh Lôi Tiễn', effect: 'shadowbolt', sound: 'bossShadowBolt', windup: 26 },
+  boss_scribe: { name: 'Mặc Vũ Tán', effect: 'inksplatter', sound: 'bossInkSplatter', windup: 26 },
+  boss_windserpent: { name: 'Cuồng Phong Trảm', effect: 'galeslash', sound: 'bossGaleSlash', windup: 20 },
+  boss_guardian_statue: { name: 'Thạch Quyền', effect: 'stonefist', sound: 'bossStoneFist', windup: 40 },
+  boss_formless: { name: 'Hắc Ảnh Trảo', effect: 'shadowgrasp', sound: 'bossShadowGrasp', windup: 30 },
   stageboss_staffguardian: { name: 'Sóng Cổ Ngữ', effect: 'arcanepulse', sound: 'bossArcanePulse', windup: 30 },
   boss_warden: { name: 'Xiềng Sắt', effect: 'ironslam', sound: 'bossIronSlam', windup: 32 },
-  boss_jailer: { name: 'Lời Nguyền Đèn', effect: 'lanterncurse', sound: 'bossLanternCurse', windup: 30 },
-  boss_general: { name: 'Chém Gào Thét', effect: 'warcryslash', sound: 'bossWarCrySlash', windup: 24 },
+  boss_jailer: { name: 'Đăng Hồn Chú', effect: 'lanterncurse', sound: 'bossLanternCurse', windup: 30 },
+  boss_general: { name: 'Cuồng Hống Kích', effect: 'warcryslash', sound: 'bossWarCrySlash', windup: 24 },
 };
 
 // The World Devourer (stage 26) is the one monster with `phases` — it gets

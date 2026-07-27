@@ -30,6 +30,16 @@ python3 -m http.server 8000
 Then click a game card to play. (Each game may also ship its own dev server —
 see the game's own README, e.g. `anh-hung-ban-phim` uses `npm start`.)
 
+## Install as an app
+
+The portal is an installable PWA (Progressive Web App) — served over HTTP(S) with a
+[web app manifest](manifest.webmanifest) and a [service worker](sw.js), it can be
+"installed" like a native app on Windows, macOS, Android, and Chromebooks (e.g.
+via the install icon in Chrome's address bar, or "Add to Home Screen" on
+mobile). Installed, it opens in its own window with its own icon, and the
+portal shell works offline once visited. This only covers the portal itself —
+each game folder is not independently installable.
+
 ## Deploy to GitHub Pages
 
 1. Push this repository to GitHub.
@@ -67,9 +77,12 @@ automatically. Game links are relative, so they work both locally and on Pages.
 ## Project layout
 
 ```
-index.html          the portal — game selection page (GitHub Pages landing)
-README.md           this file
-anh-hung-ban-phim/  the Vietnamese Telex typing game (self-contained)
+index.html               the portal — game selection page (GitHub Pages landing)
+manifest.webmanifest     PWA manifest (install as app)
+sw.js                    service worker (offline caching for the portal shell)
+icons/                   PWA icons (192/512, incl. maskable variants)
+README.md                this file
+anh-hung-ban-phim/       the Vietnamese Telex typing game (self-contained)
 LICENSE
 ```
 

@@ -37,7 +37,7 @@ export class TypingTracker {
     this.elapsedMs = 0;             // time from first key to completion
     // How many times THIS word attempt has gone off the rails (isMistake()
     // true). Distinct from usedBackspace/wasClean, which judge the whole word
-    // after the fact — this counts live, for Princess Dòng Suối's Cleanse
+    // after the fact — this counts live, for Rain Princess's Cleanse
     // support (main.js), which watches for a kid stuck fumbling repeatedly.
     this.mistakeCount = 0;
   }
