@@ -13,6 +13,7 @@ can be served straight from **GitHub Pages**.
 | Game | Folder | What it is |
 |------|--------|------------|
 | **Anh Hùng Bàn Phím** (Cứu Công Chúa) | [`anh-hung-ban-phim/`](anh-hung-ban-phim/) | A 2D pixel-art typing game that teaches kids to type Vietnamese with the Telex input method. Fight monsters by typing the word above them — a 26-stage, three-chapter story: rescue ten kidnapped princesses, seek the Staff of Wisdom, and defeat the World Devourer. |
+| **Phi Công Toán Học** (Cứu Dải Ngân Hà) | [`phi-cong-toan-hoc/`](phi-cong-toan-hoc/) | A pixel-art vertical space shooter that drills mental arithmetic. The ship flies and fires itself — the kid answers maths questions to keep it powered, and every correct answer is a volley. Four difficulty levels (± within 10 up to all four operations within 1000), 24 stages across three chapters: defend Earth, rescue five imprisoned allies who then fly in formation with you, and destroy the Galaxy Destroyer. |
 
 *More games coming soon.*
 

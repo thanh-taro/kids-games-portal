@@ -959,7 +959,7 @@ function grantReward() {
 }
 
 // ---------------------------------------------------------------------------
-// Input for scene transitions (SPACE advances; R resets)
+// Input for scene transitions (SPACE advances; Z resets)
 // ---------------------------------------------------------------------------
 window.addEventListener('keydown', (e) => {
   // First user gesture unlocks the AudioContext (browsers require this).
@@ -1078,12 +1078,12 @@ window.addEventListener('keydown', (e) => {
     startStory(openingFor(chapter.id), openingTitle(chapter.id), 'title');
     return;
   }
-  if (e.key === 'r' || e.key === 'R') {
+  if (e.key === 'z' || e.key === 'Z') {
     if (state === STATE.TITLE) {
       resetProgress();
       progress = { stage: 0, rewards: [], seenTutorial: false, seenStory: [], rankStats: {}, princessesUsed: [] };
       stageIndex = 0;
-      rank.reset(); // R on the title is a full wipe → also clear the lifetime rank
+      rank.reset(); // Z on the title is a full wipe → also clear the lifetime rank
       princesses.used.clear(); // all ten princesses are captive again
       Audio.confirm();
     }

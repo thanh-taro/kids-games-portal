@@ -266,7 +266,7 @@ export class RankTracker {
     };
   }
 
-  // Full wipe (the R-on-title "reset progress"). Window + kill points back to
+  // Full wipe (the Z-on-title "reset progress"). Window + kill points back to
   // zero.
   reset() {
     this.window = [];

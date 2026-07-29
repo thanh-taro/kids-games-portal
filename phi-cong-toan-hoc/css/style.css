@@ -1,0 +1,33 @@
+/* style.css — layout + retro pixel look.
+   Mirrors anh-hung-ban-phim: one fullscreen canvas, no DOM UI. */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;             /* fullscreen canvas — no page scroll */
+  background: #05030f;          /* deep space, not the typing game's grey */
+  font-family: monospace;
+}
+
+#wrap {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  background: #05030f;
+  image-rendering: pixelated;   /* keep dots crisp at native resolution */
+  touch-action: manipulation;   /* answer cards are tapped — kill the 300ms delay */
+}
+
+/* A simple pixel-ish fallback font; the chunky look mostly comes from the
+   canvas dot rendering. Swap in a real bitmap @font-face later if desired. */
+@font-face {
+  font-family: "PixelFont";
+  src: local("Courier New"), local("monospace");
+}

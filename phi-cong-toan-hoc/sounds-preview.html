@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>audio + effects preview</title>
+<!--
+  Dev-only review page for audio.js and effects.js (the typing game ships the
+  same pair). Neither can be judged by a test: a sound is either pleasant to
+  hear a thousand times or it is not, and an effect either stays out of the
+  quest box's way or it does not.
+
+  The effects column draws each one over a MOCK QUEST BOX, because the single
+  thing that would ruin this game is an explosion that paints over the numbers
+  the kid is reading. If any effect bleeds below the purple line, that is a bug.
+
+  Open with `npm start`, then http://localhost:8179/sounds-preview.html
+-->
+<style>
+  body { margin:0; background:#0b0820; color:#e8e4f5; font:13px/1.5 ui-monospace,monospace; padding:18px; }
+  h1 { font-size:17px; color:#7fe3ff; margin:0 0 4px; }
+  p.note { color:#9a92c0; margin:0 0 16px; max-width:80ch; }
+  h2 { font-size:14px; color:#f2c53d; margin:20px 0 8px; border-bottom:1px solid #2a2350; padding-bottom:5px; }
+  .cols { display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; }
+  .col { flex:1 1 340px; min-width:320px; }
+  button { font:600 12px ui-monospace,monospace; color:#f2eeff; background:#241d4a;
+           border:2px solid #4b3f8f; border-radius:9px; padding:9px 12px; margin:0 5px 6px 0;
+           cursor:pointer; }
+  button:hover { background:#31276b; border-color:#7fffd4; }
+  button.loud { border-color:#ffd24a; }
+  button.fx { border-color:#5fd8d8; }
+  canvas { display:block; background:#05030f; border-radius:8px; border:1px solid #2a2350; }
+  .hint { color:#6b64a0; font-size:11px; margin:6px 0 10px; }
+</style>
+</head>
+<body>
+<h1>Phi Công Toán Học — audio + effects preview</h1>
+<p class="note">
+  Click a sound to hear it. Click an effect to fire it on the canvas — nothing may
+  ever cross the purple line into the quest box.
+</p>
+
+<div class="cols">
+  <div class="col">
+    <h2>Answer feedback <span class="hint">(must be the loudest thing)</span></h2>
+    <div id="sfx-answer"></div>
+    <h2>Combat</h2>
+    <div id="sfx-combat"></div>
+    <h2>Progression</h2>
+    <div id="sfx-prog"></div>
+    <h2>State / UI</h2>
+    <div id="sfx-ui"></div>
+  </div>
+
+  <div class="col">
+    <h2>Effects <span class="hint">(clipped to the play field)</span></h2>
+    <div id="fx-buttons"></div>
+    <canvas id="fx" width="520" height="420"></canvas>
+    <div class="hint">The purple line is questTop. Effects must never cross it.</div>
+  </div>
+</div>
+
+<script type="module">
+import * as A from './js/audio.js';
+import { ParticleSystem } from './js/effects.js';
+import { fillRoundRect, drawTextBold, drawText } from './js/render.js';
+
+// --- sounds ---
+const GROUPS = {
+  'sfx-answer': [
+    ['answerCorrect (combo 0)', () => A.answerCorrect(0), 'loud'],
+    ['answerCorrect (combo 6)', () => A.answerCorrect(6), 'loud'],
+    ['answerWrong', () => A.answerWrong(), 'loud'],
+  ],
+  'sfx-combat': [
+    ['shoot', () => A.shoot()],
+    ['shootSpecial', () => A.shootSpecial()],
+    ['hit', () => A.hit()],
+    ['explode t1', () => A.explode(1)],
+    ['explode t3', () => A.explode(3)],
+    ['hurt', () => A.hurt()],
+    ['shieldBlock (dull!)', () => A.shieldBlock()],
+    ['shieldAbsorb', () => A.shieldAbsorb()],
+    ['escape', () => A.escape()],
+  ],
+  'sfx-prog': [
+    ['comboMilestone', () => A.comboMilestone(2)],
+    ['comboBreak', () => A.comboBreak()],
+    ['ultimateReady', () => A.ultimateReady()],
+    ['ultimateFire', () => A.ultimateFire()],
+    ['upgrade', () => A.upgrade()],
+    ['downgrade', () => A.downgrade()],
+    ['allyJoin', () => A.allyJoin()],
+    ['phaseChange', () => A.phaseChange()],
+  ],
+  'sfx-ui': [
+    ['victory', () => A.victory()],
+    ['failure', () => A.failure()],
+    ['confirm', () => A.confirm()],
+    ['storyPage', () => A.storyPage()],
+    ['energyLow', () => A.energyLow()],
+    ['toggleMute', () => alert('muted: ' + A.toggleMute())],
+  ],
+};
+
+for (const [id, list] of Object.entries(GROUPS)) {
+  const host = document.getElementById(id);
+  for (const [label, fn, cls] of list) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    if (cls) b.className = cls;
+    b.onclick = () => { A.resumeAudio(); fn(); };
+    host.appendChild(b);
+  }
+}
+
+// --- effects ---
+const cv = document.getElementById('fx');
+const cx = cv.getContext('2d');
+cx.imageSmoothingEnabled = false;
+const parts = new ParticleSystem();
+
+// A mock metrics object matching the real vertical layout.
+const m = {
+  w: cv.width, h: cv.height,
+  playTop: 24,
+  playBottom: Math.round(cv.height * 0.66),
+  questTop: Math.round(cv.height * 0.66),
+  questH: Math.round(cv.height * 0.34),
+  cx: Math.round(cv.width / 2),
+};
+
+const FX = [
+  ['muzzle', () => parts.muzzle(m.cx, m.playBottom - 40)],
+  ['impact', () => parts.impact(m.cx, 150, '#ffd24a')],
+  ['blocked (dull)', () => parts.blocked(m.cx, 150)],
+  ['death t1', () => parts.death(m.cx, 150, '#e0503a', 1)],
+  ['death t3', () => parts.death(m.cx, 170, '#a855f7', 3)],
+  ['freeze', () => parts.freeze(m.cx, 150)],
+  ['repair', () => parts.repair(m.cx, m.playBottom - 60)],
+  ['shield', () => parts.shield(m.cx, m.playBottom - 50)],
+  ['ULTIMATE', () => parts.ultimate(m.cx, m.playBottom - 50, m)],
+  ['hurt', () => parts.hurt(m.cx, m.playBottom - 50)],
+  ['phaseChange', () => parts.phaseChange(m.cx, 160)],
+  ['escape (bottom edge)', () => parts.escape(m.cx, m.playBottom - 6)],
+];
+
+const fxHost = document.getElementById('fx-buttons');
+for (const [label, fn] of FX) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  b.className = 'fx';
+  b.onclick = fn;
+  fxHost.appendChild(b);
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  parts.update(dt);
+
+  cx.fillStyle = '#05030f';
+  cx.fillRect(0, 0, m.w, m.h);
+  // faint starfield so contrast is realistic
+  cx.fillStyle = 'rgba(180,190,230,0.35)';
+  for (let i = 0; i < 40; i++) {
+    cx.fillRect((i * 137) % m.w, (i * 91) % m.playBottom, 1, 1);
+  }
+
+  const off = parts.shakeOffset();
+  cx.save();
+  cx.translate(off.x, off.y);
+  parts.draw(cx, m);
+  cx.restore();
+
+  // The mock quest box — the thing effects must never touch.
+  cx.fillStyle = '#0d0a20';
+  cx.fillRect(0, m.questTop, m.w, m.questH);
+  cx.fillStyle = '#4b3f8f';
+  cx.fillRect(0, m.questTop - 3, m.w, 3);
+  drawTextBold(cx, '54 + 33 = ?', m.cx, m.questTop + 34, 26, '#fff4d6', 'center', 'middle');
+  const cw = (m.w - 40) / 4;
+  for (let i = 0; i < 4; i++) {
+    fillRoundRect(cx, 8 + i * (cw + 8), m.questTop + 62, cw, 56, 10, '#241d4a');
+    drawText(cx, String(85 + i), 8 + i * (cw + 8) + cw / 2, m.questTop + 90, 20, '#f2eeff', 'center', 'middle');
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

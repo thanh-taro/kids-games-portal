@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>math.js preview — 4 levels × 12 tiers</title>
+<!--
+  Dev-only review page for the curriculum. math.test.js proves the CONTRACT
+  (one right answer, in range, exact division, instructive decoys); this page
+  is for the thing a test cannot judge — whether a tier FEELS like the right
+  difficulty for the stage it is attached to, and whether the four options look
+  like a fair choice to a child.
+
+  Open with `npm start`, then http://localhost:8178/math-preview.html
+-->
+<style>
+  body { margin:0; background:#0b0820; color:#e8e4f5; font:14px/1.5 ui-monospace,monospace; padding:20px; }
+  h1 { font-size:18px; color:#7fe3ff; margin:0 0 4px; }
+  p.note { color:#9a92c0; margin:0 0 20px; max-width:80ch; }
+  .level { margin-bottom:28px; border:1px solid #2a2350; border-radius:10px; overflow:hidden; }
+  .level > h2 { margin:0; padding:10px 14px; background:#171235; font-size:15px; color:#f2c53d; }
+  .level > h2 small { color:#9a92c0; font-weight:normal; margin-left:10px; }
+  table { width:100%; border-collapse:collapse; }
+  td, th { padding:6px 10px; text-align:left; border-top:1px solid #221c45; vertical-align:top; }
+  th { color:#9a92c0; font-weight:normal; font-size:12px; background:#100d28; }
+  td.tier { color:#7fe3ff; width:44px; }
+  td.shapes { color:#9a92c0; width:200px; font-size:12px; }
+  .q { display:inline-block; margin:0 14px 4px 0; }
+  .q b { color:#fff; }
+  .opt { display:inline-block; padding:1px 7px; margin-left:3px; border-radius:5px;
+         background:#221c45; color:#c9c2e8; }
+  .opt.right { background:#2fbf9f; color:#05030f; font-weight:bold; }
+  .stat { color:#9a92c0; font-size:12px; }
+</style>
+</head>
+<body>
+<h1>Phi Công Toán Học — curriculum preview</h1>
+<p class="note">
+  Every level × tier, sampled. The green chip is the correct answer. Read down a
+  column to check the ramp feels right; read across a row to check the four
+  options look like a fair choice rather than a giveaway.
+</p>
+<div id="out"></div>
+
+<script type="module">
+import { LEVELS, LEVEL_IDS, TIER_COUNT, generateQuest } from './js/math.js';
+
+const SAMPLES = 4;   // quests shown per tier
+const STATS_N = 600; // hidden sample size for the per-tier stats
+
+const out = document.getElementById('out');
+
+for (const id of LEVEL_IDS) {
+  const lv = LEVELS[id];
+  const box = document.createElement('div');
+  box.className = 'level';
+
+  let html = `<h2>${lv.name} <small>${lv.desc} · max ${lv.max}</small></h2>
+    <table><tr><th>Tier</th><th>Shapes</th><th>Samples</th><th>Mean answer</th></tr>`;
+
+  for (let tier = 1; tier <= TIER_COUNT; tier++) {
+    const shapes = lv.tiers[tier - 1].shapes.join(' · ');
+
+    let qs = '';
+    for (let i = 0; i < SAMPLES; i++) {
+      const q = generateQuest(id, tier, null, (i + 1) * 7919 + tier * 131);
+      const opts = q.options.map((o, k) =>
+        `<span class="opt${k === q.correctIndex ? ' right' : ''}">${o}</span>`).join('');
+      qs += `<span class="q"><b>${q.text} =</b>${opts}</span>`;
+    }
+
+    // Mean answer magnitude — a crude but useful read on the ramp.
+    let sum = 0;
+    for (let s = 1; s <= STATS_N; s++) sum += generateQuest(id, tier, null, s * 104729 + tier).answer;
+    const mean = (sum / STATS_N).toFixed(1);
+
+    html += `<tr><td class="tier">t${tier}</td><td class="shapes">${shapes}</td>
+             <td>${qs}</td><td class="stat">${mean}</td></tr>`;
+  }
+
+  html += '</table>';
+  box.innerHTML = html;
+  out.appendChild(box);
+}
+</script>
+</body>
+</html>

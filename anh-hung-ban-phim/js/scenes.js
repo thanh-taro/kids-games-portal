@@ -150,8 +150,8 @@ export function drawTitle(ctx, W, H, tick, stageIndex = 0, hero = {}, biome = nu
   drawText(ctx, 'Nhấn H để học cách chơi', W / 2, menuY + 34, 16, '#bfe8ff', 'center');
   plate(ctx, W / 2, menuY + 58, 'Nhấn S để xem lại câu chuyện', 16); // "S to rewatch the story"
   drawText(ctx, 'Nhấn S để xem lại câu chuyện', W / 2, menuY + 60, 16, '#f0c6ff', 'center');
-  plate(ctx, W / 2, menuY + 84, 'Nhấn R để chơi lại từ đầu', 16);
-  drawText(ctx, 'Nhấn R để chơi lại từ đầu', W / 2, menuY + 86, 16, '#fff4d6', 'center');
+  plate(ctx, W / 2, menuY + 84, 'Nhấn Z để chơi lại từ đầu', 16);
+  drawText(ctx, 'Nhấn Z để chơi lại từ đầu', W / 2, menuY + 86, 16, '#fff4d6', 'center');
 
   // Fullscreen tip, bottom-LEFT so it clears the always-on mute hint that
   // `main.js` draws bottom-right. Gently blinking (slower than the SPACE

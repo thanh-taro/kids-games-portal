@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>sprites preview — ships, monsterships, props</title>
+<!--
+  Dev-only sprite review page (the typing game ships the same thing).
+  node js/verify.js proves sprite GEOMETRY — frame widths, palette chars, no
+  content past column w. It cannot judge whether a sprite READS as a warship at
+  gameplay scale, which is the failure mode that actually shipped bugs in the
+  reference game (a book creep that vanished against a bookshelf, a statue that
+  read as a cartoon smiley).
+
+  So this page shows every sprite three ways:
+    1. At gameplay scale, on the real starfield — the only test that matters.
+    2. Enlarged, for checking outlines and shading.
+    3. Both idle frames side by side, to confirm ONLY extremities move.
+
+  Open with `npm start`, then http://localhost:8179/objects-preview.html
+-->
+<style>
+  body { margin:0; background:#0b0820; color:#e8e4f5; font:13px/1.5 ui-monospace,monospace; padding:18px; }
+  h1 { font-size:17px; color:#7fe3ff; margin:0 0 4px; }
+  p.note { color:#9a92c0; margin:0 0 18px; max-width:82ch; }
+  h2 { font-size:14px; color:#f2c53d; margin:22px 0 8px; border-bottom:1px solid #2a2350; padding-bottom:5px; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; }
+  .cell { background:#120d2e; border:1px solid #2a2350; border-radius:8px; padding:10px; }
+  .cell .name { color:#9a92c0; font-size:11px; margin-bottom:6px; }
+  .cell canvas { display:block; image-rendering:pixelated; background:#0d0a26; border-radius:4px; }
+  .pair { display:flex; gap:6px; }
+  .warn { color:#ff9d8a; }
+</style>
+</head>
+<body>
+<h1>Phi Công Toán Học — sprite preview</h1>
+<p class="note">
+  Left block: gameplay scale on the real backdrop — a monstership must read here
+  without help. Middle: 4× for outline/shading. Right: both idle frames, which
+  must differ ONLY in thruster/lamp pixels.
+</p>
+<div id="out"></div>
+
+<script type="module">
+import { SPRITES, PALETTE } from './js/sprites.js';
+import { drawSprite, DOT } from './js/render.js';
+
+const out = document.getElementById('out');
+
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').imageSmoothingEnabled = false;
+  return c;
+}
+
+// Gameplay scale: DOT * the scale main.js actually uses for that entity class.
+const GAMEPLAY_SCALE = { ship_hero: 1.6, enemy_dart: 1.3, shot_plasma: 1, shot_enemy: 1 };
+
+function starryBg(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#0a0720'); g.addColorStop(1, '#120d2e');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  // A few stars, so we can see whether the sprite survives them.
+  ctx.fillStyle = 'rgba(210,220,250,0.55)';
+  for (let i = 0; i < 26; i++) {
+    const x = (i * 2654435761 % 9973) / 9973 * w;
+    const y = (i * 40503 % 7919) / 7919 * h;
+    ctx.fillRect(Math.round(x), Math.round(y), 1 + (i % 3 === 0 ? 1 : 0), 1);
+  }
+}
+
+const section = document.createElement('div');
+section.innerHTML = '<h2>Entities</h2>';
+const row = document.createElement('div');
+row.className = 'row';
+
+for (const [name, sprite] of Object.entries(SPRITES)) {
+  const frames = sprite.frames;
+  const rows = frames[0].length;
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+
+  // Geometry sanity, mirroring verify.js so a problem is visible here too.
+  const problems = [];
+  for (let fi = 0; fi < frames.length; fi++) {
+    for (let ri = 0; ri < frames[fi].length; ri++) {
+      const line = frames[fi][ri];
+      for (let ci = 0; ci < line.length; ci++) {
+        const ch = line[ci];
+        if (ch === ' ') continue;
+        if (ci >= sprite.w) problems.push(`f${fi} r${ri}: content at col ${ci} >= w ${sprite.w}`);
+        if (!(ch in PALETTE)) problems.push(`f${fi} r${ri}: '${ch}' not in PALETTE`);
+      }
+    }
+  }
+
+  const gs = GAMEPLAY_SCALE[name] ?? 1.3;
+  const gw = Math.ceil(sprite.w * DOT * gs) + 20;
+  const gh = Math.ceil(rows * DOT * gs) + 20;
+
+  cell.innerHTML = `<div class="name">${name} — ${sprite.w}×${rows}, ${frames.length}f, scale ${gs}</div>`;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pair';
+
+  // 1. gameplay scale on the backdrop
+  const c1 = makeCanvas(gw, gh);
+  const x1 = c1.getContext('2d');
+  starryBg(x1, gw, gh);
+  drawSprite(x1, sprite, 0, 10, 10, gs);
+  wrap.appendChild(c1);
+
+  // 2. 4x for detail
+  const big = 4;
+  const c2 = makeCanvas(sprite.w * big + 8, rows * big + 8);
+  const x2 = c2.getContext('2d');
+  x2.fillStyle = '#0d0a26'; x2.fillRect(0, 0, c2.width, c2.height);
+  // draw at raw pixel size `big` by faking DOT via scale
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < frames[0][r].length; c++) {
+      const ch = frames[0][r][c];
+      if (ch === ' ') continue;
+      x2.fillStyle = PALETTE[ch] || '#f0f';
+      x2.fillRect(4 + c * big, 4 + r * big, big, big);
+    }
+  }
+  wrap.appendChild(c2);
+
+  // 3. both frames, to confirm only extremities move
+  if (frames.length > 1) {
+    const c3 = makeCanvas((sprite.w * 3 + 6) * frames.length, rows * 3 + 8);
+    const x3 = c3.getContext('2d');
+    x3.fillStyle = '#0d0a26'; x3.fillRect(0, 0, c3.width, c3.height);
+    for (let fi = 0; fi < frames.length; fi++) {
+      const ox = fi * (sprite.w * 3 + 6) + 3;
+      for (let r = 0; r < frames[fi].length; r++) {
+        for (let c = 0; c < frames[fi][r].length; c++) {
+          const ch = frames[fi][r][c];
+          if (ch === ' ') continue;
+          // Highlight pixels that DIFFER between frame 0 and this one.
+          const base = frames[0][r] ? frames[0][r][c] : ' ';
+          x3.fillStyle = (fi > 0 && base !== ch) ? '#ff2d6f' : (PALETTE[ch] || '#f0f');
+          x3.fillRect(ox + c * 3, 4 + r * 3, 3, 3);
+        }
+      }
+    }
+    wrap.appendChild(c3);
+  }
+
+  cell.appendChild(wrap);
+  if (problems.length) {
+    const p = document.createElement('div');
+    p.className = 'warn';
+    p.textContent = problems.slice(0, 4).join(' · ');
+    cell.appendChild(p);
+  }
+  row.appendChild(cell);
+}
+
+section.appendChild(row);
+out.appendChild(section);
+
+// Palette swatches — quick check that no two keys are indistinguishable, which
+// is how a shade tone silently becomes invisible against its base.
+const ps = document.createElement('div');
+ps.innerHTML = '<h2>Palette</h2>';
+const prow = document.createElement('div');
+prow.className = 'row';
+for (const [k, v] of Object.entries(PALETTE)) {
+  const d = document.createElement('div');
+  d.className = 'cell';
+  d.style.padding = '6px 8px';
+  d.innerHTML = `<div style="width:34px;height:22px;background:${v};border-radius:3px;border:1px solid #0008"></div>
+                 <div class="name" style="margin:4px 0 0">${k} ${v}</div>`;
+  prow.appendChild(d);
+}
+ps.appendChild(prow);
+out.appendChild(ps);
+</script>
+</body>
+</html>

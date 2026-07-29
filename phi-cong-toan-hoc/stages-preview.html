@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>stage blueprints — 24 stages</title>
+<!--
+  Dev-only review page for stages.js. `node js/verify.js` proves each stage is
+  legal and beatable; this page is for the thing a test cannot show — whether the
+  24-stage CURVE feels right when you look at it all at once.
+
+  Each row is one stage's wave timeline: bar width is the wave's on-screen
+  window, bar height is how many hits it demands, and the dashed line is what a
+  slow kid can actually land in that window. A bar taller than the line leaks.
+
+  Open with `npm start`, then http://localhost:8179/stages-preview.html
+-->
+<style>
+  body { margin:0; background:#0b0820; color:#e8e4f5; font:13px/1.5 ui-monospace,monospace; padding:18px; }
+  h1 { font-size:17px; color:#7fe3ff; margin:0 0 4px; }
+  p.note { color:#9a92c0; margin:0 0 16px; max-width:88ch; }
+  .chapter { margin:22px 0 8px; padding:8px 12px; background:#171235; border-radius:8px; }
+  .chapter h2 { margin:0; font-size:14px; color:#f2c53d; }
+  .chapter div { color:#9a92c0; font-size:12px; }
+  table { width:100%; border-collapse:collapse; }
+  td, th { padding:5px 8px; border-top:1px solid #221c45; vertical-align:middle; }
+  th { color:#9a92c0; font-weight:normal; font-size:11px; text-align:left; background:#100d28; }
+  td.n { color:#7fe3ff; width:26px; }
+  td.nm { width:190px; }
+  td.b { color:#6b64a0; font-size:11px; width:96px; }
+  .tl { position:relative; height:34px; background:#100d28; border-radius:4px; overflow:hidden; }
+  .wv { position:absolute; bottom:0; border-radius:2px 2px 0 0; }
+  .wv.boss { background:#ff2d6f; }
+  .wv.creep { background:#4d9bf0; }
+  .wv.leak { background:#e0503a; }
+  .cap { position:absolute; left:0; right:0; border-top:1px dashed rgba(255,210,74,0.8); }
+  .stat { color:#9a92c0; font-size:11px; }
+  .ok { color:#2fbf9f; }
+  .warn { color:#ffd24a; }
+  .bad { color:#e0503a; }
+  .tiers { display:flex; gap:2px; align-items:flex-end; height:28px; }
+  .tiers i { display:block; width:8px; background:#7fe3ff; border-radius:1px; }
+</style>
+</head>
+<body>
+<h1>Phi Công Toán Học — stage blueprints</h1>
+<p class="note">
+  Blue bars are creep waves, magenta are bosses (which hold position and cannot
+  leak). Bar height = hits demanded; the dashed gold line = what a SLOW kid can
+  land inside that wave's window. Red means the bar exceeds the line, i.e. the
+  wave will leak every run. Read the tier column down the page to see the
+  arithmetic curve.
+</p>
+<div id="out"></div>
+
+<script type="module">
+import { STAGES, stageHits } from './js/stages.js';
+import { CHAPTERS } from './js/chapters.js';
+import { PROFILES, volleySize, alliesByStage, judge } from './js/balance.js';
+
+const out = document.getElementById('out');
+const slow = PROFILES.slow;
+const MAXH = 14;   // hits that fill the bar height
+
+for (const ch of CHAPTERS) {
+  const box = document.createElement('div');
+  box.className = 'chapter';
+  box.innerHTML = `<h2>Chương ${ch.id} — ${ch.name}</h2><div>${ch.subtitle} · stages ${ch.stageStart + 1}-${ch.stageStart + ch.stageCount}</div>`;
+  out.appendChild(box);
+
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `<tr><th>#</th><th>stage</th><th>biome</th><th>timeline</th>
+                   <th>tier</th><th>hits</th><th>minQ</th><th>allies</th><th>gate</th></tr>`;
+
+  for (let i = ch.stageStart; i < ch.stageStart + ch.stageCount; i++) {
+    const st = STAGES[i];
+    const allies = alliesByStage(STAGES, i);
+    const v = judge(st, allies);
+
+    // Build the timeline. Total width is the sum of all wave windows.
+    const waves = st.waves.map((w) => {
+      const isBoss = w.formation === 'BOSS' || !!(w.phases && w.phases.length);
+      const hits = w.phases ? w.phases.reduce((s, p) => s + p.hits, 0) * (w.count || 1)
+                            : (w.count || 1) * (w.hits || 1);
+      const window = (w.count || 1) * (w.gap ?? 0.5) + 500 / (w.speed || 40);
+      const landed = (window / slow.secsPerAnswer) * slow.accuracy * volleySize(2, allies);
+      return { id: w.id, isBoss, hits, window, landed, formation: w.formation, enemy: w.enemy };
+    });
+    const totalWin = waves.reduce((s, w) => s + w.window, 0);
+
+    let bars = '';
+    let x = 0;
+    for (const w of waves) {
+      const wpc = (w.window / totalWin) * 100;
+      const hpc = Math.min(100, (w.hits / MAXH) * 100);
+      const leaks = !w.isBoss && w.hits > w.landed * 1.35;
+      const cls = w.isBoss ? 'boss' : leaks ? 'leak' : 'creep';
+      bars += `<div class="wv ${cls}" style="left:${x}%;width:${wpc - 0.6}%;height:${hpc}%"
+                title="${w.id} ${w.formation}/${w.enemy} — ${w.hits} hits in ${w.window.toFixed(0)}s (slow lands ~${w.landed.toFixed(1)})"></div>`;
+      // the per-wave capacity line
+      const cpc = Math.min(100, (w.landed / MAXH) * 100);
+      bars += `<div class="cap" style="left:${x}%;width:${wpc - 0.6}%;bottom:${cpc}%"></div>`;
+      x += wpc;
+    }
+
+    const wins = ['slow', 'typical', 'fast'].map((k) => v.results[k].wins);
+    const gateCls = v.ok ? 'ok' : wins[0] >= 3 ? 'warn' : 'bad';
+    const gate = `${wins[0]}/${wins[1]}/${wins[2]}`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="n">${st.id}</td>
+      <td class="nm">${st.name}</td>
+      <td class="b">${st.biome}</td>
+      <td><div class="tl">${bars}</div></td>
+      <td class="stat">${st.quest.tier}</td>
+      <td class="stat">${stageHits(st)}</td>
+      <td class="stat">${st.quest.minQuests}</td>
+      <td class="stat">${allies}</td>
+      <td class="${gateCls}">${gate}</td>`;
+    tbl.appendChild(tr);
+  }
+  out.appendChild(tbl);
+}
+
+// The arithmetic curve, as one strip.
+const curve = document.createElement('div');
+curve.className = 'chapter';
+curve.innerHTML = '<h2>Đường cong toán học</h2><div>quest.tier across all 24 stages — must never go down</div>';
+const strip = document.createElement('div');
+strip.className = 'tiers';
+strip.style.marginTop = '8px';
+for (const st of STAGES) {
+  const i = document.createElement('i');
+  i.style.height = `${(st.quest.tier / 12) * 28}px`;
+  i.title = `stage ${st.id}: tier ${st.quest.tier}`;
+  strip.appendChild(i);
+}
+curve.appendChild(strip);
+out.appendChild(curve);
+</script>
+</body>
+</html>
