@@ -1,4 +1,7 @@
-const CACHE_NAME = "kids-games-portal-v1";
+// Bump on every release to the release datetime (UTC, yyyymmddHHMM) so a new
+// deploy always busts old installs' caches instead of relying on remembering
+// to increment a counter.
+const CACHE_NAME = "kids-games-portal-v202608031512";
 
 const PRECACHE_URLS = [
   "./",
@@ -28,12 +31,29 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Cache-first for same-origin GET requests, falling back to network and
-// filling the cache as games/assets get visited. Everything else (other
+// HTML documents (portal + game pages) go network-first so new content ships
+// on the next load while online; only offline installs fall back to cache.
+// Other same-origin GET requests (icons, css, game assets) stay cache-first
+// since they're content-hashed-ish and rarely change. Everything else (other
 // origins, non-GET) passes straight through to the network.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) {
+    return;
+  }
+
+  if (request.mode === "navigate" || request.destination === "document") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 

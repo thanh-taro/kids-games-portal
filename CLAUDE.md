@@ -16,16 +16,17 @@ dependencies**, so it deploys straight to **GitHub Pages** from the repo root.
 ## Structure
 
 ```
-index.html          the portal — game-selection page + all its CSS (single file, inline <style>)
-README.md           portal overview + GitHub Pages deploy steps + add-a-game template
-anh-hung-ban-phim/  a game (Vietnamese Telex typing game) — self-contained, has its own CLAUDE.md
+index.html                       the portal — game-selection page + all its CSS (single file, inline <style>)
+README.md                        portal overview + GitHub Pages deploy steps + add-a-game template
+games/anh-hung-ban-phim/         a game (Vietnamese Telex typing game) — self-contained, has its own CLAUDE.md
+games/phi-cong-toan-hoc/         a game (math space shooter) — self-contained, has its own CLAUDE.md
 ```
 
 The portal and games are **decoupled**: the portal only references each game by a
 relative link to its `index.html`. It does not import game code or share state.
-When working *inside* a game, read that game's own `CLAUDE.md` — e.g.
-`anh-hung-ban-phim/CLAUDE.md` documents that game's architecture and its
-`npm start` dev server + `node js/telex.test.js` test suite.
+Games live under `games/`. When working *inside* a game, read that game's own
+`CLAUDE.md` — e.g. `games/anh-hung-ban-phim/CLAUDE.md` documents that game's
+architecture and its `npm start` dev server + `node js/telex.test.js` test suite.
 
 ## Serving / previewing the portal
 
@@ -37,7 +38,7 @@ python3 -m http.server 8000    # then open http://localhost:8000/index.html
 
 Serving from the **root** (not a game subfolder) is what makes the relative game
 links resolve — the same reason they work on GitHub Pages. Individual games may
-ship a stricter no-cache dev server (`anh-hung-ban-phim` uses `npm start`, an
+ship a stricter no-cache dev server (`games/anh-hung-ban-phim` uses `npm start`, an
 `http-server -c-1` script); use that when editing that game's JS modules to
 avoid Chrome caching stale modules.
 
@@ -46,7 +47,7 @@ avoid Chrome caching stale modules.
 The portal is built to grow by **data, not code**: a new game is a new folder +
 one new card. To add one:
 
-1. Create `my-new-game/` with its own `index.html`.
+1. Create `games/my-new-game/` with its own `index.html`.
 2. Copy an existing `<a class="game-card">` block in the root `index.html` and
    point its `href` at the new game. Each card is themed by two CSS custom
    properties set inline — `--c1`/`--c2` drive the art gradient and the button

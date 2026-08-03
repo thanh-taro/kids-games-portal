@@ -183,6 +183,18 @@
       opacity: 0.9;
     }
 
+    footer a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    footer a:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .decor span { animation: none; }
       .game-card { transition: none; }
@@ -202,7 +214,7 @@
   <main>
     <div class="games">
       <!-- Anh Hùng Bàn Phím -->
-      <a class="game-card" href="anh-hung-ban-phim/index.html"
+      <a class="game-card" href="games/anh-hung-ban-phim/index.html"
          target="_blank" rel="noopener"
          style="--c1:#fbbf24; --c2:#f97316;">
         <div class="game-art">⌨️</div>
@@ -215,7 +227,7 @@
       </a>
 
       <!-- Phi Công Toán Học -->
-      <a class="game-card" href="phi-cong-toan-hoc/index.html"
+      <a class="game-card" href="games/phi-cong-toan-hoc/index.html"
          target="_blank" rel="noopener"
          style="--c1:#60a5fa; --c2:#7c3aed;">
         <div class="game-art">🚀</div>
@@ -240,13 +252,22 @@
   </main>
 
   <footer>
-    Made with ❤️ for kids · Kids Games Portal
+    Made with ❤️ for kids · Kids Games Portal ·
+    <a href="https://github.com/thanh-taro/kids-games-portal" target="_blank" rel="noopener">GitHub</a>
   </footer>
 
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+      // Reload once a new service worker takes over so an already-open
+      // install picks up fresh content instead of waiting for a relaunch.
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
     }
   </script>

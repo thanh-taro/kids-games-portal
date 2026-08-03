@@ -1,5 +1,7 @@
 # 🎮 Kids Games Portal
 
+[GitHub repo](https://github.com/thanh-taro/kids-games-portal)
+
 A friendly collection of browser games for kids — fun, colorful, and easy to
 use. The portal is a single static page (`index.html`) that lets a child pick a
 game from a grid of big, tappable cards. It's built to grow: each game lives in
@@ -12,8 +14,8 @@ can be served straight from **GitHub Pages**.
 
 | Game | Folder | What it is |
 |------|--------|------------|
-| **Anh Hùng Bàn Phím** (Cứu Công Chúa) | [`anh-hung-ban-phim/`](anh-hung-ban-phim/) | A 2D pixel-art typing game that teaches kids to type Vietnamese with the Telex input method. Fight monsters by typing the word above them — a 26-stage, three-chapter story: rescue ten kidnapped princesses, seek the Staff of Wisdom, and defeat the World Devourer. |
-| **Phi Công Toán Học** (Cứu Dải Ngân Hà) | [`phi-cong-toan-hoc/`](phi-cong-toan-hoc/) | A pixel-art vertical space shooter that drills mental arithmetic. The ship flies and fires itself — the kid answers maths questions to keep it powered, and every correct answer is a volley. Four difficulty levels (± within 10 up to all four operations within 1000), 24 stages across three chapters: defend Earth, rescue five imprisoned allies who then fly in formation with you, and destroy the Galaxy Destroyer. |
+| **Anh Hùng Bàn Phím** (Cứu Công Chúa) | [`games/anh-hung-ban-phim/`](games/anh-hung-ban-phim/) | A 2D pixel-art typing game that teaches kids to type Vietnamese with the Telex input method. Fight monsters by typing the word above them — a 26-stage, three-chapter story: rescue ten kidnapped princesses, seek the Staff of Wisdom, and defeat the World Devourer. |
+| **Phi Công Toán Học** (Cứu Dải Ngân Hà) | [`games/phi-cong-toan-hoc/`](games/phi-cong-toan-hoc/) | A pixel-art vertical space shooter that drills mental arithmetic. The ship flies and fires itself — the kid answers maths questions to keep it powered, and every correct answer is a volley. Four difficulty levels (± within 10 up to all four operations within 1000), 24 stages across three chapters: defend Earth, rescue five imprisoned allies who then fly in formation with you, and destroy the Galaxy Destroyer. |
 
 *More games coming soon.*
 
@@ -29,7 +31,7 @@ python3 -m http.server 8000
 ```
 
 Then click a game card to play. (Each game may also ship its own dev server —
-see the game's own README, e.g. `anh-hung-ban-phim` uses `npm start`.)
+see the game's own README, e.g. `games/anh-hung-ban-phim` uses `npm start`.)
 
 ## Install as an app
 
@@ -55,12 +57,12 @@ automatically. Game links are relative, so they work both locally and on Pages.
 
 ## Add a new game
 
-1. Create a new folder for the game (e.g. `my-new-game/`) with its own
-   `index.html`.
+1. Create a new folder for the game under `games/` (e.g. `games/my-new-game/`)
+   with its own `index.html`.
 2. Add a new card to the `.games` grid in the root `index.html`, copying the
    existing card as a template:
    ```html
-   <a class="game-card" href="my-new-game/index.html"
+   <a class="game-card" href="games/my-new-game/index.html"
       style="--c1:#COLOR1; --c2:#COLOR2;">
      <div class="game-art">🎯</div>
      <div class="game-body">
@@ -78,12 +80,13 @@ automatically. Game links are relative, so they work both locally and on Pages.
 ## Project layout
 
 ```
-index.html               the portal — game selection page (GitHub Pages landing)
-manifest.webmanifest     PWA manifest (install as app)
-sw.js                    service worker (offline caching for the portal shell)
-icons/                   PWA icons (192/512, incl. maskable variants)
-README.md                this file
-anh-hung-ban-phim/       the Vietnamese Telex typing game (self-contained)
+index.html                       the portal — game selection page (GitHub Pages landing)
+manifest.webmanifest            PWA manifest (install as app)
+sw.js                            service worker (offline caching for the portal shell)
+icons/                           PWA icons (192/512, incl. maskable variants)
+README.md                        this file
+games/anh-hung-ban-phim/        the Vietnamese Telex typing game (self-contained)
+games/phi-cong-toan-hoc/        the math space shooter game (self-contained)
 LICENSE
 ```
 
