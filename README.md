@@ -12,12 +12,24 @@ can be served straight from **GitHub Pages**.
 
 ## Games
 
+Games are organized into two groups on the portal:
+
+- **📚 Chơi mà học · Play & Learn**
+- **🎉 Giải trí cùng bạn bè và gia đình · Fun with Friends & Family**
+
+### 📚 Chơi mà học · Play & Learn
+
 | Game | Folder | What it is |
 |------|--------|------------|
 | **Anh Hùng Bàn Phím** (Cứu Công Chúa) | [`games/anh-hung-ban-phim/`](games/anh-hung-ban-phim/) | A 2D pixel-art typing game that teaches kids to type Vietnamese with the Telex input method. Fight monsters by typing the word above them — a 26-stage, three-chapter story: rescue ten kidnapped princesses, seek the Staff of Wisdom, and defeat the World Devourer. |
 | **Phi Công Toán Học** (Cứu Dải Ngân Hà) | [`games/phi-cong-toan-hoc/`](games/phi-cong-toan-hoc/) | A pixel-art vertical space shooter that drills mental arithmetic. The ship flies and fires itself — the kid answers maths questions to keep it powered, and every correct answer is a volley. Four difficulty levels (± within 10 up to all four operations within 1000), 24 stages across three chapters: defend Earth, rescue five imprisoned allies who then fly in formation with you, and destroy the Galaxy Destroyer. |
+| **Khinh Khí Cầu Tri Thức** | [`games/khinh-khi-cau-tri-thuc/`](games/khinh-khi-cau-tri-thuc/) | A pixel-art endless climber. A hot-air balloon rises automatically while a spiked nail bar closes in; answer the dynamically generated math, English vocab, or quiz question in time to clear the stage, or the nails burst the balloon. Endless stages with gently scaling difficulty, and the highest stage reached is saved as a local high score. |
 
 *More games coming soon.*
+
+### 🎉 Giải trí cùng bạn bè và gia đình · Fun with Friends & Family
+
+*No games yet — coming soon.*
 
 ## Play locally
 
@@ -87,6 +99,7 @@ icons/                           PWA icons (192/512, incl. maskable variants)
 README.md                        this file
 games/anh-hung-ban-phim/        the Vietnamese Telex typing game (self-contained)
 games/phi-cong-toan-hoc/        the math space shooter game (self-contained)
+games/khinh-khi-cau-tri-thuc/  the endless balloon-climb quiz game (self-contained)
 LICENSE
 ```
 

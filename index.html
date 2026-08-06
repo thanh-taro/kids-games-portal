@@ -93,6 +93,22 @@
       padding: 1.5rem 1.25rem 3rem;
     }
 
+    .game-group {
+      margin-bottom: 2.75rem;
+    }
+    .game-group:last-child {
+      margin-bottom: 0;
+    }
+    .group-title {
+      color: #fff;
+      font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+      text-shadow: 0 3px 0 rgba(58, 28, 110, 0.3), 0 6px 16px var(--shadow);
+      margin-bottom: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .games {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -128,7 +144,7 @@
     }
 
     .game-body { padding: 1.25rem 1.4rem 1.5rem; }
-    .game-body h2 {
+    .game-body h3 {
       font-size: 1.45rem;
       line-height: 1.2;
     }
@@ -169,7 +185,7 @@
       border: 3px dashed rgba(255, 255, 255, 0.9);
     }
     .game-card.soon .game-art { background: rgba(255, 255, 255, 0.35); }
-    .game-card.soon .game-body h2 { color: #4a3a6a; }
+    .game-card.soon .game-body h3 { color: #4a3a6a; }
     .game-card.soon .game-body p { color: #4a3a6a; }
 
     footer {
@@ -212,43 +228,74 @@
   </header>
 
   <main>
-    <div class="games">
-      <!-- Anh Hùng Bàn Phím -->
-      <a class="game-card" href="games/anh-hung-ban-phim/index.html"
-         target="_blank" rel="noopener"
-         style="--c1:#fbbf24; --c2:#f97316;">
-        <div class="game-art">⌨️</div>
-        <div class="game-body">
-          <h2>Anh Hùng Bàn Phím</h2>
-          <span class="tag">Tập gõ tiếng Việt</span>
-          <p>Trở thành anh hùng, đánh bại quái vật bằng cách gõ chữ và cứu công chúa!</p>
-          <span class="play-btn">Chơi ngay ▶</span>
-        </div>
-      </a>
+    <section class="game-group" aria-labelledby="group-learn">
+      <h2 class="group-title" id="group-learn">📚 Chơi mà học · Play &amp; Learn</h2>
+      <div class="games">
+        <!-- Anh Hùng Bàn Phím -->
+        <a class="game-card" href="games/anh-hung-ban-phim/index.html"
+           target="_blank" rel="noopener"
+           style="--c1:#fbbf24; --c2:#f97316;">
+          <div class="game-art">⌨️</div>
+          <div class="game-body">
+            <h3>Anh Hùng Bàn Phím</h3>
+            <span class="tag">Tập gõ tiếng Việt</span>
+            <p>Trở thành anh hùng, đánh bại quái vật bằng cách gõ chữ và cứu công chúa!</p>
+            <span class="play-btn">Chơi ngay ▶</span>
+          </div>
+        </a>
 
-      <!-- Phi Công Toán Học -->
-      <a class="game-card" href="games/phi-cong-toan-hoc/index.html"
-         target="_blank" rel="noopener"
-         style="--c1:#60a5fa; --c2:#7c3aed;">
-        <div class="game-art">🚀</div>
-        <div class="game-body">
-          <h2>Phi Công Toán Học</h2>
-          <span class="tag">Luyện toán</span>
-          <p>Lái phi thuyền, giải toán để bắn hạ quái hạm và cứu cả dải Ngân Hà!</p>
-          <span class="play-btn">Chơi ngay ▶</span>
-        </div>
-      </a>
+        <!-- Phi Công Toán Học -->
+        <a class="game-card" href="games/phi-cong-toan-hoc/index.html"
+           target="_blank" rel="noopener"
+           style="--c1:#60a5fa; --c2:#7c3aed;">
+          <div class="game-art">🚀</div>
+          <div class="game-body">
+            <h3>Phi Công Toán Học</h3>
+            <span class="tag">Luyện toán</span>
+            <p>Lái phi thuyền, giải toán để bắn hạ quái hạm và cứu cả dải Ngân Hà!</p>
+            <span class="play-btn">Chơi ngay ▶</span>
+          </div>
+        </a>
 
-      <!-- Future game placeholder -->
-      <div class="game-card soon" aria-label="More games coming soon">
-        <div class="game-art">✨</div>
-        <div class="game-body">
-          <h2>Sắp ra mắt</h2>
-          <span class="tag" style="--c2:#a78bfa; background:#a78bfa;">Coming soon</span>
-          <p>Nhiều trò chơi thú vị khác đang được chuẩn bị. Hãy quay lại sớm nhé!</p>
+        <!-- Khinh Khí Cầu Tri Thức -->
+        <a class="game-card" href="games/khinh-khi-cau-tri-thuc/index.html"
+           target="_blank" rel="noopener"
+           style="--c1:#fb923c; --c2:#ec4899;">
+          <div class="game-art">🎈</div>
+          <div class="game-body">
+            <h3>Khinh Khí Cầu Tri Thức</h3>
+            <span class="tag">Toán · Tiếng Anh · Đố vui</span>
+            <p>Trả lời câu hỏi thật nhanh để giúp khinh khí cầu bay qua từng tầng mây không giới hạn!</p>
+            <span class="play-btn">Chơi ngay ▶</span>
+          </div>
+        </a>
+
+        <!-- Future game placeholder -->
+        <div class="game-card soon" aria-label="More games coming soon">
+          <div class="game-art">✨</div>
+          <div class="game-body">
+            <h3>Sắp ra mắt</h3>
+            <span class="tag" style="--c2:#a78bfa; background:#a78bfa;">Coming soon</span>
+            <p>Nhiều trò chơi thú vị khác đang được chuẩn bị. Hãy quay lại sớm nhé!</p>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <section class="game-group" aria-labelledby="group-friends">
+      <h2 class="group-title" id="group-friends">🎉 Giải trí cùng bạn bè và gia đình · Fun with Friends &amp; Family</h2>
+      <div class="games">
+        <!-- Future game placeholder -->
+        <div class="game-card soon" aria-label="More games coming soon">
+          <div class="game-art">✨</div>
+          <div class="game-body">
+            <h3>Sắp ra mắt</h3>
+            <span class="tag" style="--c2:#a78bfa; background:#a78bfa;">Coming soon</span>
+            <p>Những trò chơi vui nhộn để chơi cùng bạn bè và gia đình đang được chuẩn bị!</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>
