@@ -82,15 +82,25 @@ export function strokeRoundRect(ctx, x, y, w, h, r, color, lineWidth = 2) {
 
 // Draws text centered at (cx, cy), shrinking the font size until it fits
 // maxWidth, and returns the font size actually used.
-export function fitText(ctx, text, cx, cy, maxWidth, startSize, minSize, font) {
+// Finds the largest font size (down to minSize) that fits text within
+// maxWidth, without drawing anything. Shared by fitText so callers that
+// need to know the fitted width up front (e.g. to lay out an icon next
+// to the text) use the exact same sizing logic.
+export function measureFitText(ctx, text, maxWidth, startSize, minSize, font) {
   let size = startSize;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
   while (size > minSize) {
     ctx.font = `800 ${size}px ${font}`;
     if (ctx.measureText(text).width <= maxWidth) break;
     size -= 1;
   }
+  return { size, width: ctx.measureText(text).width };
+}
+
+export function fitText(ctx, text, cx, cy, maxWidth, startSize, minSize, font) {
+  const { size } = measureFitText(ctx, text, maxWidth, startSize, minSize, font);
+  ctx.font = `800 ${size}px ${font}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
   ctx.fillText(text, cx, cy);
   return size;
 }

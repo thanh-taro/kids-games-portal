@@ -2,7 +2,23 @@
 // answer choices, all drawn (and hit-tested) directly on the canvas.
 // layout() is the single source of truth for positions — both draw()
 // and hitTest() call it, so visuals and tap targets can never drift.
-import { fillRoundRect, fitText, drawButton, pointInRect, UI_FONT } from "./pixelart.js";
+import { fillRoundRect, fitText, measureFitText, drawButton, pointInRect, UI_FONT } from "./pixelart.js";
+
+// Flag emoji (regional-indicator sequences) don't render as glyphs on
+// Windows — the OS emoji font has no flag images, so it falls back to
+// showing the raw two-letter region code as text. We draw real flag SVGs
+// on canvas instead, loaded on demand and cached by ISO code.
+const flagImageCache = new Map();
+
+function getFlagImage(code) {
+  let img = flagImageCache.get(code);
+  if (!img) {
+    img = new Image();
+    img.src = new URL(`../assets/flags/${code}.svg`, import.meta.url).href;
+    flagImageCache.set(code, img);
+  }
+  return img;
+}
 
 const CATEGORY_LABEL = {
   math: "🔢 Toán học",
@@ -32,6 +48,15 @@ export function layoutQuestBar(w, barrierTop, quest) {
   const promptY = y;
   y += promptH + 10;
 
+  const hasFlag = !!(quest && quest.flagCode);
+  const flagH = promptH;
+  const flagW = Math.round(flagH * (4 / 3));
+  const flagGap = 10;
+  const flag = hasFlag
+    ? { x: pad, y: promptY, w: flagW, h: flagH }
+    : null;
+  const promptTextW = hasFlag ? w - pad * 2 - flagW - flagGap : w - pad * 2;
+
   const choices = quest ? quest.choices : [];
   const cols = w >= 640 ? Math.min(4, choices.length || 4) : Math.min(2, choices.length || 2);
   const rows = Math.ceil(choices.length / cols) || 1;
@@ -59,7 +84,8 @@ export function layoutQuestBar(w, barrierTop, quest) {
     pad,
     timer: { x: pad, y: timerY, w: w - pad * 2, h: timerH },
     badge: { x: pad, y: badgeY, w: 0, h: badgeH },
-    prompt: { x: pad, y: promptY, w: w - pad * 2, h: promptH, fontSize: promptFontSize },
+    prompt: { x: pad, y: promptY, w: w - pad * 2, h: promptH, fontSize: promptFontSize, textMaxW: promptTextW },
+    flag,
     cards,
   };
 }
@@ -137,9 +163,27 @@ export function drawQuestBar(ctx, w, barrierTop, state) {
   ctx.textBaseline = "middle";
   ctx.fillText(label, m.badge.x + badgeW / 2, m.badge.y + m.badge.h / 2 + 1);
 
-  // Prompt.
+  // Flag + prompt. The flag is drawn as an image, not emoji text — Windows
+  // has no glyphs for regional-indicator flag sequences and falls back to
+  // showing the raw two-letter country code. It sits right next to the
+  // prompt text, the pair centered together as one group.
   ctx.fillStyle = "#ffffff";
-  fitText(ctx, quest.prompt, m.prompt.x + m.prompt.w / 2, m.prompt.y + m.prompt.h / 2, m.prompt.w, m.prompt.fontSize, 14, UI_FONT);
+  const flagReady = m.flag && quest.flagCode;
+  const img = flagReady ? getFlagImage(quest.flagCode) : null;
+  const showFlag = flagReady && img.complete && img.naturalWidth > 0;
+  if (showFlag) {
+    const { size, width: textW } = measureFitText(ctx, quest.prompt, m.prompt.textMaxW, m.prompt.fontSize, 14, UI_FONT);
+    const flagGap = 10;
+    const groupW = m.flag.w + flagGap + textW;
+    const groupX = m.prompt.x + (m.prompt.w - groupW) / 2;
+    ctx.drawImage(img, groupX, m.prompt.y + (m.prompt.h - m.flag.h) / 2, m.flag.w, m.flag.h);
+    ctx.font = `800 ${size}px ${UI_FONT}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(quest.prompt, groupX + m.flag.w + flagGap, m.prompt.y + m.prompt.h / 2);
+  } else {
+    fitText(ctx, quest.prompt, m.prompt.x + m.prompt.w / 2, m.prompt.y + m.prompt.h / 2, m.prompt.w, m.prompt.fontSize, 14, UI_FONT);
+  }
 
   // Choice buttons.
   for (const card of m.cards) {
